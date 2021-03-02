@@ -1,28 +1,27 @@
 cabal-version:       2.4
 name:                ekg-forward
-version:             0.0.0.0
+version:             0.1.0
 synopsis:            See README for more info
 description:         See README for more info
-homepage:            https://github.com/dshevchenko/ekg-forward
-bug-reports:         https://github.com/dshevchenko/ekg-forward/issues
-license:             MIT
+homepage:            https://github.com/input-output-hk/ekg-forward
+bug-reports:         https://github.com/input-output-hk/ekg-forward/issues
+license:             Apache-2.0
 license-file:        LICENSE
+copyright:           2021 Input Output (Hong Kong) Ltd.
 author:              Denis Shevchenko
 maintainer:          Denis Shevchenko <denis.shevchenko@iohk.io>
-copyright:           2021 Denis Shevchenko
 category:            System, Network
 build-type:          Simple
 extra-doc-files:     README.md
                      CHANGELOG.md
-tested-with:         GHC == 8.8.3
 
 source-repository head
   type:                git
-  location:            https://github.com/dshevchenko/ekg-forward.git
+  location:            https://github.com/input-output-hk/ekg-forward.git
 
 common common-options
-  build-depends:       base ^>= 4.13.0.0
-  
+  build-depends:       base >=4.12 && <5
+
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -43,7 +42,8 @@ common common-options
 library
   import:              common-options
   hs-source-dirs:      src
-  exposed-modules:     EkgForward
+  exposed-modules:     System.Metrics.Typed.Core
+                       System.Metrics.Typed.Protocol
 
 test-suite ekg-forward-test
   import:              common-options
