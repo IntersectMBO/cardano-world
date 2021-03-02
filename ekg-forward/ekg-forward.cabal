@@ -43,9 +43,18 @@ library
   import:              common-options
   hs-source-dirs:      src
 
-  exposed-modules:     System.Metrics.Typed.Protocol
+  exposed-modules:     System.Metrics.Acceptor
+                       System.Metrics.Forwarder
 
-  build-depends:       typed-protocols
+  other-modules:       System.Metrics.Internal.Protocol.Type
+                       System.Metrics.Internal.Protocol.Codec
+                       System.Metrics.Internal.Protocol.Acceptor
+                       System.Metrics.Internal.Protocol.Forwarder
+
+  build-depends:         io-sim-classes
+                       , ouroboros-network
+                       , ouroboros-network-framework
+                       , typed-protocols
 
 test-suite ekg-forward-test
   import:              common-options
