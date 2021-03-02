@@ -16,7 +16,7 @@ See README for more info
 
 module System.Metrics.Typed.Protocol where
 
-import           System.Metrics.Typed.Core
+import           Network.TypedProtocol.Core
 
 data ReqResp req resp where
   StIdle :: ReqResp req resp
@@ -30,18 +30,18 @@ instance Protocol (ReqResp req resp) where
     MsgResp :: resp -> Message (ReqResp req resp) StBusy StIdle
     MsgDone ::         Message (ReqResp req resp) StIdle StDone
 
-  data AcceptorHasAgency st where
-    TokIdle :: AcceptorHasAgency StIdle
+  data ClientHasAgency st where
+    TokIdle :: ClientHasAgency StIdle
 
-  data ForwarderHasAgency st where
-    TokBusy :: ForwarderHasAgency StBusy
+  data ServerHasAgency st where
+    TokBusy :: ServerHasAgency StBusy
 
   data NobodyHasAgency st where
     TokDone :: NobodyHasAgency StDone
 
-  exclusionLemma_AcceptorAndForwarderHaveAgency TokIdle tok = case tok of {}
-  exclusionLemma_NobodyAndAcceptorHaveAgency TokDone tok = case tok of {}
-  exclusionLemma_NobodyAndForwarderHaveAgency TokDone tok = case tok of {}
+  exclusionLemma_ClientAndServerHaveAgency TokIdle tok = case tok of {}
+  exclusionLemma_NobodyAndClientHaveAgency TokDone tok = case tok of {}
+  exclusionLemma_NobodyAndServerHaveAgency TokDone tok = case tok of {}
 
 
 deriving instance (Show req, Show resp)
@@ -50,8 +50,8 @@ deriving instance (Show req, Show resp)
 deriving instance (Eq req, Eq resp)
                => Eq (Message (ReqResp req resp) from to)
 
-instance Show (AcceptorHasAgency (st :: ReqResp req resp)) where
+instance Show (ClientHasAgency (st :: ReqResp req resp)) where
     show TokIdle = "TokIdle"
 
-instance Show (ForwarderHasAgency (st :: ReqResp req resp)) where
+instance Show (ServerHasAgency (st :: ReqResp req resp)) where
     show TokBusy = "TokBusy"
