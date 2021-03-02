@@ -42,8 +42,9 @@ common common-options
 library
   import:              common-options
   hs-source-dirs:      src
-  exposed-modules:     System.Metrics.Typed.Core
-                       System.Metrics.Typed.Protocol
+
+  exposed-modules:     System.Metrics.Typed.Protocol
+
   build-depends:       typed-protocols
 
 test-suite ekg-forward-test
