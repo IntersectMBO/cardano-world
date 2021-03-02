@@ -1,5 +1,5 @@
 # ekg-forward
 
-[![GitHub CI](https://github.com/dshevchenko/ekg-forward/workflows/CI/badge.svg)](https://github.com/dshevchenko/ekg-forward/actions)
+[![GitHub CI](https://github.com/input-output-hk/ekg-forward/workflows/CI/badge.svg)](https://github.com/input-output-hk/ekg-forward/actions)
 
-See README for more info
+EKG forwarding library
