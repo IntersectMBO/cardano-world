@@ -45,6 +45,7 @@ import           Ouroboros.Network.Protocol.Handshake.Version
 import qualified System.Metrics.Internal.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
+import           System.Metrics.Type
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
@@ -98,21 +99,6 @@ codecEKGForward =
   Acceptor.codecEKGForward
     CBOR.encode CBOR.decode
     CBOR.encode CBOR.decode
-
-data Req = SimpleReq
-  deriving (Generic, Show)
-
-data Resp = SimpleResp ![Int]
-  deriving (Generic, Show)
-
-instance ShowProxy Req where
-  showProxy _ = "SimpleReq"
-
-instance ShowProxy Resp where
-  showProxy _ = "SimpleResp" 
-
-instance CBOR.Serialise Req
-instance CBOR.Serialise Resp
 
 ekgAcceptorActions :: Int -> Acceptor.EKGAcceptor Req Resp IO ()
 ekgAcceptorActions 0 = Acceptor.SendMsgReq SimpleReq (\_resp -> return (ekgAcceptorActions 1))
