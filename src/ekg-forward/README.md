@@ -18,6 +18,10 @@ There is `ekg` [package](https://hackage.haskell.org/package/ekg) that already l
 2. `ekg-forward` is based on Haskell typed protocol, which provides type-level guarantees of correctness.
 3. `ekg-forward`'s network layer uses `ouroboros-network` [package](https://github.com/input-output-hk/ouroboros-network/) which supports both network sockets and local pipes for connection.
 
+## How To Use It
+
+Please see demo programs in the `demo` directory.
+
 ## Limitations
 
 In the current release, not all EKG metrics are supported:
