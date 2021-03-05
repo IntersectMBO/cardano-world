@@ -45,6 +45,7 @@ library
 
   exposed-modules:     System.Metrics.Acceptor
                        System.Metrics.Forwarder
+                       System.Metrics.Type
 
   other-modules:       System.Metrics.Internal.Protocol.Type
                        System.Metrics.Internal.Protocol.Codec
