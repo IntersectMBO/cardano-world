@@ -56,11 +56,34 @@ library
                        , bytestring
                        , cborg
                        , contra-tracer
+                       , ekg-core
                        , io-sim-classes
                        , ouroboros-network
                        , ouroboros-network-framework
                        , serialise
                        , typed-protocols
+
+executable demo-forwarder
+  hs-source-dirs:      demo
+  main-is:             forwarder.hs
+  build-depends:         base
+                       , ekg-forward
+
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+
+executable demo-acceptor
+  hs-source-dirs:      demo
+  main-is:             acceptor.hs
+  build-depends:         base
+                       , ekg-forward
+
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
 
 test-suite ekg-forward-test
   import:              common-options
