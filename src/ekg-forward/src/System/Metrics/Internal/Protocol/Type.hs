@@ -22,7 +22,11 @@ module System.Metrics.Internal.Protocol.Type where
 -- definition of the protocol: what is allowed and what is not allowed.
 --
 
+import           Data.Proxy (Proxy(..))
+
 import           Network.TypedProtocol.Core (Protocol (..))
+
+import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
 -- | A kind to identify our protocol, and the types of the states in the state
 -- transition diagram of the protocol.
@@ -59,6 +63,16 @@ data EKGForward req resp where
 
   -- | Both the acceptor and forwarder are in the terminal state. They're done.
   StDone :: EKGForward req resp
+
+instance (ShowProxy req, ShowProxy resp)
+      => ShowProxy (EKGForward req resp) where
+  showProxy _ = concat
+    [ "EKGForward ("
+    , showProxy (Proxy :: Proxy req)
+    , ") ("
+    , showProxy (Proxy :: Proxy resp)
+    , ")"
+    ]
 
 instance Protocol (EKGForward req resp) where
 

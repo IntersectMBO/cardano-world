@@ -51,9 +51,14 @@ library
                        System.Metrics.Internal.Protocol.Acceptor
                        System.Metrics.Internal.Protocol.Forwarder
 
-  build-depends:         io-sim-classes
+  build-depends:         async
+                       , bytestring
+                       , cborg
+                       , contra-tracer
+                       , io-sim-classes
                        , ouroboros-network
                        , ouroboros-network-framework
+                       , serialise
                        , typed-protocols
 
 test-suite ekg-forward-test
