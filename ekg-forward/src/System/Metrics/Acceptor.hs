@@ -101,7 +101,9 @@ codecEKGForward =
     CBOR.encode CBOR.decode
 
 ekgAcceptorActions :: Int -> Acceptor.EKGAcceptor Req Resp IO ()
-ekgAcceptorActions 0 = Acceptor.SendMsgReq SimpleReq (\_resp -> return (ekgAcceptorActions 1))
+ekgAcceptorActions 0 = Acceptor.SendMsgReq SimpleReq (\resp -> do
+                                                        print resp
+                                                        return (ekgAcceptorActions 1))
 ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
 
 defaultLocalSocketAddrPath :: FilePath
