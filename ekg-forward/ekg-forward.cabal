@@ -34,8 +34,6 @@ common common-options
   if impl(ghc >= 8.4)
     ghc-options:       -Wmissing-export-lists
                        -Wpartial-fields
-  if impl(ghc >= 8.8)
-    ghc-options:       -Wmissing-deriving-strategies
 
   default-language:    Haskell2010
 
@@ -45,12 +43,13 @@ library
 
   exposed-modules:     System.Metrics.Acceptor
                        System.Metrics.Forwarder
-                       System.Metrics.Type
 
   other-modules:       System.Metrics.Internal.Protocol.Type
                        System.Metrics.Internal.Protocol.Codec
                        System.Metrics.Internal.Protocol.Acceptor
                        System.Metrics.Internal.Protocol.Forwarder
+                       System.Metrics.Internal.Request
+                       System.Metrics.Internal.Response
 
   build-depends:         async
                        , bytestring
@@ -61,6 +60,7 @@ library
                        , ouroboros-network
                        , ouroboros-network-framework
                        , serialise
+                       , text
                        , typed-protocols
 
 executable demo-forwarder

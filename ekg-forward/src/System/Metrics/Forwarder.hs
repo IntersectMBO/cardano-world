@@ -11,6 +11,7 @@ See README for more info
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE EmptyCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 
 
@@ -22,10 +23,9 @@ module System.Metrics.Forwarder (
   ) where
 
 import qualified Data.ByteString.Lazy as LBS
-import           GHC.Generics (Generic)
+import qualified Data.List.NonEmpty as NE
 import           Data.Void (Void)
 
-import           Control.Concurrent.Async
 import           Control.Tracer
 
 import qualified Codec.Serialise as CBOR
@@ -35,7 +35,6 @@ import           Ouroboros.Network.NodeToNode
 import           Ouroboros.Network.IOManager
 import           Ouroboros.Network.Snocket
 import           Ouroboros.Network.Socket
-import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
 import           Ouroboros.Network.Codec
 import           Ouroboros.Network.Protocol.Handshake.Codec
@@ -45,7 +44,8 @@ import           Ouroboros.Network.Protocol.Handshake.Version
 import qualified System.Metrics.Internal.Protocol.Forwarder as Forwarder
 import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
 import qualified System.Metrics.Internal.Protocol.Type as Forwarder
-import           System.Metrics.Type
+import           System.Metrics.Internal.Request (Request (..))
+import           System.Metrics.Internal.Response (Response (..), MetricValue (..))
 
 ekgForwarder :: FilePath -> IO ()
 ekgForwarder sockPath = withIOManager $ \iocp -> do
@@ -64,7 +64,7 @@ ekgForwarder sockPath = withIOManager $ \iocp -> do
     (localAddressFromPath sockPath)
 
  where
-  app :: OuroborosApplication InitiatorMode addr LBS.ByteString IO () Void
+  app :: OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
   app = 
     OuroborosApplication $ \_connectionId _shouldStopSTM -> [
         MiniProtocol {
@@ -95,10 +95,17 @@ codecEKGForward =
     CBOR.encode CBOR.decode
 
 ekgForwarderActions
-  :: Forwarder.EKGForwarder Req Resp IO ()
+  :: Forwarder.EKGForwarder Request Response IO ()
 ekgForwarderActions =
   Forwarder.EKGForwarder {
-    Forwarder.recvMsgReq = \_req -> return (SimpleResp [1, 2, 3], ekgForwarderActions)
+    Forwarder.recvMsgReq = \_req ->
+      return ( Metrics (NE.fromList [ ("metric1", GaugeValue 1)
+                                    , ("metric2", GaugeValue 2)
+                                    , ("metric3", GaugeValue 3)
+                                    ]
+                       )
+             , ekgForwarderActions
+             )
   , Forwarder.recvMsgDone = return ()
   }
 
