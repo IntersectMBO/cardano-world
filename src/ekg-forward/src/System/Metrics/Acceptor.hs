@@ -22,7 +22,6 @@ module System.Metrics.Acceptor (
   ) where
 
 import qualified Data.ByteString.Lazy as LBS
-import           GHC.Generics (Generic)
 import           Data.Void (Void)
 
 import           Control.Concurrent.Async
@@ -35,7 +34,6 @@ import           Ouroboros.Network.NodeToNode
 import           Ouroboros.Network.IOManager
 import           Ouroboros.Network.Snocket
 import           Ouroboros.Network.Socket
-import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
 import           Ouroboros.Network.Codec
 import           Ouroboros.Network.Protocol.Handshake.Codec
@@ -45,7 +43,8 @@ import           Ouroboros.Network.Protocol.Handshake.Version
 import qualified System.Metrics.Internal.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
-import           System.Metrics.Type
+import           System.Metrics.Internal.Request (Request (..))
+import           System.Metrics.Internal.Response (Response (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
@@ -100,10 +99,10 @@ codecEKGForward =
     CBOR.encode CBOR.decode
     CBOR.encode CBOR.decode
 
-ekgAcceptorActions :: Int -> Acceptor.EKGAcceptor Req Resp IO ()
-ekgAcceptorActions 0 = Acceptor.SendMsgReq SimpleReq (\resp -> do
-                                                        print resp
-                                                        return (ekgAcceptorActions 1))
+ekgAcceptorActions :: Int -> Acceptor.EKGAcceptor Request Response IO ()
+ekgAcceptorActions 0 = Acceptor.SendMsgReq GetAllMetrics (\resp -> do
+                                                         print resp
+                                                         return (ekgAcceptorActions 1))
 ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
 
 defaultLocalSocketAddrPath :: FilePath
