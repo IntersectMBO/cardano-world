@@ -6,21 +6,16 @@ See README for more info
 -}
 
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE EmptyCase #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module System.Metrics.Internal.Protocol.Forwarder (
     EKGForwarder (..)
   , ekgForwarderPeer
   ) where
 
-import           Network.TypedProtocol.Core
+import           Network.TypedProtocol.Core (Peer (..), PeerHasAgency (..),
+                                             PeerRole (..))
 
 import           System.Metrics.Internal.Protocol.Type
 
