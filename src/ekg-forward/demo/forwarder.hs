@@ -1,5 +1,5 @@
-import           System.Metrics.Forwarder
+import           System.Metrics.Forwarder (runEKGForwarder)
 
 main :: IO ()
 main = do
-  ekgForwarder "./demo-ekg-forward.sock"
+  runEKGForwarder "./demo-ekg-forward.sock"

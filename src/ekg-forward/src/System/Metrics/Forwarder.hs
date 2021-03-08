@@ -5,41 +5,38 @@ Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
 See README for more info
 -}
 
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PolyKinds #-}
-
 
 -- This top-level module will be used by the forwarder app
 -- (the app that collects EKG metrics and sends them to the acceptor).
 --
 module System.Metrics.Forwarder (
-  ekgForwarder
+  runEKGForwarder
   ) where
 
+import qualified Codec.Serialise as CBOR
+import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List.NonEmpty as NE
 import           Data.Void (Void)
 
-import           Control.Tracer
-
-import qualified Codec.Serialise as CBOR
-
-import           Ouroboros.Network.Mux
-import           Ouroboros.Network.NodeToNode
-import           Ouroboros.Network.IOManager
-import           Ouroboros.Network.Snocket
-import           Ouroboros.Network.Socket
-
-import           Ouroboros.Network.Codec
-import           Ouroboros.Network.Protocol.Handshake.Codec
-import           Ouroboros.Network.Protocol.Handshake.Unversioned
-import           Ouroboros.Network.Protocol.Handshake.Version
+import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
+                                        MiniProtocolNum (..), MuxMode (..),
+                                        OuroborosApplication (..), MuxPeer (..),
+                                        RunMiniProtocol (..),
+                                        miniProtocolLimits, miniProtocolNum, miniProtocolRun)
+import           Ouroboros.Network.NodeToNode (simpleSingletonVersions)
+import           Ouroboros.Network.IOManager (withIOManager)
+import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket)
+import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTracers)
+import           Ouroboros.Network.Codec (Codec)
+import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec)
+import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedProtocol (..),
+                                                                   UnversionedProtocolData (..),
+                                                                   unversionedHandshakeCodec,
+                                                                   unversionedProtocolDataCodec)
+import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion)
 
 import qualified System.Metrics.Internal.Protocol.Forwarder as Forwarder
 import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
@@ -47,9 +44,8 @@ import qualified System.Metrics.Internal.Protocol.Type as Forwarder
 import           System.Metrics.Internal.Request (Request (..))
 import           System.Metrics.Internal.Response (Response (..), MetricValue (..))
 
-ekgForwarder :: FilePath -> IO ()
-ekgForwarder sockPath = withIOManager $ \iocp -> do
-  -- threadDelay (50000 * index)
+runEKGForwarder :: FilePath -> IO ()
+runEKGForwarder sockPath = withIOManager $ \iocp ->
   connectToNode
     (localSnocket iocp sockPath)
     unversionedHandshakeCodec

@@ -7,13 +7,8 @@ See README for more info
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyCase #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -- | A view of the EKG forwarding/accepting protocol from the point of view of the
 -- client.
@@ -25,9 +20,10 @@ module System.Metrics.Internal.Protocol.Acceptor (
   , ekgAcceptorPeer
   ) where
 
-import Network.TypedProtocol.Core
+import           Network.TypedProtocol.Core (Peer (..), PeerHasAgency (..),
+                                             PeerRole (..))
 
-import System.Metrics.Internal.Protocol.Type
+import           System.Metrics.Internal.Protocol.Type
 
 -- | Please note that the acceptor is a server from the __networking__
 -- point of view: the forwarder establishes network connection with the acceptor.

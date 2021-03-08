@@ -6,34 +6,27 @@ See README for more info
 -}
 
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeFamilies #-}
 
-module System.Metrics.Internal.Protocol.Codec where
+module System.Metrics.Internal.Protocol.Codec (
+  codecEKGForward
+  ) where
 
-import           Control.Monad.Class.MonadST
+import           Control.Monad.Class.MonadST (MonadST)
 import qualified Data.ByteString.Lazy as LBS
-import           Data.Word (Word8)
-import           Data.Char (ord)
-import           GHC.Base (unsafeChr)
 import           Text.Printf (printf)
-import           Text.Read (readMaybe)
 
-import           Codec.CBOR.Decoding (decodeListLen, decodeWord)
 import qualified Codec.CBOR.Decoding as CBOR
-import           Codec.CBOR.Encoding (encodeListLen, encodeWord)
 import qualified Codec.CBOR.Encoding as CBOR
-import qualified Codec.CBOR.Read as CBOR
+import           Codec.CBOR.Read (DeserialiseFailure)
 
-import           Network.TypedProtocol.Core
-import           Ouroboros.Network.Codec
+import           Ouroboros.Network.Codec (Codec, PeerHasAgency (..),
+                                          PeerRole (..), SomeMessage (..),
+                                          mkCodecCborLazyBS)
 
 import           System.Metrics.Internal.Protocol.Type
 
@@ -45,7 +38,7 @@ codecEKGForward
   -> (resp -> CBOR.Encoding)
   -> (forall s . CBOR.Decoder s resp)
   -> Codec (EKGForward req resp)
-           CBOR.DeserialiseFailure m LBS.ByteString
+           DeserialiseFailure m LBS.ByteString
 codecEKGForward encodeReq  decodeReq
                 encodeResp decodeResp =
   mkCodecCborLazyBS encode decode
@@ -59,17 +52,17 @@ codecEKGForward encodeReq  decodeReq
          -> CBOR.Encoding
 
   encode (ClientAgency TokIdle) (MsgReq req) =
-    encodeListLen 2
-      <> encodeWord 0
+    CBOR.encodeListLen 2
+      <> CBOR.encodeWord 0
       <> encodeReq req
 
   encode (ClientAgency TokIdle) MsgDone =
-    encodeListLen 1
-      <> encodeWord 1
+    CBOR.encodeListLen 1
+      <> CBOR.encodeWord 1
 
   encode (ServerAgency TokBusy) (MsgResp resp) =
-    encodeListLen 2
-      <> encodeWord 1
+    CBOR.encodeListLen 2
+      <> CBOR.encodeWord 1
       <> encodeResp resp
 
   -- Decode messages
@@ -78,8 +71,8 @@ codecEKGForward encodeReq  decodeReq
             PeerHasAgency pr st
          -> CBOR.Decoder s (SomeMessage st)
   decode stok = do
-    len <- decodeListLen
-    key <- decodeWord
+    len <- CBOR.decodeListLen
+    key <- CBOR.decodeWord
     case (key, len, stok) of
       (0, 2, ClientAgency TokIdle) -> do
         req <- decodeReq

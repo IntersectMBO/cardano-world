@@ -1,7 +1,7 @@
 import           Data.Functor (void)
 
-import           System.Metrics.Acceptor
+import           System.Metrics.Acceptor (runEKGAcceptor)
 
 main :: IO ()
 main = do
-  void $ ekgAcceptor "./demo-ekg-forward.sock"
+  void $ runEKGAcceptor "./demo-ekg-forward.sock"
