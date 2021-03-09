@@ -16,6 +16,7 @@ module System.Metrics.Acceptor (
   ) where
 
 import qualified Codec.Serialise as CBOR
+import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
@@ -49,7 +50,9 @@ import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
 import           System.Metrics.Request (Request (..))
 import           System.Metrics.Response (Response (..))
-import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
+import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
+                                               RequestFrequency (..), TimePeriod (..),
+                                               WhatToRequest (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
@@ -65,8 +68,8 @@ runEKGAcceptor'
   :: AcceptorConfiguration
   -> (Response -> IO ())
   -> IO Void
-runEKGAcceptor' AcceptorConfiguration {..} actionOnResponse = withIOManager $ \iocp ->
-  case listenToForwarder of
+runEKGAcceptor' config actionOnResponse = withIOManager $ \iocp ->
+  case listenToForwarder config of
     LocalPipe localPipe -> do
       networkState <- newNetworkMutableState
       _ <- async $ cleanNetworkMutableState networkState
@@ -123,7 +126,7 @@ runEKGAcceptor' AcceptorConfiguration {..} actionOnResponse = withIOManager $ \i
       MuxPeer
         (contramap show stdoutTracer)
         codecEKGForward
-        (Acceptor.ekgAcceptorPeer (ekgAcceptorActions actionOnResponse))
+        (Acceptor.ekgAcceptorPeer $ ekgAcceptorActions config actionOnResponse)
 
 codecEKGForward
   :: ( CBOR.Serialise req
@@ -138,11 +141,24 @@ codecEKGForward =
     CBOR.encode CBOR.decode
 
 ekgAcceptorActions
-  :: (Response -> IO ())
+  :: AcceptorConfiguration
+  -> (Response -> IO ())
   -> Acceptor.EKGAcceptor Request Response IO ()
-ekgAcceptorActions actionOnResponse =
-  Acceptor.SendMsgReq GetAllMetrics $ \response -> do
+ekgAcceptorActions config@AcceptorConfiguration {..} actionOnResponse =
+  Acceptor.SendMsgReq request $ \response -> do
+    threadDelay $ mkDelay requestFrequency -- Temporary function, see below.
     actionOnResponse response
-    return $ ekgAcceptorActions actionOnResponse
+    return $ ekgAcceptorActions config actionOnResponse
+ where
+  request =
+    case whatToRequest of
+      AllMetrics -> GetAllMetrics
+      TheseMetrics metricsNames -> GetMetrics metricsNames
+
+  -- TODO: temporary function, should be rewritten
+  -- (we have to take into account actual time of 'actionOnResponse'
+  -- as well as actual time of getting the response from the forwarder).
+  mkDelay (AskMetricsEvery delay Seconds)      = (fromIntegral delay) * 1000000
+  mkDelay (AskMetricsEvery delay MilliSeconds) = (fromIntegral delay) * 1000
 
 -- ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
