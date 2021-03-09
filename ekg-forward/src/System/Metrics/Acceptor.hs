@@ -20,7 +20,9 @@ import           Control.Concurrent.Async (async, wait)
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import           Data.Functor (void)
+import qualified Data.Text as T
 import           Data.Void (Void)
+import qualified Network.Socket as Socket
 
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
@@ -29,7 +31,7 @@ import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (.
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
 import           Ouroboros.Network.NodeToNode (nullErrorPolicies, simpleSingletonVersions)
 import           Ouroboros.Network.IOManager (withIOManager)
-import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket)
+import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (AcceptedConnectionsLimit (..),
                                            SomeResponderApplication (..),
                                            cleanNetworkMutableState, newNetworkMutableState,
@@ -56,46 +58,63 @@ runEKGAcceptor :: AcceptorConfiguration -> IO ()
 runEKGAcceptor = void . runEKGAcceptor'
 
 runEKGAcceptor' :: AcceptorConfiguration -> IO Void
-runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp -> do
-    networkState <- newNetworkMutableState
-    _ <- async $ cleanNetworkMutableState networkState
-    withServerNode
-      (localSnocket iocp localPipe)
-      nullNetworkServerTracers
-      networkState
-      (AcceptedConnectionsLimit maxBound maxBound 0)
-      (localAddressFromPath localPipe)
-      unversionedHandshakeCodec
-      (cborTermVersionDataCodec unversionedProtocolDataCodec)
-      acceptableVersion
-      (simpleSingletonVersions
-        UnversionedProtocol
-        UnversionedProtocolData
-        (SomeResponderApplication app))
-      nullErrorPolicies
-      $ \_ serverAsync -> wait serverAsync -- Block until async exception.
-  where
-    localPipe = case listenToForwarder of
-                  LocalPipe path -> path
-                  RemoteSocket _host _port -> undefined
+runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp ->
+  case listenToForwarder of
+    LocalPipe localPipe -> do
+      networkState <- newNetworkMutableState
+      _ <- async $ cleanNetworkMutableState networkState
+      withServerNode
+        (localSnocket iocp localPipe)
+        nullNetworkServerTracers
+        networkState
+        (AcceptedConnectionsLimit maxBound maxBound 0)
+        (localAddressFromPath localPipe)
+        unversionedHandshakeCodec
+        (cborTermVersionDataCodec unversionedProtocolDataCodec)
+        acceptableVersion
+        (simpleSingletonVersions
+          UnversionedProtocol
+          UnversionedProtocolData
+          (SomeResponderApplication app))
+        nullErrorPolicies
+        $ \_ serverAsync -> wait serverAsync -- Block until async exception.
+    RemoteSocket host port -> do
+      listenAddress:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
+      networkState <- newNetworkMutableState
+      _ <- async $ cleanNetworkMutableState networkState
+      withServerNode
+        (socketSnocket iocp)
+        nullNetworkServerTracers
+        networkState
+        (AcceptedConnectionsLimit maxBound maxBound 0)
+        (Socket.addrAddress listenAddress)
+        unversionedHandshakeCodec
+        (cborTermVersionDataCodec unversionedProtocolDataCodec)
+        acceptableVersion
+        (simpleSingletonVersions
+          UnversionedProtocol
+          UnversionedProtocolData
+          (SomeResponderApplication app))
+        nullErrorPolicies
+        $ \_ serverAsync -> wait serverAsync -- Block until async exception.
+ where
+  app :: OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
+  app =
+    OuroborosApplication $ \_connectionId _shouldStopSTM -> [
+      MiniProtocol {
+        miniProtocolNum    = MiniProtocolNum 2,
+        miniProtocolLimits = maximumMiniProtocolLimits,
+        miniProtocolRun    = acceptEKGMetrics
+      }
+    ]
 
-    app :: OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
-    app =
-      OuroborosApplication $ \_connectionId _shouldStopSTM -> [
-        MiniProtocol {
-          miniProtocolNum    = MiniProtocolNum 2,
-          miniProtocolLimits = maximumMiniProtocolLimits,
-          miniProtocolRun    = acceptEKGMetrics
-        }
-      ]
-
-    acceptEKGMetrics :: RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
-    acceptEKGMetrics =
-      ResponderProtocolOnly $
-        MuxPeer
-          (contramap show stdoutTracer)
-          codecEKGForward
-          (Acceptor.ekgAcceptorPeer (ekgAcceptorActions 0))
+  acceptEKGMetrics :: RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
+  acceptEKGMetrics =
+    ResponderProtocolOnly $
+      MuxPeer
+        (contramap show stdoutTracer)
+        codecEKGForward
+        (Acceptor.ekgAcceptorPeer (ekgAcceptorActions 0))
 
 codecEKGForward
   :: ( CBOR.Serialise req

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import           System.Metrics.Forwarder (runEKGForwarder)
 import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
 
@@ -7,5 +9,5 @@ main = do
  where
   config =
     ForwarderConfiguration
-      { connectToAcceptor = LocalPipe "./demo-ekg-forward.sock"
+      { connectToAcceptor = RemoteSocket "127.0.0.1" 3010 -- LocalPipe "./demo-ekg-forward.sock"
       }

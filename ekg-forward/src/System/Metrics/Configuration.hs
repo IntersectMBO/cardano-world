@@ -10,6 +10,8 @@ module System.Metrics.Configuration (
     AcceptorConfiguration (..)
   , ForwarderConfiguration (..)
   , HowToConnect (..)
+  , Host
+  , Port
   , RequestFrequency (..)
   , TimePeriod (..)
   ) where

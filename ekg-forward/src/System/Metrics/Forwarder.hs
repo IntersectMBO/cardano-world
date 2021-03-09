@@ -20,7 +20,9 @@ import qualified Codec.Serialise as CBOR
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.List.NonEmpty as NE
+import qualified Data.Text as T
 import           Data.Void (Void)
+import qualified Network.Socket as Socket
 
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
@@ -29,7 +31,7 @@ import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (.
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
 import           Ouroboros.Network.NodeToNode (simpleSingletonVersions)
 import           Ouroboros.Network.IOManager (withIOManager)
-import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket)
+import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTracers)
 import           Ouroboros.Network.Codec (Codec)
 import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec)
@@ -48,25 +50,37 @@ import           System.Metrics.Configuration (ForwarderConfiguration (..), HowT
 
 runEKGForwarder :: ForwarderConfiguration -> IO ()
 runEKGForwarder ForwarderConfiguration{..} = withIOManager $ \iocp ->
-  connectToNode
-    (localSnocket iocp localPipe)
-    unversionedHandshakeCodec
-    (cborTermVersionDataCodec unversionedProtocolDataCodec)
-    nullNetworkConnectTracers
-    acceptableVersion
-    (simpleSingletonVersions
-       UnversionedProtocol
-       UnversionedProtocolData
-       app)
-    Nothing
-    (localAddressFromPath localPipe)
+  case connectToAcceptor of
+    LocalPipe localPipe ->
+      connectToNode
+        (localSnocket iocp localPipe)
+        unversionedHandshakeCodec
+        (cborTermVersionDataCodec unversionedProtocolDataCodec)
+        nullNetworkConnectTracers
+        acceptableVersion
+        (simpleSingletonVersions
+           UnversionedProtocol
+           UnversionedProtocolData
+           app)
+        Nothing
+        (localAddressFromPath localPipe)
+    RemoteSocket host port -> do
+      acceptorAddress:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
+      connectToNode
+        (socketSnocket iocp)
+        unversionedHandshakeCodec
+        (cborTermVersionDataCodec unversionedProtocolDataCodec)
+        nullNetworkConnectTracers
+        acceptableVersion
+        (simpleSingletonVersions
+           UnversionedProtocol
+           UnversionedProtocolData
+           app)
+        Nothing
+        (Socket.addrAddress acceptorAddress)
  where
-  localPipe = case connectToAcceptor of
-                LocalPipe path -> path
-                RemoteSocket _host _port -> undefined
-  
   app :: OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
-  app = 
+  app =
     OuroborosApplication $ \_connectionId _shouldStopSTM -> [
         MiniProtocol {
           miniProtocolNum    = MiniProtocolNum 2,
