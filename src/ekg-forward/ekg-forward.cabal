@@ -42,6 +42,7 @@ library
   hs-source-dirs:      src
 
   exposed-modules:     System.Metrics.Acceptor
+                       System.Metrics.Configuration
                        System.Metrics.Forwarder
 
   other-modules:       System.Metrics.Internal.Protocol.Type

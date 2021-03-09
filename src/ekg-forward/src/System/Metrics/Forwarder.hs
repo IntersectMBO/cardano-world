@@ -7,6 +7,7 @@ See README for more info
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- This top-level module will be used by the forwarder app
 -- (the app that collects EKG metrics and sends them to the acceptor).
@@ -43,11 +44,12 @@ import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
 import qualified System.Metrics.Internal.Protocol.Type as Forwarder
 import           System.Metrics.Internal.Request (Request (..))
 import           System.Metrics.Internal.Response (Response (..), MetricValue (..))
+import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
 
-runEKGForwarder :: FilePath -> IO ()
-runEKGForwarder sockPath = withIOManager $ \iocp ->
+runEKGForwarder :: ForwarderConfiguration -> IO ()
+runEKGForwarder ForwarderConfiguration{..} = withIOManager $ \iocp ->
   connectToNode
-    (localSnocket iocp sockPath)
+    (localSnocket iocp localPipe)
     unversionedHandshakeCodec
     (cborTermVersionDataCodec unversionedProtocolDataCodec)
     nullNetworkConnectTracers
@@ -57,9 +59,12 @@ runEKGForwarder sockPath = withIOManager $ \iocp ->
        UnversionedProtocolData
        app)
     Nothing
-    (localAddressFromPath sockPath)
-
+    (localAddressFromPath localPipe)
  where
+  localPipe = case connectToAcceptor of
+                LocalPipe path -> path
+                RemoteSocket _host _port -> undefined
+  
   app :: OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
   app = 
     OuroborosApplication $ \_connectionId _shouldStopSTM -> [

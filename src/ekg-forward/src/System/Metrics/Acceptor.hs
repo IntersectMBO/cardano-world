@@ -6,6 +6,7 @@ See README for more info
 -}
 
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- | This top-level module will be used by the acceptor app
 -- (the app that asks EKG metrics from the forwarder app).
@@ -45,20 +46,21 @@ import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
 import           System.Metrics.Internal.Request (Request (..))
 import           System.Metrics.Internal.Response (Response (..))
+import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
 --
-runEKGAcceptor :: FilePath -> IO Void
-runEKGAcceptor sockAddr = withIOManager $ \iocp -> do
+runEKGAcceptor :: AcceptorConfiguration -> IO Void
+runEKGAcceptor AcceptorConfiguration {..} = withIOManager $ \iocp -> do
     networkState <- newNetworkMutableState
     _ <- async $ cleanNetworkMutableState networkState
     withServerNode
-      (localSnocket iocp defaultLocalSocketAddrPath)
+      (localSnocket iocp localPipe)
       nullNetworkServerTracers
       networkState
       (AcceptedConnectionsLimit maxBound maxBound 0)
-      (localAddressFromPath sockAddr)
+      (localAddressFromPath localPipe)
       unversionedHandshakeCodec
       (cborTermVersionDataCodec unversionedProtocolDataCodec)
       acceptableVersion
@@ -69,6 +71,10 @@ runEKGAcceptor sockAddr = withIOManager $ \iocp -> do
       nullErrorPolicies
       $ \_ serverAsync -> wait serverAsync -- Block until async exception.
   where
+    localPipe = case listenToForwarder of
+                  LocalPipe path -> path
+                  RemoteSocket _host _port -> undefined
+
     app :: OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
     app =
       OuroborosApplication $ \_connectionId _shouldStopSTM -> [
@@ -104,9 +110,6 @@ ekgAcceptorActions 0 = Acceptor.SendMsgReq GetAllMetrics (\resp -> do
                                                          print resp
                                                          return (ekgAcceptorActions 1))
 ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
-
-defaultLocalSocketAddrPath :: FilePath
-defaultLocalSocketAddrPath =  "./demo-ekg-forward.sock"
 
 maximumMiniProtocolLimits :: MiniProtocolLimits
 maximumMiniProtocolLimits =
