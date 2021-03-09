@@ -8,7 +8,7 @@ See README for more info
 {-# LANGUAGE DeriveGeneric #-}
 
 --
-module System.Metrics.Internal.Response ( 
+module System.Metrics.Response ( 
     MetricName
   , MetricValue (..)
   , Response (..)
@@ -16,7 +16,6 @@ module System.Metrics.Internal.Response (
 
 import           Codec.Serialise (Serialise)
 import           Data.Int (Int64)
-import           Data.List.NonEmpty (NonEmpty)
 import           Data.Text (Text)
 import           GHC.Generics (Generic)
 
@@ -34,8 +33,8 @@ instance ShowProxy MetricValue
 instance Serialise MetricValue
 
 data Response
-  = NoMetrics
-  | Metrics !(NonEmpty (MetricName, MetricValue))
+  = ResponseNoMetrics
+  | ResponseMetrics ![(MetricName, MetricValue)]
   deriving (Generic, Show)
 
 instance ShowProxy Response

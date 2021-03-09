@@ -7,7 +7,8 @@ import           System.Exit (die)
 
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               RequestFrequency (..), TimePeriod (..), Port)
+                                               RequestFrequency (..), TimePeriod (..), Port,
+                                               WhatToRequest (..))
 
 main :: IO ()
 main = do
@@ -19,5 +20,7 @@ main = do
         AcceptorConfiguration
           { listenToForwarder = listenIt
           , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
+          , whatToRequest     = AllMetrics
           }
-  runEKGAcceptor config
+      actionOnResponse = print
+  runEKGAcceptor config actionOnResponse
