@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
                                                RequestFrequency (..), TimePeriod (..))
@@ -8,6 +10,6 @@ main = do
  where
   config =
     AcceptorConfiguration
-      { listenToForwarder = LocalPipe "./demo-ekg-forward.sock"
+      { listenToForwarder = RemoteSocket "127.0.0.1" 3010 -- LocalPipe "./demo-ekg-forward.sock"
       , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
       }
