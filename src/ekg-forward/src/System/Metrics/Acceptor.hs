@@ -45,6 +45,8 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
                                                                    unversionedProtocolDataCodec)
 import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion)
 
+import qualified System.Metrics as EKG
+
 import qualified System.Metrics.Internal.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
@@ -60,15 +62,17 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 runEKGAcceptor
   :: AcceptorConfiguration
   -> (Response -> IO ())
+  -> EKG.Store
   -> IO ()
-runEKGAcceptor config actionOnResponse =
-  void $ runEKGAcceptor' config actionOnResponse
+runEKGAcceptor config actionOnResponse ekgStore =
+  void $ runEKGAcceptor' config actionOnResponse ekgStore
 
 runEKGAcceptor'
   :: AcceptorConfiguration
   -> (Response -> IO ())
+  -> EKG.Store
   -> IO Void
-runEKGAcceptor' config actionOnResponse = withIOManager $ \iocp ->
+runEKGAcceptor' config actionOnResponse ekgStore = withIOManager $ \iocp ->
   case listenToForwarder config of
     LocalPipe localPipe -> do
       networkState <- newNetworkMutableState
@@ -126,7 +130,8 @@ runEKGAcceptor' config actionOnResponse = withIOManager $ \iocp ->
       MuxPeer
         (contramap show stdoutTracer)
         codecEKGForward
-        (Acceptor.ekgAcceptorPeer $ ekgAcceptorActions config actionOnResponse)
+        (Acceptor.ekgAcceptorPeer $
+          ekgAcceptorActions config actionOnResponse ekgStore)
 
 codecEKGForward
   :: ( CBOR.Serialise req
@@ -143,12 +148,13 @@ codecEKGForward =
 ekgAcceptorActions
   :: AcceptorConfiguration
   -> (Response -> IO ())
+  -> EKG.Store
   -> Acceptor.EKGAcceptor Request Response IO ()
-ekgAcceptorActions config@AcceptorConfiguration {..} actionOnResponse =
+ekgAcceptorActions config@AcceptorConfiguration {..} actionOnResponse ekgStore =
   Acceptor.SendMsgReq request $ \response -> do
     threadDelay $ mkDelay requestFrequency -- Temporary function, see below.
     actionOnResponse response
-    return $ ekgAcceptorActions config actionOnResponse
+    return $ ekgAcceptorActions config actionOnResponse ekgStore
  where
   request =
     case whatToRequest of
