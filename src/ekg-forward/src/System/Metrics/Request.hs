@@ -8,7 +8,7 @@ See README for more info
 {-# LANGUAGE DeriveGeneric #-}
 
 --
-module System.Metrics.Internal.Request (
+module System.Metrics.Request (
     MetricName
   , Request (..)
   ) where

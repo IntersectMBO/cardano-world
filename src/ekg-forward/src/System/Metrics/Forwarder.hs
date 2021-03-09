@@ -19,7 +19,9 @@ module System.Metrics.Forwarder (
 import qualified Codec.Serialise as CBOR
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.HashMap.Strict as HM
 import qualified Data.List.NonEmpty as NE
+import           Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
@@ -41,15 +43,20 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
                                                                    unversionedProtocolDataCodec)
 import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion)
 
+import qualified System.Metrics as EKG
+
 import qualified System.Metrics.Internal.Protocol.Forwarder as Forwarder
 import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
 import qualified System.Metrics.Internal.Protocol.Type as Forwarder
-import           System.Metrics.Internal.Request (Request (..))
-import           System.Metrics.Internal.Response (Response (..), MetricValue (..))
+import           System.Metrics.Request (Request (..))
+import           System.Metrics.Response (Response (..), MetricValue (..))
 import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
 
-runEKGForwarder :: ForwarderConfiguration -> IO ()
-runEKGForwarder ForwarderConfiguration{..} = withIOManager $ \iocp ->
+runEKGForwarder
+  :: ForwarderConfiguration
+  -> EKG.Store
+  -> IO ()
+runEKGForwarder ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp ->
   case connectToAcceptor of
     LocalPipe localPipe ->
       connectToNode
@@ -95,7 +102,7 @@ runEKGForwarder ForwarderConfiguration{..} = withIOManager $ \iocp ->
       MuxPeer
         (contramap show stdoutTracer)
         codecEKGForward
-        (Forwarder.ekgForwarderPeer ekgForwarderActions)
+        (Forwarder.ekgForwarderPeer (ekgForwarderActions ekgStore))
 
 codecEKGForward
   :: ( CBOR.Serialise req
@@ -110,19 +117,40 @@ codecEKGForward =
     CBOR.encode CBOR.decode
 
 ekgForwarderActions
-  :: Forwarder.EKGForwarder Request Response IO ()
-ekgForwarderActions =
+  :: EKG.Store
+  -> Forwarder.EKGForwarder Request Response IO ()
+ekgForwarderActions ekgStore =
   Forwarder.EKGForwarder {
-    Forwarder.recvMsgReq = \_req ->
-      return ( Metrics (NE.fromList [ ("metric1", GaugeValue 1)
-                                    , ("metric2", GaugeValue 2)
-                                    , ("metric3", GaugeValue 3)
-                                    ]
-                       )
-             , ekgForwarderActions
-             )
+    Forwarder.recvMsgReq = \request -> do
+      allMetrics <- HM.toList <$> EKG.sampleAll ekgStore
+      case request of
+        GetAllMetrics -> do
+          let supportedMetrics = mapMaybe filterMetrics allMetrics
+          return ( ResponseMetrics supportedMetrics
+                 , ekgForwarderActions ekgStore
+                 )
+        GetMetrics metricsNames -> do
+          let mNames = NE.toList metricsNames
+              metricsWeNeed = mapMaybe (filterMetricsWeNeed mNames) allMetrics
+          return ( ResponseMetrics metricsWeNeed
+                 , ekgForwarderActions ekgStore
+                 )
   , Forwarder.recvMsgDone = return ()
   }
+ where
+  -- TODO: temporary functions. We have to remove unsupported metrics.
+  filterMetrics (_,     EKG.Counter _)      = Nothing
+  filterMetrics (_,     EKG.Distribution _) = Nothing
+  filterMetrics (mName, EKG.Gauge g)        = Just (mName, GaugeValue g)
+  filterMetrics (mName, EKG.Label l)        = Just (mName, LabelValue l)
+
+  filterMetricsWeNeed _      (_,     EKG.Counter _)      = Nothing
+  filterMetricsWeNeed _      (_,     EKG.Distribution _) = Nothing
+  filterMetricsWeNeed mNames (mName, EKG.Gauge g)        = onlyIfNeeded mNames mName (GaugeValue g)
+  filterMetricsWeNeed mNames (mName, EKG.Label l)        = onlyIfNeeded mNames mName (LabelValue l)
+
+  onlyIfNeeded mNames mName value =
+    if mName `elem` mNames then Just (mName, value) else Nothing
 
 maximumMiniProtocolLimits :: MiniProtocolLimits
 maximumMiniProtocolLimits =

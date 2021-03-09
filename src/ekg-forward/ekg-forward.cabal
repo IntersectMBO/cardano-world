@@ -44,13 +44,13 @@ library
   exposed-modules:     System.Metrics.Acceptor
                        System.Metrics.Configuration
                        System.Metrics.Forwarder
+                       System.Metrics.Request
+                       System.Metrics.Response
 
   other-modules:       System.Metrics.Internal.Protocol.Type
                        System.Metrics.Internal.Protocol.Codec
                        System.Metrics.Internal.Protocol.Acceptor
                        System.Metrics.Internal.Protocol.Forwarder
-                       System.Metrics.Internal.Request
-                       System.Metrics.Internal.Response
 
   build-depends:         async
                        , bytestring
@@ -64,11 +64,13 @@ library
                        , serialise
                        , text
                        , typed-protocols
+                       , unordered-containers
 
 executable demo-forwarder
   hs-source-dirs:      demo
   main-is:             forwarder.hs
   build-depends:         base
+                       , ekg-core
                        , ekg-forward
                        , text
 
@@ -76,11 +78,13 @@ executable demo-forwarder
   ghc-options:         -Wall
                        -threaded
                        -rtsopts
+                       -with-rtsopts=-T
 
 executable demo-acceptor
   hs-source-dirs:      demo
   main-is:             acceptor.hs
   build-depends:         base
+                       , ekg-core
                        , ekg-forward
                        , text
 
@@ -88,6 +92,7 @@ executable demo-acceptor
   ghc-options:         -Wall
                        -threaded
                        -rtsopts
+                       -with-rtsopts=-T
 
 test-suite ekg-forward-test
   import:              common-options

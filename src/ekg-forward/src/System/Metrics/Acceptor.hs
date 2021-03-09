@@ -47,18 +47,25 @@ import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion
 import qualified System.Metrics.Internal.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
 import qualified System.Metrics.Internal.Protocol.Type as Acceptor
-import           System.Metrics.Internal.Request (Request (..))
-import           System.Metrics.Internal.Response (Response (..))
+import           System.Metrics.Request (Request (..))
+import           System.Metrics.Response (Response (..))
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
 --
-runEKGAcceptor :: AcceptorConfiguration -> IO ()
-runEKGAcceptor = void . runEKGAcceptor'
+runEKGAcceptor
+  :: AcceptorConfiguration
+  -> (Response -> IO ())
+  -> IO ()
+runEKGAcceptor config actionOnResponse =
+  void $ runEKGAcceptor' config actionOnResponse
 
-runEKGAcceptor' :: AcceptorConfiguration -> IO Void
-runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp ->
+runEKGAcceptor'
+  :: AcceptorConfiguration
+  -> (Response -> IO ())
+  -> IO Void
+runEKGAcceptor' AcceptorConfiguration {..} actionOnResponse = withIOManager $ \iocp ->
   case listenToForwarder of
     LocalPipe localPipe -> do
       networkState <- newNetworkMutableState
@@ -101,11 +108,13 @@ runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp ->
   app :: OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
   app =
     OuroborosApplication $ \_connectionId _shouldStopSTM -> [
-      MiniProtocol {
-        miniProtocolNum    = MiniProtocolNum 2,
-        miniProtocolLimits = maximumMiniProtocolLimits,
-        miniProtocolRun    = acceptEKGMetrics
-      }
+      MiniProtocol
+        { miniProtocolNum    = MiniProtocolNum 2
+        , miniProtocolLimits = MiniProtocolLimits {
+                                 maximumIngressQueue = maxBound
+                               }
+        , miniProtocolRun    = acceptEKGMetrics
+        }
     ]
 
   acceptEKGMetrics :: RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
@@ -114,7 +123,7 @@ runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp ->
       MuxPeer
         (contramap show stdoutTracer)
         codecEKGForward
-        (Acceptor.ekgAcceptorPeer (ekgAcceptorActions 0))
+        (Acceptor.ekgAcceptorPeer (ekgAcceptorActions actionOnResponse))
 
 codecEKGForward
   :: ( CBOR.Serialise req
@@ -128,14 +137,12 @@ codecEKGForward =
     CBOR.encode CBOR.decode
     CBOR.encode CBOR.decode
 
-ekgAcceptorActions :: Int -> Acceptor.EKGAcceptor Request Response IO ()
-ekgAcceptorActions 0 = Acceptor.SendMsgReq GetAllMetrics (\resp -> do
-                                                         print resp
-                                                         return (ekgAcceptorActions 1))
-ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
+ekgAcceptorActions
+  :: (Response -> IO ())
+  -> Acceptor.EKGAcceptor Request Response IO ()
+ekgAcceptorActions actionOnResponse =
+  Acceptor.SendMsgReq GetAllMetrics $ \response -> do
+    actionOnResponse response
+    return $ ekgAcceptorActions actionOnResponse
 
-maximumMiniProtocolLimits :: MiniProtocolLimits
-maximumMiniProtocolLimits =
-    MiniProtocolLimits {
-      maximumIngressQueue = maxBound
-    }
+-- ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
