@@ -1,15 +1,23 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+import qualified Data.Text as T
+import           System.Environment (getArgs)
+import           System.Exit (die)
 
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               RequestFrequency (..), TimePeriod (..))
+                                               RequestFrequency (..), TimePeriod (..), Port)
 
 main :: IO ()
 main = do
+  listenIt <- getArgs >>= \case
+    [path]       -> return $ LocalPipe path
+    [host, port] -> return $ RemoteSocket (T.pack host) (read port :: Port)
+    _            -> die "Usage: demo-acceptor (pathToLocalPipe | host port)"
+  let config =
+        AcceptorConfiguration
+          { listenToForwarder = listenIt
+          , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
+          }
   runEKGAcceptor config
- where
-  config =
-    AcceptorConfiguration
-      { listenToForwarder = RemoteSocket "127.0.0.1" 3010 -- LocalPipe "./demo-ekg-forward.sock"
-      , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
-      }
