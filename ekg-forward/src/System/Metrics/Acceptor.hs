@@ -19,6 +19,7 @@ import qualified Codec.Serialise as CBOR
 import           Control.Concurrent.Async (async, wait)
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
+import           Data.Functor (void)
 import           Data.Void (Void)
 
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
@@ -51,8 +52,11 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 -- | Please note that acceptor is a server from the __networking__ point of view:
 -- the forwarder establishes network connection with the acceptor.
 --
-runEKGAcceptor :: AcceptorConfiguration -> IO Void
-runEKGAcceptor AcceptorConfiguration {..} = withIOManager $ \iocp -> do
+runEKGAcceptor :: AcceptorConfiguration -> IO ()
+runEKGAcceptor = void . runEKGAcceptor'
+
+runEKGAcceptor' :: AcceptorConfiguration -> IO Void
+runEKGAcceptor' AcceptorConfiguration {..} = withIOManager $ \iocp -> do
     networkState <- newNetworkMutableState
     _ <- async $ cleanNetworkMutableState networkState
     withServerNode

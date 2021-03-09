@@ -6,6 +6,6 @@ main = do
   runEKGForwarder config
  where
   config =
-    ForwarderConfiguration {
-      connectToAcceptor = LocalPipe "./demo-ekg-forward.sock"
-    }
+    ForwarderConfiguration
+      { connectToAcceptor = LocalPipe "./demo-ekg-forward.sock"
+      }

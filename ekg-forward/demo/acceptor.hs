@@ -1,13 +1,13 @@
-import           Data.Functor (void)
-
 import           System.Metrics.Acceptor (runEKGAcceptor)
-import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
+import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
+                                               RequestFrequency (..), TimePeriod (..))
 
 main :: IO ()
 main = do
-  void $ runEKGAcceptor config
+  runEKGAcceptor config
  where
   config =
-    AcceptorConfiguration {
-      listenToForwarder = LocalPipe "./demo-ekg-forward.sock"
-    }
+    AcceptorConfiguration
+      { listenToForwarder = LocalPipe "./demo-ekg-forward.sock"
+      , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
+      }
