@@ -59,7 +59,6 @@ library
                        , ekg-core
                        , io-sim-classes
                        , network
-                       , ouroboros-network
                        , ouroboros-network-framework
                        , serialise
                        , text
