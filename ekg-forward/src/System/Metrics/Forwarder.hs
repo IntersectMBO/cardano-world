@@ -31,7 +31,6 @@ import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (.
                                         OuroborosApplication (..), MuxPeer (..),
                                         RunMiniProtocol (..),
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
-import           Ouroboros.Network.NodeToNode (simpleSingletonVersions)
 import           Ouroboros.Network.IOManager (withIOManager)
 import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTracers)
@@ -41,7 +40,7 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
                                                                    UnversionedProtocolData (..),
                                                                    unversionedHandshakeCodec,
                                                                    unversionedProtocolDataCodec)
-import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion)
+import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion, simpleSingletonVersions)
 
 import qualified System.Metrics as EKG
 
