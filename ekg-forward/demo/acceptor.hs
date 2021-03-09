@@ -5,6 +5,8 @@ import qualified Data.Text as T
 import           System.Environment (getArgs)
 import           System.Exit (die)
 
+import qualified System.Metrics as EKG
+
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
                                                RequestFrequency (..), TimePeriod (..), Port,
@@ -23,4 +25,6 @@ main = do
           , whatToRequest     = AllMetrics
           }
       actionOnResponse = print
-  runEKGAcceptor config actionOnResponse
+
+  store <- EKG.newStore
+  runEKGAcceptor config actionOnResponse store
