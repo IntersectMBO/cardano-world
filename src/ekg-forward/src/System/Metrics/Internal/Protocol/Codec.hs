@@ -7,7 +7,6 @@ See README for more info
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -74,16 +73,14 @@ codecEKGForward encodeReq  decodeReq
     len <- CBOR.decodeListLen
     key <- CBOR.decodeWord
     case (key, len, stok) of
-      (0, 2, ClientAgency TokIdle) -> do
-        req <- decodeReq
-        return (SomeMessage (MsgReq req))
+      (0, 2, ClientAgency TokIdle) ->
+        SomeMessage . MsgReq <$> decodeReq
 
       (1, 1, ClientAgency TokIdle) ->
-        return (SomeMessage MsgDone)
+        return $ SomeMessage MsgDone
 
-      (1, 2, ServerAgency TokBusy) -> do
-        resp <- decodeResp
-        return (SomeMessage (MsgResp resp))
+      (1, 2, ServerAgency TokBusy) ->
+        SomeMessage . MsgResp <$> decodeResp
 
       -- Failures per protocol state
       (_, _, ClientAgency TokIdle) ->

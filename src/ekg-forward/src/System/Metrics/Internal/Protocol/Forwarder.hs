@@ -7,6 +7,7 @@ See README for more info
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module System.Metrics.Internal.Protocol.Forwarder (
@@ -44,15 +45,14 @@ ekgForwarderPeer
 ekgForwarderPeer EKGForwarder{..} =
   -- In the 'StIdle' state the forwarder is awaiting a request message
   -- from the acceptor.
-  Await (ClientAgency TokIdle) $ \msg ->
-    case msg of
-      -- The acceptor sent us a request for new metrics, so now we're
-      -- in the 'StBusy' state which means it's the forwarder's turn to send
-      -- a reply.
-      MsgReq req -> Effect $ do
-        (resp, next) <- recvMsgReq req
-        return $ Yield (ServerAgency TokBusy) (MsgResp resp) (ekgForwarderPeer next)
+  Await (ClientAgency TokIdle) $ \case
+    -- The acceptor sent us a request for new metrics, so now we're
+    -- in the 'StBusy' state which means it's the forwarder's turn to send
+    -- a reply.
+    MsgReq req -> Effect $ do
+      (resp, next) <- recvMsgReq req
+      return $ Yield (ServerAgency TokBusy) (MsgResp resp) (ekgForwarderPeer next)
 
-      -- The acceptor sent the done transition, so we're in the 'StDone' state
-      -- so all we can do is stop using 'done', with a return value.
-      MsgDone -> Effect $ Done TokDone <$> recvMsgDone
+    -- The acceptor sent the done transition, so we're in the 'StDone' state
+    -- so all we can do is stop using 'done', with a return value.
+    MsgDone -> Effect $ Done TokDone <$> recvMsgDone
