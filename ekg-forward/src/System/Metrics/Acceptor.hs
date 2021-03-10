@@ -60,7 +60,7 @@ import qualified System.Metrics.Internal.Protocol.Type as Acceptor
 import           System.Metrics.Request (Request (..), MetricName)
 import           System.Metrics.Response (Response (..), MetricValue (..))
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               RequestFrequency (..), TimePeriod (..),
+                                               Frequency (..), TimePeriod (..),
                                                WhatToRequest (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
@@ -178,8 +178,8 @@ ekgAcceptorActions config@AcceptorConfiguration {..}
   -- TODO: temporary function, should be rewritten
   -- (we have to take into account actual time of 'actionOnResponse'
   -- as well as actual time of getting the response from the forwarder).
-  mkDelay (AskMetricsEvery delay Seconds)      = fromIntegral delay * 1000000
-  mkDelay (AskMetricsEvery delay MilliSeconds) = fromIntegral delay * 1000
+  mkDelay (Every delay Seconds)      = fromIntegral delay * 1000000
+  mkDelay (Every delay MilliSeconds) = fromIntegral delay * 1000
 
 storeResponseInEKG
   :: Response

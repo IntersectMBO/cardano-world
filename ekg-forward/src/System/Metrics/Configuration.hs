@@ -13,7 +13,7 @@ module System.Metrics.Configuration (
   , Host
   , MetricName
   , Port
-  , RequestFrequency (..)
+  , Frequency (..)
   , TimePeriod (..)
   , WhatToRequest (..)
   ) where
@@ -33,7 +33,7 @@ data HowToConnect
 data TimePeriod = Seconds | MilliSeconds
   deriving (Eq, Show)
 
-data RequestFrequency = AskMetricsEvery !Word64 !TimePeriod
+data Frequency = Every !Word64 !TimePeriod
   deriving (Eq, Show)
 
 type MetricName = Text
@@ -45,10 +45,11 @@ data WhatToRequest
 
 data AcceptorConfiguration = AcceptorConfiguration
   { listenToForwarder :: !HowToConnect
-  , requestFrequency  :: !RequestFrequency
+  , requestFrequency  :: !Frequency
   , whatToRequest     :: !WhatToRequest
   } deriving (Eq, Show)
 
 data ForwarderConfiguration = ForwarderConfiguration
-  { connectToAcceptor :: !HowToConnect
+  { connectToAcceptor  :: !HowToConnect
+  , reConnectFrequency :: !Frequency
   } deriving (Eq, Show)
