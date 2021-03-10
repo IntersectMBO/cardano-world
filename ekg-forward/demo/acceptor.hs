@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import qualified Data.Text as T
+import           Data.Word (Word64)
 import           System.Environment (getArgs)
 import           System.Exit (die)
 
@@ -14,14 +15,15 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 
 main :: IO ()
 main = do
-  listenIt <- getArgs >>= \case
-    [path]       -> return $ LocalPipe path
-    [host, port] -> return $ RemoteSocket (T.pack host) (read port :: Port)
-    _            -> die "Usage: demo-acceptor (pathToLocalPipe | host port)"
-  let config =
+  (listenIt, freq) <- getArgs >>= \case
+    [path, freq]       -> return (LocalPipe path, freq)
+    [host, port, freq] -> return (RemoteSocket (T.pack host) (read port :: Port), freq)
+    _                  -> die "Usage: demo-acceptor (pathToLocalPipe | host port) freqInMilliSecs"
+  let freqAsNum = read freq :: Word64
+      config =
         AcceptorConfiguration
           { listenToForwarder = listenIt
-          , requestFrequency  = AskMetricsEvery 1000 MilliSeconds
+          , requestFrequency  = AskMetricsEvery freqAsNum MilliSeconds
           , whatToRequest     = AllMetrics
           }
       actionOnResponse = print
