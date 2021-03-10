@@ -140,13 +140,13 @@ ekgForwarderActions ekgStore =
   }
  where
   -- TODO: temporary functions. We have to remove unsupported metrics.
-  filterMetrics (_,     EKG.Counter _)      = Nothing
   filterMetrics (_,     EKG.Distribution _) = Nothing
+  filterMetrics (mName, EKG.Counter c)      = Just (mName, CounterValue c)
   filterMetrics (mName, EKG.Gauge g)        = Just (mName, GaugeValue g)
   filterMetrics (mName, EKG.Label l)        = Just (mName, LabelValue l)
 
-  filterMetricsWeNeed _      (_,     EKG.Counter _)      = Nothing
   filterMetricsWeNeed _      (_,     EKG.Distribution _) = Nothing
+  filterMetricsWeNeed mNames (mName, EKG.Counter c)      = onlyIfNeeded mNames mName (CounterValue c)
   filterMetricsWeNeed mNames (mName, EKG.Gauge g)        = onlyIfNeeded mNames mName (GaugeValue g)
   filterMetricsWeNeed mNames (mName, EKG.Label l)        = onlyIfNeeded mNames mName (LabelValue l)
 
