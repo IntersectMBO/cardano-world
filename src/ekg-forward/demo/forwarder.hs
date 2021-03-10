@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.Text as T
+import           Data.Text (pack)
 import           Data.Word (Word64)
 import           System.Environment (getArgs)
 import           System.Exit (die)
@@ -15,15 +14,15 @@ import           System.Metrics.Configuration (ForwarderConfiguration (..),
 
 main :: IO ()
 main = do
-  -- Prepare the configuration.
-  (connectTo, freq) <- getArgs >>= \case
+  -- Prepare the forwarder's configuration.
+  (howToConnect, freq) <- getArgs >>= \case
     [path, freq]       -> return (LocalPipe path, freq)
-    [host, port, freq] -> return (RemoteSocket (T.pack host) (read port :: Port), freq)
+    [host, port, freq] -> return (RemoteSocket (pack host) (read port :: Port), freq)
     _                  -> die "Usage: demo-forwarder (pathToLocalPipe | host port) freqInMilliSecs"
   let freqAsNum = read freq :: Word64
       config =
         ForwarderConfiguration
-          { connectToAcceptor  = connectTo
+          { connectToAcceptor  = howToConnect
           , reConnectFrequency = Every freqAsNum MilliSeconds
           }
 
@@ -31,6 +30,7 @@ main = do
   store <- EKG.newStore
   EKG.registerGcMetrics store
 
-  -- Run the forwarder. All the metrics (or the metrics with specified names)
-  -- from the store will be forwarded to the acceptor.
+  -- Run the forwarder. It will establish the connection with the acceptor,
+  -- then the acceptor will periodically ask for the metrics, the forwarder
+  -- will take them from the 'store' and send them back.
   runEKGForwarder config store

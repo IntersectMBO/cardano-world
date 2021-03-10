@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.Text as T
+import           Data.Text (pack)
 import           Data.Word (Word64)
 import           System.Environment (getArgs)
 import           System.Exit (die)
@@ -15,9 +14,10 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 
 main :: IO ()
 main = do
+  -- Prepare the acceptor's configuration.
   (listenIt, freq) <- getArgs >>= \case
     [path, freq]       -> return (LocalPipe path, freq)
-    [host, port, freq] -> return (RemoteSocket (T.pack host) (read port :: Port), freq)
+    [host, port, freq] -> return (RemoteSocket (pack host) (read port :: Port), freq)
     _                  -> die "Usage: demo-acceptor (pathToLocalPipe | host port) freqInMilliSecs"
   let freqAsNum = read freq :: Word64
       config =
@@ -27,5 +27,12 @@ main = do
           , whatToRequest     = AllMetrics
           }
       actionOnResponse = print
+
+  -- Create an empty EKG store.
   store <- EKG.newStore
+
+  -- Run the acceptor. It will listen to the forwarder, and after the connection
+  -- will be established, the acceptor will periodically (using 'requestFrequency')
+  -- ask for the metrics from the forwarder. After these metrics will be received,
+  -- the acceptor will put them in the 'store'.
   runEKGAcceptor config actionOnResponse store
