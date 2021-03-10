@@ -159,12 +159,10 @@ ekgAcceptorActions config@AcceptorConfiguration {..} actionOnResponse ekgStore =
   request =
     case whatToRequest of
       AllMetrics -> GetAllMetrics
-      TheseMetrics metricsNames -> GetMetrics metricsNames
+      TheseMetrics mNames -> GetMetrics mNames
 
   -- TODO: temporary function, should be rewritten
   -- (we have to take into account actual time of 'actionOnResponse'
   -- as well as actual time of getting the response from the forwarder).
-  mkDelay (AskMetricsEvery delay Seconds)      = (fromIntegral delay) * 1000000
-  mkDelay (AskMetricsEvery delay MilliSeconds) = (fromIntegral delay) * 1000
-
--- ekgAcceptorActions _ = Acceptor.SendMsgDone (return ())
+  mkDelay (AskMetricsEvery delay Seconds)      = fromIntegral delay * 1000000
+  mkDelay (AskMetricsEvery delay MilliSeconds) = fromIntegral delay * 1000
