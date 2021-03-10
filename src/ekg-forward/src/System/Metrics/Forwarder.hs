@@ -88,10 +88,12 @@ runEKGForwarder ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp ->
   app :: OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
   app =
     OuroborosApplication $ \_connectionId _shouldStopSTM -> [
-        MiniProtocol {
-          miniProtocolNum    = MiniProtocolNum 2,
-          miniProtocolLimits = maximumMiniProtocolLimits,
-          miniProtocolRun    = forwardEKGMetrics
+        MiniProtocol
+          { miniProtocolNum    = MiniProtocolNum 2
+          , miniProtocolLimits = MiniProtocolLimits
+                                   { maximumIngressQueue = maxBound
+                                   }
+          , miniProtocolRun    = forwardEKGMetrics
         }
       ]
 
@@ -150,9 +152,3 @@ ekgForwarderActions ekgStore =
 
   onlyIfNeeded mNames mName value =
     if mName `elem` mNames then Just (mName, value) else Nothing
-
-maximumMiniProtocolLimits :: MiniProtocolLimits
-maximumMiniProtocolLimits =
-    MiniProtocolLimits {
-      maximumIngressQueue = maxBound
-    }

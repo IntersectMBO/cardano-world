@@ -13,7 +13,13 @@ See README for more info
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module System.Metrics.Internal.Protocol.Type where
+module System.Metrics.Internal.Protocol.Type (
+    EKGForward (..)
+  , Message (..)
+  , ClientHasAgency (..)
+  , ServerHasAgency (..)
+  , NobodyHasAgency (..)
+  ) where
 
 -- | The type of the EKG forwarding/accepting protocol.
 --
@@ -24,7 +30,6 @@ module System.Metrics.Internal.Protocol.Type where
 import           Data.Proxy (Proxy(..))
 
 import           Network.TypedProtocol.Core (Protocol (..))
-
 import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
 -- | A kind to identify our protocol, and the types of the states in the state
