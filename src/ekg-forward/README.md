@@ -28,5 +28,5 @@ In the current release, not all EKG metrics are supported:
 
 1. [Gauge](https://hackage.haskell.org/package/ekg-core-0.1.1.7/docs/System-Metrics-Gauge.html) - supported
 2. [Label](https://hackage.haskell.org/package/ekg-core-0.1.1.7/docs/System-Metrics-Label.html) - supported
-3. [Counter](https://hackage.haskell.org/package/ekg-core-0.1.1.7/docs/System-Metrics-Counter.html) - does **not** supported
+3. [Counter](https://hackage.haskell.org/package/ekg-core-0.1.1.7/docs/System-Metrics-Counter.html) - supported
 4. [Distribution](https://hackage.haskell.org/package/ekg-core-0.1.1.7/docs/System-Metrics-Distribution.html) - does **not** supported
