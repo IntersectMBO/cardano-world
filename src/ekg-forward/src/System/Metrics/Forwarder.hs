@@ -6,8 +6,10 @@ See README for more info
 -}
 
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- This top-level module will be used by the forwarder app
 -- (the app that collects EKG metrics and sends them to the acceptor).
@@ -17,6 +19,9 @@ module System.Metrics.Forwarder (
   ) where
 
 import qualified Codec.Serialise as CBOR
+import           Control.Exception (SomeException, try)
+import           Control.Concurrent (threadDelay)
+import           Control.Monad (forever)
 import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.HashMap.Strict as HM
@@ -49,13 +54,28 @@ import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
 import qualified System.Metrics.Internal.Protocol.Type as Forwarder
 import           System.Metrics.Request (Request (..))
 import           System.Metrics.Response (Response (..), MetricValue (..))
-import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
+import           System.Metrics.Configuration (ForwarderConfiguration (..), Frequency (..),
+                                               HowToConnect (..), TimePeriod (..))
 
 runEKGForwarder
   :: ForwarderConfiguration
   -> EKG.Store
   -> IO ()
-runEKGForwarder ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp ->
+runEKGForwarder config@ForwarderConfiguration{..} ekgStore = forever $
+  try (runEKGForwarder' config ekgStore) >>= \case
+    Left (_e :: SomeException) -> do
+      threadDelay $ mkDelay reConnectFrequency
+      runEKGForwarder config ekgStore
+    Right _ -> return ()
+ where
+  mkDelay (Every delay Seconds)      = fromIntegral delay * 1000000
+  mkDelay (Every delay MilliSeconds) = fromIntegral delay * 1000
+
+runEKGForwarder'
+  :: ForwarderConfiguration
+  -> EKG.Store
+  -> IO ()
+runEKGForwarder' ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp ->
   case connectToAcceptor of
     LocalPipe localPipe ->
       connectToNode

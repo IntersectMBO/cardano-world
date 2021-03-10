@@ -10,7 +10,7 @@ import qualified System.Metrics as EKG
 
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               RequestFrequency (..), TimePeriod (..), Port,
+                                               Frequency (..), TimePeriod (..), Port,
                                                WhatToRequest (..))
 
 main :: IO ()
@@ -23,7 +23,7 @@ main = do
       config =
         AcceptorConfiguration
           { listenToForwarder = listenIt
-          , requestFrequency  = AskMetricsEvery freqAsNum MilliSeconds
+          , requestFrequency  = Every freqAsNum MilliSeconds
           , whatToRequest     = AllMetrics
           }
       actionOnResponse = print
