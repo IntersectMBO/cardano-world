@@ -25,6 +25,5 @@ main = do
           , whatToRequest     = AllMetrics
           }
       actionOnResponse = print
-
   store <- EKG.newStore
   runEKGAcceptor config actionOnResponse store

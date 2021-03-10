@@ -24,17 +24,16 @@ import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 type MetricName = Text
 
 data MetricValue
-  = GaugeValue !Int64
-  | LabelValue !Text
+  = CounterValue !Int64
+  | GaugeValue   !Int64
+  | LabelValue   !Text
   deriving (Eq, Show, Generic)
 
 instance ShowProxy MetricValue
 
 instance Serialise MetricValue
 
-data Response
-  = ResponseNoMetrics
-  | ResponseMetrics ![(MetricName, MetricValue)]
+newtype Response = ResponseMetrics [(MetricName, MetricValue)]
   deriving (Generic, Show)
 
 instance ShowProxy Response
