@@ -11,10 +11,10 @@ module System.Metrics.Forwarder
 
 import           Control.Exception (SomeException, try)
 import           Control.Concurrent (threadDelay)
+import           Data.Time.Clock (NominalDiffTime)
 import qualified System.Metrics as EKG
 
-import           System.Metrics.Configuration (ForwarderConfiguration (..), Frequency (..),
-                                               TimePeriod (..))
+import           System.Metrics.Configuration (ForwarderConfiguration (..))
 import           System.Metrics.Forwarder.Network (connectToAcceptor)
 
 runEKGForwarder
@@ -24,9 +24,9 @@ runEKGForwarder
 runEKGForwarder config@ForwarderConfiguration{..} ekgStore =
   try (connectToAcceptor config ekgStore) >>= \case
     Left (_e :: SomeException) -> do
-      threadDelay $ mkDelay reConnectFrequency
+      threadDelay $ toMicroSecs reConnectFrequency
       runEKGForwarder config ekgStore
     Right _ -> return ()
  where
-  mkDelay (Every delay Seconds)      = fromIntegral delay * 1000000
-  mkDelay (Every delay MilliSeconds) = fromIntegral delay * 1000
+  toMicroSecs :: NominalDiffTime -> Int
+  toMicroSecs dt = fromEnum dt `div` 1000000

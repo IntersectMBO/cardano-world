@@ -69,6 +69,7 @@ library
                        , ouroboros-network-framework
                        , serialise
                        , text
+                       , time
                        , typed-protocols
                        , unordered-containers
 
@@ -80,6 +81,7 @@ executable demo-forwarder
                        , ekg-core
                        , ekg-forward
                        , text
+                       , time
 
   default-language:    Haskell2010
   ghc-options:         -Wall
@@ -95,6 +97,7 @@ executable demo-acceptor
                        , ekg-core
                        , ekg-forward
                        , text
+                       , time
 
   default-language:    Haskell2010
   ghc-options:         -Wall

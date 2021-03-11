@@ -1,16 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
 
 import           Control.Tracer (contramap, stdoutTracer)
+import           Data.Fixed (Pico)
 import           Data.Text (pack)
-import           Data.Word (Word64)
+import           Data.Time.Clock (secondsToNominalDiffTime)
 import           System.Environment (getArgs)
 import           System.Exit (die)
 
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Acceptor (runEKGAcceptor)
-import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               Frequency (..), TimePeriod (..), Port)
+import           System.Metrics.Configuration (AcceptorConfiguration (..),
+                                               HowToConnect (..), Port)
 import           System.Metrics.Request (Request (..))
 
 main :: IO ()
@@ -19,13 +20,12 @@ main = do
   (listenIt, freq) <- getArgs >>= \case
     [path, freq]       -> return (LocalPipe path, freq)
     [host, port, freq] -> return (RemoteSocket (pack host) (read port :: Port), freq)
-    _                  -> die "Usage: demo-acceptor (pathToLocalPipe | host port) freqInMilliSecs"
-  let freqAsNum = read freq :: Word64
-      config =
+    _                  -> die "Usage: demo-acceptor (pathToLocalPipe | host port) freqInSecs"
+  let config =
         AcceptorConfiguration
           { acceptorTracer    = contramap show stdoutTracer
           , forwarderEndpoint = listenIt
-          , requestFrequency  = Every freqAsNum MilliSeconds
+          , requestFrequency  = secondsToNominalDiffTime (read freq :: Pico)
           , whatToRequest     = GetAllMetrics
           , actionOnResponse  = print
           }
