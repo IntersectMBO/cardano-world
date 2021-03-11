@@ -22,7 +22,7 @@ main = do
   let freqAsNum = read freq :: Word64
       config =
         ForwarderConfiguration
-          { connectToAcceptor  = howToConnect
+          { acceptorEndpoint   = howToConnect
           , reConnectFrequency = Every freqAsNum MilliSeconds
           }
 

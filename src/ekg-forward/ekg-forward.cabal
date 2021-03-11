@@ -42,8 +42,12 @@ library
   hs-source-dirs:      src
 
   exposed-modules:     System.Metrics.Acceptor
+                       System.Metrics.Acceptor.Network
+                       System.Metrics.Acceptor.Store
                        System.Metrics.Configuration
                        System.Metrics.Forwarder
+                       System.Metrics.Forwarder.Network
+                       System.Metrics.Forwarder.Store
                        System.Metrics.Request
                        System.Metrics.Response
 
