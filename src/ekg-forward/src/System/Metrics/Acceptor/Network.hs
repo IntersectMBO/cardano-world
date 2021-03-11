@@ -24,7 +24,7 @@ import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (.
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
 import           Ouroboros.Network.ErrorPolicy (nullErrorPolicies)
 import           Ouroboros.Network.IOManager (withIOManager)
-import           Ouroboros.Network.Snocket (localAddressFromPath, localSnocket, socketSnocket)
+import           Ouroboros.Network.Snocket (Snocket, localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (AcceptedConnectionsLimit (..),
                                            SomeResponderApplication (..),
                                            cleanNetworkMutableState, newNetworkMutableState,
@@ -49,45 +49,43 @@ listenToForwarder
   -> EKG.Store
   -> IORef MetricsLocalStore
   -> IO Void
-listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp ->
+listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp -> do
+  let app = acceptorApp config ekgStore metricsStore
   case forwarderEndpoint config of
     LocalPipe localPipe -> do
-      networkState <- newNetworkMutableState
-      _ <- async $ cleanNetworkMutableState networkState
-      withServerNode
-        (localSnocket iocp localPipe)
-        nullNetworkServerTracers
-        networkState
-        (AcceptedConnectionsLimit maxBound maxBound 0)
-        (localAddressFromPath localPipe)
-        unversionedHandshakeCodec
-        (cborTermVersionDataCodec unversionedProtocolDataCodec)
-        acceptableVersion
-        (simpleSingletonVersions
-          UnversionedProtocol
-          UnversionedProtocolData
-          (SomeResponderApplication $ acceptorApp config ekgStore metricsStore))
-        nullErrorPolicies
-        $ \_ serverAsync -> wait serverAsync -- Block until async exception.
+      let snocket = localSnocket iocp localPipe
+          address = localAddressFromPath localPipe
+      doListenToForwarder snocket address app
     RemoteSocket host port -> do
       listenAddress:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
-      networkState <- newNetworkMutableState
-      _ <- async $ cleanNetworkMutableState networkState
-      withServerNode
-        (socketSnocket iocp)
-        nullNetworkServerTracers
-        networkState
-        (AcceptedConnectionsLimit maxBound maxBound 0)
-        (Socket.addrAddress listenAddress)
-        unversionedHandshakeCodec
-        (cborTermVersionDataCodec unversionedProtocolDataCodec)
-        acceptableVersion
-        (simpleSingletonVersions
-          UnversionedProtocol
-          UnversionedProtocolData
-          (SomeResponderApplication $ acceptorApp config ekgStore metricsStore))
-        nullErrorPolicies
-        $ \_ serverAsync -> wait serverAsync -- Block until async exception.
+      let snocket = socketSnocket iocp
+          address = Socket.addrAddress listenAddress
+      doListenToForwarder snocket address app
+
+doListenToForwarder
+  :: Ord addr
+  => Snocket IO fd addr
+  -> addr
+  -> OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
+  -> IO Void
+doListenToForwarder snocket address app = do
+  networkState <- newNetworkMutableState
+  _ <- async $ cleanNetworkMutableState networkState
+  withServerNode
+    snocket
+    nullNetworkServerTracers
+    networkState
+    (AcceptedConnectionsLimit maxBound maxBound 0)
+    address
+    unversionedHandshakeCodec
+    (cborTermVersionDataCodec unversionedProtocolDataCodec)
+    acceptableVersion
+    (simpleSingletonVersions
+      UnversionedProtocol
+      UnversionedProtocolData
+      (SomeResponderApplication app))
+    nullErrorPolicies
+    $ \_ serverAsync -> wait serverAsync -- Block until async exception.
 
 acceptorApp
   :: AcceptorConfiguration
