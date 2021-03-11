@@ -50,6 +50,6 @@ data AcceptorConfiguration = AcceptorConfiguration
   } deriving (Eq, Show)
 
 data ForwarderConfiguration = ForwarderConfiguration
-  { connectToAcceptor  :: !HowToConnect
+  { acceptorEndpoint   :: !HowToConnect
   , reConnectFrequency :: !Frequency
   } deriving (Eq, Show)
