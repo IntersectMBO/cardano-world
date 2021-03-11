@@ -44,17 +44,20 @@ library
   exposed-modules:     System.Metrics.Acceptor
                        System.Metrics.Acceptor.Network
                        System.Metrics.Acceptor.Store
+
                        System.Metrics.Configuration
+
                        System.Metrics.Forwarder
                        System.Metrics.Forwarder.Network
                        System.Metrics.Forwarder.Store
+
                        System.Metrics.Request
                        System.Metrics.Response
 
-  other-modules:       System.Metrics.Internal.Protocol.Type
-                       System.Metrics.Internal.Protocol.Codec
-                       System.Metrics.Internal.Protocol.Acceptor
-                       System.Metrics.Internal.Protocol.Forwarder
+                       System.Metrics.Protocol.Type
+                       System.Metrics.Protocol.Codec
+                       System.Metrics.Protocol.Acceptor
+                       System.Metrics.Protocol.Forwarder
 
   build-depends:         async
                        , bytestring
@@ -73,6 +76,7 @@ executable demo-forwarder
   hs-source-dirs:      demo
   main-is:             forwarder.hs
   build-depends:         base
+                       , contra-tracer
                        , ekg-core
                        , ekg-forward
                        , text
@@ -87,6 +91,7 @@ executable demo-acceptor
   hs-source-dirs:      demo
   main-is:             acceptor.hs
   build-depends:         base
+                       , contra-tracer
                        , ekg-core
                        , ekg-forward
                        , text

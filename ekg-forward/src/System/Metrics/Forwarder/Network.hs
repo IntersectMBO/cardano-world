@@ -6,7 +6,6 @@ module System.Metrics.Forwarder.Network
   ) where
 
 import qualified Codec.Serialise as CBOR
-import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import           Data.Void (Void)
@@ -30,31 +29,32 @@ import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTrac
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
 import           System.Metrics.Forwarder.Store (mkResponse)
-import qualified System.Metrics.Internal.Protocol.Forwarder as Forwarder
-import qualified System.Metrics.Internal.Protocol.Codec as Forwarder
+import qualified System.Metrics.Protocol.Forwarder as Forwarder
+import qualified System.Metrics.Protocol.Codec as Forwarder
 
 connectToAcceptor
   :: ForwarderConfiguration
   -> EKG.Store
   -> IO ()
-connectToAcceptor ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp ->
+connectToAcceptor config@ForwarderConfiguration{..} ekgStore = withIOManager $ \iocp -> do
+  let app = forwarderApp config ekgStore
   case acceptorEndpoint of
     LocalPipe localPipe -> do
       let snocket = localSnocket iocp localPipe
           address = localAddressFromPath localPipe
-      doConnectToAcceptor snocket address ekgStore
+      doConnectToAcceptor snocket address app
     RemoteSocket host port -> do
       acceptorAddr:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
       let snocket = socketSnocket iocp
           address = Socket.addrAddress acceptorAddr
-      doConnectToAcceptor snocket address ekgStore
+      doConnectToAcceptor snocket address app
 
 doConnectToAcceptor
   :: Snocket IO fd addr
   -> addr
-  -> EKG.Store
+  -> OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
   -> IO ()
-doConnectToAcceptor snocket address ekgStore =
+doConnectToAcceptor snocket address app =
   connectToNode
     snocket
     unversionedHandshakeCodec
@@ -64,29 +64,31 @@ doConnectToAcceptor snocket address ekgStore =
     (simpleSingletonVersions
        UnversionedProtocol
        UnversionedProtocolData
-       $ forwarderApp ekgStore)
+       app)
     Nothing
     address
 
 forwarderApp
-  :: EKG.Store
+  :: ForwarderConfiguration
+  -> EKG.Store
   -> OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
-forwarderApp ekgStore =
+forwarderApp config ekgStore =
   OuroborosApplication $ \_connectionId _shouldStopSTM ->
     [ MiniProtocol
         { miniProtocolNum    = MiniProtocolNum 2
         , miniProtocolLimits = MiniProtocolLimits { maximumIngressQueue = maxBound }
-        , miniProtocolRun    = forwardEKGMetrics ekgStore
+        , miniProtocolRun    = forwardEKGMetrics config ekgStore
         }
     ]
 
 forwardEKGMetrics
-  :: EKG.Store
+  :: ForwarderConfiguration
+  -> EKG.Store
   -> RunMiniProtocol 'InitiatorMode LBS.ByteString IO () Void
-forwardEKGMetrics ekgStore =
+forwardEKGMetrics config ekgStore =
   InitiatorProtocolOnly $
     MuxPeer
-      (contramap show stdoutTracer)
+      (forwarderTracer config)
       (Forwarder.codecEKGForward CBOR.encode CBOR.decode
                                  CBOR.encode CBOR.decode)
       (Forwarder.ekgForwarderPeer $ mkResponse ekgStore)

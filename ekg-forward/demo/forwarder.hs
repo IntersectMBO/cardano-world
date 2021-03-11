@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
+import           Control.Tracer (contramap, stdoutTracer)
 import           Data.Text (pack)
 import           Data.Word (Word64)
 import           System.Environment (getArgs)
@@ -22,7 +23,8 @@ main = do
   let freqAsNum = read freq :: Word64
       config =
         ForwarderConfiguration
-          { acceptorEndpoint   = howToConnect
+          { forwarderTracer    = contramap show stdoutTracer
+          , acceptorEndpoint   = howToConnect
           , reConnectFrequency = Every freqAsNum MilliSeconds
           }
 

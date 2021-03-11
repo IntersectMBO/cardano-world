@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
+import           Control.Tracer (contramap, stdoutTracer)
 import           Data.Text (pack)
 import           Data.Word (Word64)
 import           System.Environment (getArgs)
@@ -22,7 +23,8 @@ main = do
   let freqAsNum = read freq :: Word64
       config =
         AcceptorConfiguration
-          { forwarderEndpoint = listenIt
+          { acceptorTracer    = contramap show stdoutTracer
+          , forwarderEndpoint = listenIt
           , requestFrequency  = Every freqAsNum MilliSeconds
           , whatToRequest     = GetAllMetrics
           , actionOnResponse  = print

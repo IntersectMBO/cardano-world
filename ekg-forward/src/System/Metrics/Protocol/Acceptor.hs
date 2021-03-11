@@ -14,7 +14,7 @@ See README for more info
 --
 -- For execution, a conversion into the typed protocol is provided.
 --
-module System.Metrics.Internal.Protocol.Acceptor (
+module System.Metrics.Protocol.Acceptor (
     EKGAcceptor(..)
   , ekgAcceptorPeer
   ) where
@@ -22,7 +22,7 @@ module System.Metrics.Internal.Protocol.Acceptor (
 import           Network.TypedProtocol.Core (Peer (..), PeerHasAgency (..),
                                              PeerRole (..))
 
-import           System.Metrics.Internal.Protocol.Type
+import           System.Metrics.Protocol.Type
 
 -- | Please note that the acceptor is a server from the __networking__
 -- point of view: the forwarder establishes network connection with the acceptor.

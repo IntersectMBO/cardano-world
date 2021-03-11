@@ -10,7 +10,7 @@ See README for more info
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module System.Metrics.Internal.Protocol.Forwarder (
+module System.Metrics.Protocol.Forwarder (
     EKGForwarder (..)
   , ekgForwarderPeer
   ) where
@@ -18,7 +18,7 @@ module System.Metrics.Internal.Protocol.Forwarder (
 import           Network.TypedProtocol.Core (Peer (..), PeerHasAgency (..),
                                              PeerRole (..))
 
-import           System.Metrics.Internal.Protocol.Type
+import           System.Metrics.Protocol.Type
 
 -- | Please note that the forwarder is a client from the __networking__
 -- point of view: it establishes network connection with the acceptor.
