@@ -11,7 +11,6 @@ module System.Metrics.Forwarder
 
 import           Control.Exception (SomeException, try)
 import           Control.Concurrent (threadDelay)
-import           Control.Monad (forever)
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..), Frequency (..),
@@ -23,12 +22,11 @@ runEKGForwarder
   -> EKG.Store
   -> IO ()
 runEKGForwarder config@ForwarderConfiguration{..} ekgStore =
-  forever $
-    try (connectToAcceptor config ekgStore) >>= \case
-      Left (_e :: SomeException) -> do
-        threadDelay $ mkDelay reConnectFrequency
-        runEKGForwarder config ekgStore
-      Right _ -> return ()
+  try (connectToAcceptor config ekgStore) >>= \case
+    Left (_e :: SomeException) -> do
+      threadDelay $ mkDelay reConnectFrequency
+      runEKGForwarder config ekgStore
+    Right _ -> return ()
  where
   mkDelay (Every delay Seconds)      = fromIntegral delay * 1000000
   mkDelay (Every delay MilliSeconds) = fromIntegral delay * 1000
