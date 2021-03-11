@@ -9,8 +9,8 @@ import qualified System.Metrics as EKG
 
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               Frequency (..), TimePeriod (..), Port,
-                                               WhatToRequest (..))
+                                               Frequency (..), TimePeriod (..), Port)
+import           System.Metrics.Request (Request (..))
 
 main :: IO ()
 main = do
@@ -22,11 +22,11 @@ main = do
   let freqAsNum = read freq :: Word64
       config =
         AcceptorConfiguration
-          { listenToForwarder = listenIt
+          { forwarderEndpoint = listenIt
           , requestFrequency  = Every freqAsNum MilliSeconds
-          , whatToRequest     = AllMetrics
+          , whatToRequest     = GetAllMetrics
+          , actionOnResponse  = print
           }
-      actionOnResponse = print
 
   -- Create an empty EKG store.
   store <- EKG.newStore
@@ -35,4 +35,4 @@ main = do
   -- will be established, the acceptor will periodically (using 'requestFrequency')
   -- ask for the metrics from the forwarder. After these metrics will be received,
   -- the acceptor will put them in the 'store'.
-  runEKGAcceptor config actionOnResponse store
+  runEKGAcceptor config store
