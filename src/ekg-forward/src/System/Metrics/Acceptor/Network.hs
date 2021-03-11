@@ -12,6 +12,7 @@ import           Control.Concurrent.Async (async, wait)
 import qualified Data.ByteString.Lazy as LBS
 import           Data.IORef (IORef)
 import qualified Data.Text as T
+import           Data.Time.Clock (NominalDiffTime)
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
 import qualified System.Metrics as EKG
@@ -40,8 +41,7 @@ import qualified System.Metrics.Protocol.Codec as Acceptor
 import           System.Metrics.Acceptor.Store (MetricsLocalStore (..), storeMetrics)
 import           System.Metrics.Request (Request (..))
 import           System.Metrics.Response (Response (..))
-import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..),
-                                               Frequency (..), TimePeriod (..))
+import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
 
 listenToForwarder
   :: AcceptorConfiguration
@@ -120,15 +120,15 @@ acceptorActions
   -> EKG.Store
   -> IORef MetricsLocalStore
   -> Acceptor.EKGAcceptor Request Response IO ()
-acceptorActions config@AcceptorConfiguration {..} ekgStore metricsStore =
+acceptorActions config@AcceptorConfiguration{..} ekgStore metricsStore =
   Acceptor.SendMsgReq whatToRequest $ \response -> do
     storeMetrics response ekgStore metricsStore
     actionOnResponse response
-    threadDelay $ mkDelay requestFrequency
+    threadDelay $ toMicroSecs requestFrequency
     return $ acceptorActions config ekgStore metricsStore
  where
   -- TODO: temporary function, should be rewritten
   -- (we have to take into account actual time of 'actionOnResponse'
   -- as well as actual time of getting the response from the forwarder).
-  mkDelay (Every delay Seconds)      = fromIntegral delay * 1000000
-  mkDelay (Every delay MilliSeconds) = fromIntegral delay * 1000
+  toMicroSecs :: NominalDiffTime -> Int
+  toMicroSecs dt = fromEnum dt `div` 1000000

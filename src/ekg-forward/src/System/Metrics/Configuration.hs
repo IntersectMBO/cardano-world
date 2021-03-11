@@ -13,12 +13,11 @@ module System.Metrics.Configuration (
   , Host
   , MetricName
   , Port
-  , Frequency (..)
-  , TimePeriod (..)
   ) where
 
 import           Control.Tracer (Tracer)
 import           Data.Text (Text)
+import           Data.Time.Clock (NominalDiffTime)
 import           Data.Word (Word16, Word64)
 
 import           Ouroboros.Network.Driver (TraceSendRecv)
@@ -35,14 +34,10 @@ data HowToConnect
   = LocalPipe    !FilePath
   | RemoteSocket !Host !Port
 
-data TimePeriod = Seconds | MilliSeconds
-
-data Frequency = Every !Word64 !TimePeriod
-
 data AcceptorConfiguration = AcceptorConfiguration
   { acceptorTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
   , forwarderEndpoint :: !HowToConnect
-  , requestFrequency  :: !Frequency
+  , requestFrequency  :: !NominalDiffTime
   , whatToRequest     :: !Request
   , actionOnResponse  :: Response -> IO ()
   }
@@ -50,5 +45,5 @@ data AcceptorConfiguration = AcceptorConfiguration
 data ForwarderConfiguration = ForwarderConfiguration
   { forwarderTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
   , acceptorEndpoint   :: !HowToConnect
-  , reConnectFrequency :: !Frequency
+  , reConnectFrequency :: !NominalDiffTime
   }

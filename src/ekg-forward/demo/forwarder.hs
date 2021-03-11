@@ -1,8 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 import           Control.Tracer (contramap, stdoutTracer)
+import           Data.Fixed (Pico)
 import           Data.Text (pack)
-import           Data.Word (Word64)
+import           Data.Time.Clock (secondsToNominalDiffTime)
 import           System.Environment (getArgs)
 import           System.Exit (die)
 
@@ -10,8 +11,7 @@ import qualified System.Metrics as EKG
 
 import           System.Metrics.Forwarder (runEKGForwarder)
 import           System.Metrics.Configuration (ForwarderConfiguration (..),
-                                               Frequency (..), HowToConnect (..),
-                                               Port, TimePeriod (..))
+                                               HowToConnect (..), Port)
 
 main :: IO ()
 main = do
@@ -19,13 +19,12 @@ main = do
   (howToConnect, freq) <- getArgs >>= \case
     [path, freq]       -> return (LocalPipe path, freq)
     [host, port, freq] -> return (RemoteSocket (pack host) (read port :: Port), freq)
-    _                  -> die "Usage: demo-forwarder (pathToLocalPipe | host port) freqInMilliSecs"
-  let freqAsNum = read freq :: Word64
-      config =
+    _                  -> die "Usage: demo-forwarder (pathToLocalPipe | host port) freqInSecs"
+  let config =
         ForwarderConfiguration
           { forwarderTracer    = contramap show stdoutTracer
           , acceptorEndpoint   = howToConnect
-          , reConnectFrequency = Every freqAsNum MilliSeconds
+          , reConnectFrequency = secondsToNominalDiffTime (read freq :: Pico)
           }
 
   -- Create an empty EKG store and register predefined GC metrics in it.
