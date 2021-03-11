@@ -13,7 +13,7 @@ See README for more info
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module System.Metrics.Internal.Protocol.Type (
+module System.Metrics.Protocol.Type (
     EKGForward (..)
   , Message (..)
   , ClientHasAgency (..)

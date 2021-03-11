@@ -9,7 +9,6 @@ module System.Metrics.Acceptor.Network
 import qualified Codec.Serialise as CBOR
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
-import           Control.Tracer (contramap, stdoutTracer)
 import qualified Data.ByteString.Lazy as LBS
 import           Data.IORef (IORef)
 import qualified Data.Text as T
@@ -36,8 +35,8 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
                                                                    unversionedProtocolDataCodec)
 import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion, simpleSingletonVersions)
 
-import qualified System.Metrics.Internal.Protocol.Acceptor as Acceptor
-import qualified System.Metrics.Internal.Protocol.Codec as Acceptor
+import qualified System.Metrics.Protocol.Acceptor as Acceptor
+import qualified System.Metrics.Protocol.Codec as Acceptor
 import           System.Metrics.Acceptor.Store (MetricsLocalStore (..), storeMetrics)
 import           System.Metrics.Request (Request (..))
 import           System.Metrics.Response (Response (..))
@@ -111,7 +110,7 @@ acceptEKGMetrics
 acceptEKGMetrics config ekgStore metricsStore =
   ResponderProtocolOnly $
     MuxPeer
-      (contramap show stdoutTracer)
+      (acceptorTracer config)
       (Acceptor.codecEKGForward CBOR.encode CBOR.decode
                                 CBOR.encode CBOR.decode)
       (Acceptor.ekgAcceptorPeer $ acceptorActions config ekgStore metricsStore)

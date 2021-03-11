@@ -10,7 +10,7 @@ import           Data.Maybe (mapMaybe)
 
 import qualified System.Metrics as EKG
 
-import qualified System.Metrics.Internal.Protocol.Forwarder as Forwarder
+import qualified System.Metrics.Protocol.Forwarder as Forwarder
 import           System.Metrics.Request (Request (..), MetricName)
 import           System.Metrics.Response (Response (..), MetricValue (..))
 

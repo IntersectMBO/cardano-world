@@ -11,7 +11,7 @@ See README for more info
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module System.Metrics.Internal.Protocol.Codec (
+module System.Metrics.Protocol.Codec (
   codecEKGForward
   ) where
 
@@ -27,7 +27,7 @@ import           Ouroboros.Network.Codec (Codec, PeerHasAgency (..),
                                           PeerRole (..), SomeMessage (..),
                                           mkCodecCborLazyBS)
 
-import           System.Metrics.Internal.Protocol.Type
+import           System.Metrics.Protocol.Type
 
 codecEKGForward
   :: forall req resp m.

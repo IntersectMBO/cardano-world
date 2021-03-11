@@ -17,14 +17,19 @@ module System.Metrics.Configuration (
   , TimePeriod (..)
   ) where
 
+import           Control.Tracer (Tracer)
 import           Data.Text (Text)
 import           Data.Word (Word16, Word64)
 
+import           Ouroboros.Network.Driver (TraceSendRecv)
+
+import           System.Metrics.Protocol.Type (EKGForward)
 import           System.Metrics.Response (Response)
 import           System.Metrics.Request (Request)
 
 type Host = Text
 type Port = Word16
+type MetricName = Text
 
 data HowToConnect
   = LocalPipe    !FilePath
@@ -34,16 +39,16 @@ data TimePeriod = Seconds | MilliSeconds
 
 data Frequency = Every !Word64 !TimePeriod
 
-type MetricName = Text
-
 data AcceptorConfiguration = AcceptorConfiguration
-  { forwarderEndpoint :: !HowToConnect
+  { acceptorTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+  , forwarderEndpoint :: !HowToConnect
   , requestFrequency  :: !Frequency
   , whatToRequest     :: !Request
   , actionOnResponse  :: Response -> IO ()
   }
 
 data ForwarderConfiguration = ForwarderConfiguration
-  { acceptorEndpoint   :: !HowToConnect
+  { forwarderTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+  , acceptorEndpoint   :: !HowToConnect
   , reConnectFrequency :: !Frequency
   }
