@@ -1,13 +1,4 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | This top-level module will be used by the acceptor app
