@@ -21,45 +21,45 @@ As a result, all the acceptor's local store metrics are the same ones as in the 
 The example command to run `demo-acceptor` program:
 
 ```
-./demo-acceptor /path/to/demo.sock 1000
+./demo-acceptor /path/to/demo.sock 1
 ```
 
 where:
 
 * `/path/to/demo.sock` is the path to the pipe file that will be created and used for connection with the forwarder,
-* `1000` is a request frequency in milliseconds (in this example, the acceptor will ask EKG metrics every 1000 ms).
+* `1` is a request frequency in seconds (in this example, the acceptor will ask EKG metrics every second).
 
 The example command to run `demo-forwarder` program:
 
 ```
-./demo-forwarder /path/to/demo.sock 10000
+./demo-forwarder /path/to/demo.sock 10
 ```
 
 where:
 
 * `/path/to/demo.sock` is the path to the pipe file that will be created (if needed) and used for connection with the acceptor,
-* `10000` is a reconnect frequency in milliseconds (in this example, the forwarder will try to reconnect to the acceptor every 10000 ms).
+* `10` is a reconnect frequency in seconds (in this example, the forwarder will try to reconnect to the acceptor every 10 seconds).
 
 ### Connection Via Remote Socket
 
 The example command to run `demo-acceptor` program:
 
 ```
-./demo-acceptor 127.0.0.1 3010 1000
+./demo-acceptor 127.0.0.1 3010 1
 ```
 
 where:
 
 * `127.0.0.1` and `3010` are the host and port; the acceptor will listen to them to accept the connection from the forwarder,
-* `1000` is a request frequency in milliseconds (in this example, the acceptor will ask EKG metrics every 1000 ms).
+* `1` is a request frequency in seconds (in this example, the acceptor will ask EKG metrics every second).
 
 The example command to run `demo-forwarder` program:
 
 ```
-./demo-forwarder 127.0.0.1 3010 10000
+./demo-forwarder 127.0.0.1 3010 10
 ```
 
 where:
 
 * `127.0.0.1` and `3010` are the host and port; the forwarder will use them to establish the connection with the acceptor,
-* `10000` is a reconnect frequency in milliseconds (in this example, the forwarder will try to reconnect to the acceptor every 10000 ms).
+* `10` is a reconnect frequency in seconds (in this example, the forwarder will try to reconnect to the acceptor every 10 seconds).
