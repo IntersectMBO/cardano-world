@@ -6,7 +6,6 @@ import           Data.Text (pack)
 import           Data.Time.Clock (secondsToNominalDiffTime)
 import           System.Environment (getArgs)
 import           System.Exit (die)
-
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Forwarder (runEKGForwarder)
