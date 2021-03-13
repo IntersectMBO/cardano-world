@@ -1,25 +1,15 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
---
-module System.Metrics.Configuration (
-    AcceptorConfiguration (..)
+module System.Metrics.Configuration
+  ( AcceptorConfiguration (..)
   , ForwarderConfiguration (..)
   , HowToConnect (..)
   , Host
-  , MetricName
   , Port
   ) where
 
 import           Control.Tracer (Tracer)
 import           Data.Text (Text)
 import           Data.Time.Clock (NominalDiffTime)
-import           Data.Word (Word16, Word64)
-
+import           Data.Word (Word16)
 import           Ouroboros.Network.Driver (TraceSendRecv)
 
 import           System.Metrics.Protocol.Type (EKGForward)
@@ -28,22 +18,40 @@ import           System.Metrics.Request (Request)
 
 type Host = Text
 type Port = Word16
-type MetricName = Text
 
+-- | Specifies how to connect to the peer.
 data HowToConnect
-  = LocalPipe    !FilePath
-  | RemoteSocket !Host !Port
+  = LocalPipe    !FilePath    -- ^ Local pipe (UNIX or Windows).
+  | RemoteSocket !Host !Port  -- ^ Remote socket (host and port).
 
+-- | Acceptor configuration.
 data AcceptorConfiguration = AcceptorConfiguration
-  { acceptorTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+  { -- | The tracer that will be used by the acceptor in its network layer.
+    -- For more info about tracers please read its [documentation](https://github.com/input-output-hk/iohk-monitoring-framework/tree/master/contra-tracer).
+    acceptorTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+    -- | The endpoint that will be used to listen to the forwarder.
   , forwarderEndpoint :: !HowToConnect
+    -- | Specifies how often the acceptor will ask the framework for new metrics.
+    -- It can be specified as seconds or as fraction of second.
   , requestFrequency  :: !NominalDiffTime
+    -- | Specifies what to request: all existing metrics or particular metrics.
   , whatToRequest     :: !Request
-  , actionOnResponse  :: Response -> IO ()
+    -- | Additional action that will be performed every time the acceptor will
+    -- receive the response from the forwarder.
+  , actionOnResponse  :: !(Response -> IO ())
   }
 
+-- | Forwarder configuration.
 data ForwarderConfiguration = ForwarderConfiguration
-  { forwarderTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+  { -- | The tracer that will be used by the forwarder in its network layer.
+    forwarderTracer    :: !(Tracer IO (TraceSendRecv (EKGForward Request Response)))
+    -- | The endpoint that will be used to connect to the acceptor.
   , acceptorEndpoint   :: !HowToConnect
+    -- | If the connection with the acceptor will fail, the forwarder will attempt
+    -- to re-establish the connection after this delay.
+    -- It can be specified as seconds or as fraction of second.
   , reConnectFrequency :: !NominalDiffTime
+    -- | Additional action that will be performed every time the forwarder will
+    -- receive the request from the acceptor.
+  , actionOnRequest    :: !(Request -> IO ())
   }

@@ -1,30 +1,21 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
 {-# LANGUAGE DeriveGeneric #-}
 
---
-module System.Metrics.Request (
-    MetricName
-  , Request (..)
+module System.Metrics.Request
+  ( Request (..)
   ) where
 
 import           Codec.Serialise (Serialise)
 import           Data.List.NonEmpty (NonEmpty)
-import           Data.Text (Text)
 import           GHC.Generics (Generic)
-
 import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
-type MetricName = Text
+import           System.Metrics.Metric (MetricName)
 
+-- | The request for the new metrics.
+-- The acceptor will send this request to the forwarder.
 data Request
-  = GetAllMetrics
-  | GetMetrics !(NonEmpty MetricName)
+  = GetAllMetrics                      -- ^ Get all metrics from the forwarder's local store.
+  | GetMetrics !(NonEmpty MetricName)  -- ^ Get specific metrics only.
   deriving (Eq, Generic, Show)
 
 instance ShowProxy Request

@@ -1,38 +1,19 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
 {-# LANGUAGE DeriveGeneric #-}
 
---
-module System.Metrics.Response ( 
-    MetricName
-  , MetricValue (..)
-  , Response (..)
+module System.Metrics.Response 
+  ( Response (..)
   ) where
 
 import           Codec.Serialise (Serialise)
-import           Data.Int (Int64)
-import           Data.Text (Text)
 import           GHC.Generics (Generic)
-
 import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 
-type MetricName = Text
+import           System.Metrics.Metric (MetricName, MetricValue)
 
-data MetricValue
-  = CounterValue !Int64
-  | GaugeValue   !Int64
-  | LabelValue   !Text
-  deriving (Eq, Show, Generic)
-
-instance ShowProxy MetricValue
-
-instance Serialise MetricValue
-
+-- | The response with the metrics.
+-- The forwarder will send it to the acceptor as a reply for the request.
+-- Please note that the list of metrics can be empty (for example, if the
+-- forwarder's local store is empty).
 newtype Response = ResponseMetrics [(MetricName, MetricValue)]
   deriving (Generic, Show)
 

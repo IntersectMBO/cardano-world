@@ -1,4 +1,3 @@
-
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -15,8 +14,6 @@ import qualified Data.Text as T
 import           Data.Time.Clock (NominalDiffTime)
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
-import qualified System.Metrics as EKG
-
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
                                         OuroborosApplication (..), MuxPeer (..),
@@ -35,6 +32,7 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
                                                                    unversionedHandshakeCodec,
                                                                    unversionedProtocolDataCodec)
 import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion, simpleSingletonVersions)
+import qualified System.Metrics as EKG
 
 import qualified System.Metrics.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Protocol.Codec as Acceptor

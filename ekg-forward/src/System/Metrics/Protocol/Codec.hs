@@ -1,10 +1,3 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
@@ -15,14 +8,12 @@ module System.Metrics.Protocol.Codec (
   codecEKGForward
   ) where
 
-import           Control.Monad.Class.MonadST (MonadST)
-import qualified Data.ByteString.Lazy as LBS
-import           Text.Printf (printf)
-
 import qualified Codec.CBOR.Decoding as CBOR
 import qualified Codec.CBOR.Encoding as CBOR
 import           Codec.CBOR.Read (DeserialiseFailure)
-
+import           Control.Monad.Class.MonadST (MonadST)
+import qualified Data.ByteString.Lazy as LBS
+import           Text.Printf (printf)
 import           Ouroboros.Network.Codec (Codec, PeerHasAgency (..),
                                           PeerRole (..), SomeMessage (..),
                                           mkCodecCborLazyBS)

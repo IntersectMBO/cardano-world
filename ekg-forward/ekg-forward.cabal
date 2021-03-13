@@ -51,6 +51,8 @@ library
                        System.Metrics.Forwarder.Network
                        System.Metrics.Forwarder.Store
 
+                       System.Metrics.Metric
+
                        System.Metrics.Request
                        System.Metrics.Response
 
