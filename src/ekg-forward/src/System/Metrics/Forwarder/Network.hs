@@ -10,8 +10,6 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
-import qualified System.Metrics as EKG
-
 import           Ouroboros.Network.IOManager (withIOManager)
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
@@ -26,6 +24,7 @@ import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedPr
 import           Ouroboros.Network.Protocol.Handshake.Version (acceptableVersion, simpleSingletonVersions)
 import           Ouroboros.Network.Snocket (Snocket, localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTracers)
+import qualified System.Metrics as EKG
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
 import           System.Metrics.Forwarder.Store (mkResponse)
@@ -91,4 +90,4 @@ forwardEKGMetrics config ekgStore =
       (forwarderTracer config)
       (Forwarder.codecEKGForward CBOR.encode CBOR.decode
                                  CBOR.encode CBOR.decode)
-      (Forwarder.ekgForwarderPeer $ mkResponse ekgStore)
+      (Forwarder.ekgForwarderPeer $ mkResponse config ekgStore)

@@ -24,6 +24,7 @@ main = do
           { forwarderTracer    = contramap show stdoutTracer
           , acceptorEndpoint   = howToConnect
           , reConnectFrequency = secondsToNominalDiffTime (read freq :: Pico)
+          , actionOnRequest    = \_ -> return ()
           }
 
   -- Create an empty EKG store and register predefined GC metrics in it.

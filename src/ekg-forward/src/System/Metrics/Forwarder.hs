@@ -4,7 +4,6 @@
 
 -- This top-level module will be used by the forwarder app
 -- (the app that collects EKG metrics and sends them to the acceptor).
---
 module System.Metrics.Forwarder
   ( runEKGForwarder
   ) where
@@ -17,9 +16,11 @@ import qualified System.Metrics as EKG
 import           System.Metrics.Configuration (ForwarderConfiguration (..))
 import           System.Metrics.Forwarder.Network (connectToAcceptor)
 
+-- | Please note that forwarder is a client from the __networking__ point of view:
+-- it establishes network connection with the acceptor.
 runEKGForwarder
-  :: ForwarderConfiguration
-  -> EKG.Store
+  :: ForwarderConfiguration  -- ^ Forwarder configuration.
+  -> EKG.Store               -- ^ The store the forwarder will take EKG metrics from.
   -> IO ()
 runEKGForwarder config@ForwarderConfiguration{..} ekgStore =
   try (connectToAcceptor config ekgStore) >>= \case

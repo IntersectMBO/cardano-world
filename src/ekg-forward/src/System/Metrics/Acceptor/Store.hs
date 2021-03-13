@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module System.Metrics.Acceptor.Store
   ( storeMetrics
   , MetricsLocalStore (..)
@@ -17,8 +15,8 @@ import qualified System.Metrics.Counter as C
 import qualified System.Metrics.Gauge as G
 import qualified System.Metrics.Label as L
 
-import           System.Metrics.Request (MetricName)
-import           System.Metrics.Response (Response (..), MetricValue (..))
+import           System.Metrics.Metric (MetricName, MetricValue (..))
+import           System.Metrics.Response (Response (..))
 
 storeMetrics
   :: Response

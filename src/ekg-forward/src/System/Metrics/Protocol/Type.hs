@@ -1,10 +1,3 @@
-{- |
-Copyright: (c) 2021 Input Output (Hong Kong) Ltd.
-Maintainer: Denis Shevchenko <denis.shevchenko@iohk.io>
-
-See README for more info
--}
-
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyCase #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -28,7 +21,6 @@ module System.Metrics.Protocol.Type (
 --
 
 import           Data.Proxy (Proxy(..))
-
 import           Network.TypedProtocol.Core (Protocol (..))
 import           Ouroboros.Network.Util.ShowProxy (ShowProxy(..))
 

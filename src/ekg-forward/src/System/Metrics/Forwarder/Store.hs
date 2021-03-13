@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module System.Metrics.Forwarder.Store
@@ -7,30 +8,33 @@ module System.Metrics.Forwarder.Store
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List.NonEmpty as NE
 import           Data.Maybe (mapMaybe)
-
 import qualified System.Metrics as EKG
 
+import           System.Metrics.Configuration (ForwarderConfiguration (..))
+import           System.Metrics.Metric (MetricName, MetricValue (..)) 
 import qualified System.Metrics.Protocol.Forwarder as Forwarder
-import           System.Metrics.Request (Request (..), MetricName)
-import           System.Metrics.Response (Response (..), MetricValue (..))
+import           System.Metrics.Request (Request (..))
+import           System.Metrics.Response (Response (..))
 
 mkResponse
-  :: EKG.Store
+  :: ForwarderConfiguration
+  -> EKG.Store
   -> Forwarder.EKGForwarder Request Response IO ()
-mkResponse ekgStore =
+mkResponse config@ForwarderConfiguration{..} ekgStore =
   Forwarder.EKGForwarder
     { Forwarder.recvMsgReq = \request -> do
+        actionOnRequest request
         allMetrics <- HM.toList <$> EKG.sampleAll ekgStore
         case request of
           GetAllMetrics -> do
             let supportedMetrics = mapMaybe filterMetrics allMetrics
             return ( ResponseMetrics supportedMetrics
-                   , mkResponse ekgStore
+                   , mkResponse config ekgStore
                    )
           GetMetrics (NE.toList -> mNames) -> do
             let metricsWeNeed = mapMaybe (filterMetricsWeNeed mNames) allMetrics
             return ( ResponseMetrics metricsWeNeed
-                   , mkResponse ekgStore
+                   , mkResponse config ekgStore
                    )
     , Forwarder.recvMsgDone = return ()
     }

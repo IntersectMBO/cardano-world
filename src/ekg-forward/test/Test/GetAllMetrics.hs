@@ -6,7 +6,6 @@ module Test.GetAllMetrics
 import Test.Hspec
 
 import           Control.Concurrent (forkIO, killThread, threadDelay)
-import qualified Data.HashMap.Strict as HM
 import qualified System.Metrics as EKG
 import qualified System.Metrics.Gauge as G
 import qualified System.Metrics.Label as L
@@ -45,7 +44,7 @@ getAllMetrics endpoint = do
   killThread forwarderThr
   killThread acceptorThr
 
-  forwarderMetrics <- HM.toList <$> EKG.sampleAll forwarderStore
-  acceptorMetrics  <- HM.toList <$> EKG.sampleAll acceptorStore
+  forwarderMetrics <- EKG.sampleAll forwarderStore
+  acceptorMetrics  <- EKG.sampleAll acceptorStore
 
-  forwarderMetrics `shouldBe` acceptorMetrics
+  acceptorMetrics `shouldBe` forwarderMetrics
