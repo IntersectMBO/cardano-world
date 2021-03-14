@@ -7,6 +7,7 @@ module System.Metrics.Configuration
   ) where
 
 import           Control.Tracer (Tracer)
+import           Data.IORef (IORef)
 import           Data.Text (Text)
 import           Data.Time.Clock (NominalDiffTime)
 import           Data.Word (Word16)
@@ -39,6 +40,12 @@ data AcceptorConfiguration = AcceptorConfiguration
     -- | Additional action that will be performed every time the acceptor will
     -- receive the response from the forwarder.
   , actionOnResponse  :: !(Response -> IO ())
+    -- | 'IORef' that can be used as a brake: if an external thread will set it to
+    -- 'True', the acceptor will send 'MsgDone' message to the forwarder and their
+    -- session will be closed.
+  , shouldWeStop      :: !(IORef Bool)
+    -- | An action that will be performed before sending 'MsgDone' message.
+  , actionOnDone      :: !(IO ())
   }
 
 -- | Forwarder configuration.
