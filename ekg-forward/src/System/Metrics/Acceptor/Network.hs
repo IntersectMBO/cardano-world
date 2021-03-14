@@ -9,7 +9,7 @@ import qualified Codec.Serialise as CBOR
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
 import qualified Data.ByteString.Lazy as LBS
-import           Data.IORef (IORef)
+import           Data.IORef (IORef, readIORef)
 import qualified Data.Text as T
 import           Data.Time.Clock (NominalDiffTime)
 import           Data.Void (Void)
@@ -111,22 +111,29 @@ acceptEKGMetrics config ekgStore metricsStore =
       (acceptorTracer config)
       (Acceptor.codecEKGForward CBOR.encode CBOR.decode
                                 CBOR.encode CBOR.decode)
-      (Acceptor.ekgAcceptorPeer $ acceptorActions config ekgStore metricsStore)
+      (Acceptor.ekgAcceptorPeer $ acceptorActions True config ekgStore metricsStore)
 
 acceptorActions
-  :: AcceptorConfiguration
+  :: Bool
+  -> AcceptorConfiguration
   -> EKG.Store
   -> IORef MetricsLocalStore
   -> Acceptor.EKGAcceptor Request Response IO ()
-acceptorActions config@AcceptorConfiguration{..} ekgStore metricsStore =
+acceptorActions True config@AcceptorConfiguration{..} ekgStore metricsStore =
   Acceptor.SendMsgReq whatToRequest $ \response -> do
     storeMetrics response ekgStore metricsStore
     actionOnResponse response
     threadDelay $ toMicroSecs requestFrequency
-    return $ acceptorActions config ekgStore metricsStore
+    weAreDone <- readIORef shouldWeStop
+    if weAreDone
+      then return $ acceptorActions False config ekgStore metricsStore
+      else return $ acceptorActions True  config ekgStore metricsStore
  where
   -- TODO: temporary function, should be rewritten
   -- (we have to take into account actual time of 'actionOnResponse'
   -- as well as actual time of getting the response from the forwarder).
   toMicroSecs :: NominalDiffTime -> Int
   toMicroSecs dt = fromEnum dt `div` 1000000
+acceptorActions False AcceptorConfiguration{..} _ _ =
+  Acceptor.SendMsgDone $
+    actionOnDone

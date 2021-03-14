@@ -7,6 +7,7 @@ import Test.Hspec
 
 import           Control.Concurrent (forkIO, killThread, threadDelay)
 import qualified Data.HashMap.Strict as HM
+import           Data.IORef (newIORef)
 import qualified Data.List.NonEmpty as NE
 import qualified System.Metrics as EKG
 import qualified System.Metrics.Gauge as G
@@ -28,7 +29,9 @@ getMetrics :: HowToConnect -> IO ()
 getMetrics endpoint = do
   forwarderStore <- EKG.newStore
   acceptorStore  <- EKG.newStore
-  let acceptorConfig = mkAcceptorConfig endpoint $
+  weAreDone <- newIORef False
+
+  let acceptorConfig = mkAcceptorConfig endpoint weAreDone $
         GetMetrics $ NE.fromList ["test2.gauge.1", "test2.label.2"]
       forwarderConfig = mkForwarderConfig endpoint
 

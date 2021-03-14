@@ -6,6 +6,7 @@ module Test.GetAllMetrics
 import Test.Hspec
 
 import           Control.Concurrent (forkIO, killThread, threadDelay)
+import           Data.IORef (newIORef)
 import qualified System.Metrics as EKG
 import qualified System.Metrics.Gauge as G
 import qualified System.Metrics.Label as L
@@ -26,9 +27,11 @@ getAllMetrics :: HowToConnect -> IO ()
 getAllMetrics endpoint = do
   forwarderStore <- EKG.newStore
   acceptorStore  <- EKG.newStore
-  let acceptorConfig = mkAcceptorConfig endpoint GetAllMetrics
-      forwarderConfig = mkForwarderConfig endpoint
+  weAreDone <- newIORef False
 
+  let acceptorConfig = mkAcceptorConfig endpoint weAreDone GetAllMetrics
+      forwarderConfig = mkForwarderConfig endpoint
+  
   acceptorThr <- forkIO $ runEKGAcceptor acceptorConfig acceptorStore
 
   EKG.createGauge   "test1.gauge.1" forwarderStore >>= flip G.set 123

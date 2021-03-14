@@ -4,6 +4,7 @@ module Test.MkConfig
   ) where
 
 import           Control.Tracer (nullTracer)
+import           Data.IORef (IORef)
 import           Data.Time.Clock (secondsToNominalDiffTime)
 
 import           System.Metrics.Configuration (AcceptorConfiguration (..),
@@ -13,15 +14,18 @@ import           System.Metrics.Request (Request (..))
 
 mkAcceptorConfig
   :: HowToConnect
+  -> IORef Bool
   -> Request
   -> AcceptorConfiguration
-mkAcceptorConfig endpoint request =
+mkAcceptorConfig endpoint weAreDone request =
   AcceptorConfiguration
     { acceptorTracer    = nullTracer
     , forwarderEndpoint = endpoint
     , requestFrequency  = secondsToNominalDiffTime 1
     , whatToRequest     = request
     , actionOnResponse  = \_ -> return ()
+    , shouldWeStop      = weAreDone
+    , actionOnDone      = putStrLn "Acceptor: we are done!"
     }
 
 mkForwarderConfig
