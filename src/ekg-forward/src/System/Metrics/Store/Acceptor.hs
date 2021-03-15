@@ -1,4 +1,4 @@
-module System.Metrics.Acceptor.Store
+module System.Metrics.Store.Acceptor
   ( storeMetrics
   , MetricsLocalStore (..)
   , emptyMetricsLocalStore
@@ -15,8 +15,7 @@ import qualified System.Metrics.Counter as C
 import qualified System.Metrics.Gauge as G
 import qualified System.Metrics.Label as L
 
-import           System.Metrics.Metric (MetricName, MetricValue (..))
-import           System.Metrics.Response (Response (..))
+import           System.Metrics.ReqResp (MetricName, MetricValue (..), Response (..))
 
 storeMetrics
   :: Response

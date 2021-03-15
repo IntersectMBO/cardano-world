@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module System.Metrics.Forwarder.Store
+module System.Metrics.Store.Forwarder
   ( mkResponse
   ) where
 
@@ -11,10 +11,9 @@ import           Data.Maybe (mapMaybe)
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..))
-import           System.Metrics.Metric (MetricName, MetricValue (..)) 
+import           System.Metrics.ReqResp (MetricName, MetricValue (..),
+                                         Request (..), Response (..)) 
 import qualified System.Metrics.Protocol.Forwarder as Forwarder
-import           System.Metrics.Request (Request (..))
-import           System.Metrics.Response (Response (..))
 
 mkResponse
   :: ForwarderConfiguration

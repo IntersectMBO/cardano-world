@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module System.Metrics.Acceptor.Network
+module System.Metrics.Network.Acceptor
   ( listenToForwarder
   ) where
 
@@ -36,9 +36,8 @@ import qualified System.Metrics as EKG
 
 import qualified System.Metrics.Protocol.Acceptor as Acceptor
 import qualified System.Metrics.Protocol.Codec as Acceptor
-import           System.Metrics.Acceptor.Store (MetricsLocalStore (..), storeMetrics)
-import           System.Metrics.Request (Request (..))
-import           System.Metrics.Response (Response (..))
+import           System.Metrics.Store.Acceptor (MetricsLocalStore (..), storeMetrics)
+import           System.Metrics.ReqResp (Request (..), Response (..))
 import           System.Metrics.Configuration (AcceptorConfiguration (..), HowToConnect (..))
 
 listenToForwarder

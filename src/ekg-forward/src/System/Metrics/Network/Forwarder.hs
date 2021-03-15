@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module System.Metrics.Forwarder.Network
+module System.Metrics.Network.Forwarder
   ( connectToAcceptor
   ) where
 
@@ -27,7 +27,7 @@ import           Ouroboros.Network.Socket (connectToNode, nullNetworkConnectTrac
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..), HowToConnect (..))
-import           System.Metrics.Forwarder.Store (mkResponse)
+import           System.Metrics.Store.Forwarder (mkResponse)
 import qualified System.Metrics.Protocol.Forwarder as Forwarder
 import qualified System.Metrics.Protocol.Codec as Forwarder
 

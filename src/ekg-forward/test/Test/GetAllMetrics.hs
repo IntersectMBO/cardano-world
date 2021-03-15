@@ -15,7 +15,7 @@ import qualified System.Metrics.Counter as C
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Forwarder (runEKGForwarder)
 import           System.Metrics.Configuration (HowToConnect (..))
-import           System.Metrics.Request (Request (..))
+import           System.Metrics.ReqResp (Request (..))
 
 import           Test.MkConfig (mkAcceptorConfig, mkForwarderConfig)
 

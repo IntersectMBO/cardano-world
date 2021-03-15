@@ -10,7 +10,7 @@ import           Data.Time.Clock (secondsToNominalDiffTime)
 import           System.Metrics.Configuration (AcceptorConfiguration (..),
                                                ForwarderConfiguration (..),
                                                HowToConnect (..))
-import           System.Metrics.Request (Request (..))
+import           System.Metrics.ReqResp (Request (..))
 
 mkAcceptorConfig
   :: HowToConnect

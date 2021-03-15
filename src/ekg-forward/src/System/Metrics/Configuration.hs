@@ -14,8 +14,7 @@ import           Data.Word (Word16)
 import           Ouroboros.Network.Driver (TraceSendRecv)
 
 import           System.Metrics.Protocol.Type (EKGForward)
-import           System.Metrics.Response (Response)
-import           System.Metrics.Request (Request)
+import           System.Metrics.ReqResp (Request, Response)
 
 type Host = Text
 type Port = Word16
