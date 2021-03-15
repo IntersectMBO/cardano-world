@@ -6,19 +6,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module System.Metrics.Protocol.Type (
-    EKGForward (..)
+-- | The type of the EKG forwarding/accepting protocol.
+--
+-- Since we are using a typed protocol framework this is in some sense /the/
+-- definition of the protocol: what is allowed and what is not allowed.
+
+module System.Metrics.Protocol.Type
+  ( EKGForward (..)
   , Message (..)
   , ClientHasAgency (..)
   , ServerHasAgency (..)
   , NobodyHasAgency (..)
   ) where
-
--- | The type of the EKG forwarding/accepting protocol.
---
--- Since we are using a typed protocol framework this is in some sense /the/
--- definition of the protocol: what is allowed and what is not allowed.
---
 
 import           Data.Proxy (Proxy(..))
 import           Network.TypedProtocol.Core (Protocol (..))
