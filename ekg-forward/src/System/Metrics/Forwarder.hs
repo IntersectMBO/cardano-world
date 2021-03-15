@@ -14,7 +14,7 @@ import           Data.Time.Clock (NominalDiffTime)
 import qualified System.Metrics as EKG
 
 import           System.Metrics.Configuration (ForwarderConfiguration (..))
-import           System.Metrics.Forwarder.Network (connectToAcceptor)
+import           System.Metrics.Network.Forwarder (connectToAcceptor)
 
 -- | Please note that forwarder is a client from the __networking__ point of view:
 -- it establishes network connection with the acceptor.

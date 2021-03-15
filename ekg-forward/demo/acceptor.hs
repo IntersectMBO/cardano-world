@@ -12,7 +12,7 @@ import qualified System.Metrics as EKG
 import           System.Metrics.Acceptor (runEKGAcceptor)
 import           System.Metrics.Configuration (AcceptorConfiguration (..),
                                                HowToConnect (..), Port)
-import           System.Metrics.Request (Request (..))
+import           System.Metrics.ReqResp (Request (..))
 
 main :: IO ()
 main = do

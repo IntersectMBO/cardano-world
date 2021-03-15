@@ -12,8 +12,8 @@ import           Control.Monad (void)
 import           Data.IORef (newIORef)
 import qualified System.Metrics as EKG
 
-import           System.Metrics.Acceptor.Network (listenToForwarder)
-import           System.Metrics.Acceptor.Store (emptyMetricsLocalStore)
+import           System.Metrics.Network.Acceptor (listenToForwarder)
+import           System.Metrics.Store.Acceptor (emptyMetricsLocalStore)
 import           System.Metrics.Configuration (AcceptorConfiguration (..))
 
 -- | Please note that acceptor is a server from the __networking__ point of view:
