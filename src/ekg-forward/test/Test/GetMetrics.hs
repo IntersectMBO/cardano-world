@@ -51,8 +51,12 @@ getMetrics endpoint = do
 
   threadDelay 1000000
 
-  acceptorMetrics  <- HM.toList <$> EKG.sampleAll acceptorStore
+  acceptorMetrics <- HM.toList <$> EKG.sampleAll acceptorStore
 
-  acceptorMetrics `shouldBe` [ ("test2.gauge.1", EKG.Gauge 123)
-                             , ("test2.label.2", EKG.Label "TestLabel_2")
-                             ]
+  length acceptorMetrics `shouldBe` 2
+
+  let fstMetricIsHere = ("test2.gauge.1", EKG.Gauge 123)           `elem` acceptorMetrics
+      sndMetricIsHere = ("test2.label.2", EKG.Label "TestLabel_2") `elem` acceptorMetrics
+
+  fstMetricIsHere `shouldBe` True
+  sndMetricIsHere `shouldBe` True
