@@ -5,6 +5,7 @@ module System.Metrics.Network.Acceptor
   ( listenToForwarder
   ) where
 
+import           Codec.CBOR.Term (Term)
 import qualified Codec.Serialise as CBOR
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
@@ -14,19 +15,23 @@ import qualified Data.Text as T
 import           Data.Time.Clock (NominalDiffTime)
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
+import           Ouroboros.Network.Driver.Limits (ProtocolTimeLimits)
+import           Ouroboros.Network.ErrorPolicy (nullErrorPolicies)
+import           Ouroboros.Network.IOManager (withIOManager)
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
                                         OuroborosApplication (..), MuxPeer (..),
                                         RunMiniProtocol (..),
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
-import           Ouroboros.Network.ErrorPolicy (nullErrorPolicies)
-import           Ouroboros.Network.IOManager (withIOManager)
 import           Ouroboros.Network.Snocket (Snocket, localAddressFromPath, localSnocket, socketSnocket)
 import           Ouroboros.Network.Socket (AcceptedConnectionsLimit (..),
                                            SomeResponderApplication (..),
                                            cleanNetworkMutableState, newNetworkMutableState,
                                            nullNetworkServerTracers, withServerNode)
-import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec)
+import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec,
+                                                             noTimeLimitsHandshake,
+                                                             timeLimitsHandshake)
+import           Ouroboros.Network.Protocol.Handshake.Type (Handshake)
 import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedProtocol (..),
                                                                    UnversionedProtocolData (..),
                                                                    unversionedHandshakeCodec,
@@ -51,20 +56,21 @@ listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp -> do
     LocalPipe localPipe -> do
       let snocket = localSnocket iocp localPipe
           address = localAddressFromPath localPipe
-      doListenToForwarder snocket address app
+      doListenToForwarder snocket address noTimeLimitsHandshake app
     RemoteSocket host port -> do
       listenAddress:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
       let snocket = socketSnocket iocp
           address = Socket.addrAddress listenAddress
-      doListenToForwarder snocket address app
+      doListenToForwarder snocket address timeLimitsHandshake app
 
 doListenToForwarder
   :: Ord addr
   => Snocket IO fd addr
   -> addr
+  -> ProtocolTimeLimits (Handshake UnversionedProtocol Term)
   -> OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
   -> IO Void
-doListenToForwarder snocket address app = do
+doListenToForwarder snocket address timeLimits app = do
   networkState <- newNetworkMutableState
   _ <- async $ cleanNetworkMutableState networkState
   withServerNode
@@ -74,6 +80,7 @@ doListenToForwarder snocket address app = do
     (AcceptedConnectionsLimit maxBound maxBound 0)
     address
     unversionedHandshakeCodec
+    timeLimits
     (cborTermVersionDataCodec unversionedProtocolDataCodec)
     acceptableVersion
     (simpleSingletonVersions

@@ -7,18 +7,23 @@ module System.Metrics.Network.Forwarder
   , forwardEKGMetrics
   ) where
 
+import           Codec.CBOR.Term (Term)
 import qualified Codec.Serialise as CBOR
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import           Data.Void (Void)
 import qualified Network.Socket as Socket
+import           Ouroboros.Network.Driver.Limits (ProtocolTimeLimits)
 import           Ouroboros.Network.IOManager (withIOManager)
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
                                         OuroborosApplication (..), MuxPeer (..),
                                         RunMiniProtocol (..),
                                         miniProtocolLimits, miniProtocolNum, miniProtocolRun)
-import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec)
+import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec,
+                                                             noTimeLimitsHandshake,
+                                                             timeLimitsHandshake)
+import           Ouroboros.Network.Protocol.Handshake.Type (Handshake)
 import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedProtocol (..),
                                                                    UnversionedProtocolData (..),
                                                                    unversionedHandshakeCodec,
@@ -43,22 +48,24 @@ connectToAcceptor config@ForwarderConfiguration{..} ekgStore = withIOManager $ \
     LocalPipe localPipe -> do
       let snocket = localSnocket iocp localPipe
           address = localAddressFromPath localPipe
-      doConnectToAcceptor snocket address app
+      doConnectToAcceptor snocket address noTimeLimitsHandshake app
     RemoteSocket host port -> do
       acceptorAddr:_ <- Socket.getAddrInfo Nothing (Just $ T.unpack host) (Just $ show port)
       let snocket = socketSnocket iocp
           address = Socket.addrAddress acceptorAddr
-      doConnectToAcceptor snocket address app
+      doConnectToAcceptor snocket address timeLimitsHandshake app
 
 doConnectToAcceptor
   :: Snocket IO fd addr
   -> addr
+  -> ProtocolTimeLimits (Handshake UnversionedProtocol Term)
   -> OuroborosApplication 'InitiatorMode addr LBS.ByteString IO () Void
   -> IO ()
-doConnectToAcceptor snocket address app =
+doConnectToAcceptor snocket address timeLimits app =
   connectToNode
     snocket
     unversionedHandshakeCodec
+    timeLimits
     (cborTermVersionDataCodec unversionedProtocolDataCodec)
     nullNetworkConnectTracers
     acceptableVersion
