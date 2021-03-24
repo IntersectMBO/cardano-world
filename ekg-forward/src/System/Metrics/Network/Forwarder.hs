@@ -3,6 +3,8 @@
 
 module System.Metrics.Network.Forwarder
   ( connectToAcceptor
+    -- | Export this function for Mux purpose.
+  , forwardEKGMetrics
   ) where
 
 import qualified Codec.Serialise as CBOR
