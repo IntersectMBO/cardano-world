@@ -3,6 +3,8 @@
 
 module System.Metrics.Network.Acceptor
   ( listenToForwarder
+  -- | Export this function for Mux purpose.
+  , acceptEKGMetrics
   ) where
 
 import           Codec.CBOR.Term (Term)
