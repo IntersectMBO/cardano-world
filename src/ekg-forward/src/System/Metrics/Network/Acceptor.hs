@@ -5,6 +5,7 @@ module System.Metrics.Network.Acceptor
   ( listenToForwarder
   -- | Export this function for Mux purpose.
   , acceptEKGMetrics
+  , acceptEKGMetricsInit
   ) where
 
 import           Codec.CBOR.Term (Term)
@@ -115,6 +116,19 @@ acceptEKGMetrics
   -> RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
 acceptEKGMetrics config ekgStore metricsStore =
   ResponderProtocolOnly $
+    MuxPeer
+      (acceptorTracer config)
+      (Acceptor.codecEKGForward CBOR.encode CBOR.decode
+                                CBOR.encode CBOR.decode)
+      (Acceptor.ekgAcceptorPeer $ acceptorActions True config ekgStore metricsStore)
+
+acceptEKGMetricsInit
+  :: AcceptorConfiguration
+  -> EKG.Store
+  -> IORef MetricsLocalStore
+  -> RunMiniProtocol 'InitiatorMode LBS.ByteString IO () Void
+acceptEKGMetricsInit config ekgStore metricsStore =
+  InitiatorProtocolOnly $
     MuxPeer
       (acceptorTracer config)
       (Acceptor.codecEKGForward CBOR.encode CBOR.decode
