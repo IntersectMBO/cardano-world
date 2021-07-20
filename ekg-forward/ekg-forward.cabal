@@ -62,7 +62,7 @@ library
                        , cborg
                        , contra-tracer
                        , ekg-core
-                       , io-sim-classes
+                       , io-classes
                        , network
                        , ouroboros-network-framework
                        , serialise

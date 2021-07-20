@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
+import           Control.Concurrent
 import           Control.Tracer (contramap, stdoutTracer)
 import           Data.Fixed (Pico)
 import           Data.Text (pack)
@@ -7,6 +9,7 @@ import           Data.Time.Clock (secondsToNominalDiffTime)
 import           System.Environment (getArgs)
 import           System.Exit (die)
 import qualified System.Metrics as EKG
+import qualified System.Metrics.Counter as EKGC
 
 import           System.Metrics.Forwarder (runEKGForwarder)
 import           System.Metrics.Configuration (ForwarderConfiguration (..),
@@ -29,9 +32,20 @@ main = do
 
   -- Create an empty EKG store and register predefined GC metrics in it.
   store <- EKG.newStore
-  EKG.registerGcMetrics store
+  _ <- forkIO $ delayedRegisterMetrics store
 
   -- Run the forwarder. It will establish the connection with the acceptor,
   -- then the acceptor will periodically ask for the metrics, the forwarder
   -- will take them from the 'store' and send them back.
   runEKGForwarder config store
+
+delayedRegisterMetrics :: EKG.Store -> IO ()
+delayedRegisterMetrics store = do
+  threadDelay 3000000
+  cnt <- EKG.createCounter "counter.1" store
+  threadDelay 3000000
+  EKGC.inc cnt 
+  threadDelay 3000000
+  EKGC.inc cnt 
+  threadDelay 3000000
+  -- EKG.registerGcMetrics store
