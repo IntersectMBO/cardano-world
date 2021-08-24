@@ -48,7 +48,7 @@ library
 
                        System.Metrics.Network.Acceptor
                        System.Metrics.Network.Forwarder
- 
+
                        System.Metrics.Store.Acceptor
                        System.Metrics.Store.Forwarder
 
@@ -66,6 +66,7 @@ library
                        , network
                        , ouroboros-network-framework
                        , serialise
+                       , stm
                        , text
                        , time
                        , typed-protocols

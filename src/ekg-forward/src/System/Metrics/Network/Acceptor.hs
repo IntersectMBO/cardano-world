@@ -12,8 +12,8 @@ import           Codec.CBOR.Term (Term)
 import qualified Codec.Serialise as CBOR
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
+import           Control.Concurrent.STM.TVar (TVar, readTVarIO)
 import qualified Data.ByteString.Lazy as LBS
-import           Data.IORef (IORef, readIORef)
 import qualified Data.Text as T
 import           Data.Time.Clock (NominalDiffTime)
 import           Data.Void (Void)
@@ -51,7 +51,7 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 listenToForwarder
   :: AcceptorConfiguration
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> IO Void
 listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp -> do
   let app = acceptorApp config ekgStore metricsStore
@@ -96,7 +96,7 @@ doListenToForwarder snocket address timeLimits app = do
 acceptorApp
   :: AcceptorConfiguration
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
 acceptorApp config ekgStore metricsStore =
   OuroborosApplication $ \_connectionId _shouldStopSTM -> [
@@ -112,7 +112,7 @@ acceptorApp config ekgStore metricsStore =
 acceptEKGMetrics
   :: AcceptorConfiguration
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
 acceptEKGMetrics config ekgStore metricsStore =
   ResponderProtocolOnly $
@@ -125,7 +125,7 @@ acceptEKGMetrics config ekgStore metricsStore =
 acceptEKGMetricsInit
   :: AcceptorConfiguration
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> RunMiniProtocol 'InitiatorMode LBS.ByteString IO () Void
 acceptEKGMetricsInit config ekgStore metricsStore =
   InitiatorProtocolOnly $
@@ -139,23 +139,19 @@ acceptorActions
   :: Bool
   -> AcceptorConfiguration
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> Acceptor.EKGAcceptor Request Response IO ()
 acceptorActions True config@AcceptorConfiguration{..} ekgStore metricsStore =
   Acceptor.SendMsgReq whatToRequest $ \response -> do
     storeMetrics response ekgStore metricsStore
-    actionOnResponse response
     threadDelay $ toMicroSecs requestFrequency
-    weAreDone <- readIORef shouldWeStop
+    weAreDone <- readTVarIO shouldWeStop
     if weAreDone
       then return $ acceptorActions False config ekgStore metricsStore
       else return $ acceptorActions True  config ekgStore metricsStore
  where
-  -- TODO: temporary function, should be rewritten
-  -- (we have to take into account actual time of 'actionOnResponse'
-  -- as well as actual time of getting the response from the forwarder).
   toMicroSecs :: NominalDiffTime -> Int
   toMicroSecs dt = fromEnum dt `div` 1000000
-acceptorActions False AcceptorConfiguration{..} _ _ =
-  Acceptor.SendMsgDone $
-    actionOnDone
+
+acceptorActions False _ _ _ =
+  Acceptor.SendMsgDone $ return ()
