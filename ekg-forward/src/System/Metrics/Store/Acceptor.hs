@@ -4,11 +4,12 @@ module System.Metrics.Store.Acceptor
   , emptyMetricsLocalStore
   ) where
 
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TVar (TVar, modifyTVar', readTVarIO)
 import           Control.Monad (forM_, when)
 import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as HM
 import           Data.Int (Int64)
-import           Data.IORef (IORef, atomicModifyIORef', readIORef)
 import           Data.Text (Text)
 import qualified System.Metrics as EKG
 import qualified System.Metrics.Counter as C
@@ -20,11 +21,11 @@ import           System.Metrics.ReqResp (MetricName, MetricValue (..), Response 
 storeMetrics
   :: Response
   -> EKG.Store
-  -> IORef MetricsLocalStore
+  -> TVar MetricsLocalStore
   -> IO ()
 storeMetrics (ResponseMetrics []) _ _ = return ()
 storeMetrics (ResponseMetrics newMetrics) ekgStore metricsStore = do
-  storedMetrics <- readIORef metricsStore
+  storedMetrics <- readTVarIO metricsStore
   forM_ newMetrics $ \(mName, mValue) ->
     case mValue of
       CounterValue c -> addOrUpdate mName storedMetrics c checkCounter addCounter updateCounter
@@ -42,26 +43,26 @@ storeMetrics (ResponseMetrics newMetrics) ekgStore metricsStore = do
   checkGauge mName   = HM.member mName . ekgGauges
   checkLabel mName   = HM.member mName . ekgLabels
 
-addCounter :: Int64 -> MetricName -> EKG.Store -> IORef MetricsLocalStore -> IO ()
+addCounter :: Int64 -> MetricName -> EKG.Store -> TVar MetricsLocalStore -> IO ()
 addCounter c mName ekgStore metricsStore = do
   newCounter <- EKG.createCounter mName ekgStore
   C.add newCounter c
-  atomicModifyIORef' metricsStore $ \currentStore ->
-    (currentStore { ekgCounters = HM.insert mName newCounter $ ekgCounters currentStore }, ())
+  atomically $ modifyTVar' metricsStore $ \currentStore ->
+    currentStore { ekgCounters = HM.insert mName newCounter $ ekgCounters currentStore }
 
-addGauge :: Int64 -> MetricName -> EKG.Store -> IORef MetricsLocalStore -> IO ()
+addGauge :: Int64 -> MetricName -> EKG.Store -> TVar MetricsLocalStore -> IO ()
 addGauge g mName ekgStore metricsStore = do
   newGauge <- EKG.createGauge mName ekgStore
   G.set newGauge g
-  atomicModifyIORef' metricsStore $ \currentStore ->
-    (currentStore { ekgGauges = HM.insert mName newGauge $ ekgGauges currentStore }, ())
+  atomically $ modifyTVar' metricsStore $ \currentStore ->
+    currentStore { ekgGauges = HM.insert mName newGauge $ ekgGauges currentStore }
 
-addLabel :: Text -> MetricName -> EKG.Store -> IORef MetricsLocalStore -> IO ()
+addLabel :: Text -> MetricName -> EKG.Store -> TVar MetricsLocalStore -> IO ()
 addLabel l mName ekgStore metricsStore = do
   newLabel <- EKG.createLabel mName ekgStore
   L.set newLabel l
-  atomicModifyIORef' metricsStore $ \currentStore ->
-    (currentStore { ekgLabels = HM.insert mName newLabel $ ekgLabels currentStore }, ())
+  atomically $ modifyTVar' metricsStore $ \currentStore ->
+    currentStore { ekgLabels = HM.insert mName newLabel $ ekgLabels currentStore }
 
 updateCounter :: Int64 -> MetricName -> MetricsLocalStore -> IO ()
 updateCounter c mName storedMetrics = do
