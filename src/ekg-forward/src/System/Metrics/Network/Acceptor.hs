@@ -57,7 +57,7 @@ listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp -> do
   let app = acceptorApp config ekgStore metricsStore
   case forwarderEndpoint config of
     LocalPipe localPipe -> do
-      let snocket = localSnocket iocp localPipe
+      let snocket = localSnocket iocp
           address = localAddressFromPath localPipe
       doListenToForwarder snocket address noTimeLimitsHandshake app
     RemoteSocket host port -> do

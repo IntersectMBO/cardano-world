@@ -47,7 +47,7 @@ connectToAcceptor config@ForwarderConfiguration{..} ekgStore = withIOManager $ \
   let app = forwarderApp config ekgStore
   case acceptorEndpoint of
     LocalPipe localPipe -> do
-      let snocket = localSnocket iocp localPipe
+      let snocket = localSnocket iocp
           address = localAddressFromPath localPipe
       doConnectToAcceptor snocket address noTimeLimitsHandshake app
     RemoteSocket host port -> do
