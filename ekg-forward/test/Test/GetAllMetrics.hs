@@ -6,7 +6,8 @@ module Test.GetAllMetrics
 import Test.Hspec
 
 import           Control.Concurrent (forkIO, threadDelay)
-import           Data.IORef (atomicModifyIORef', newIORef)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TVar (modifyTVar', newTVarIO)
 import qualified System.Metrics as EKG
 import qualified System.Metrics.Gauge as G
 import qualified System.Metrics.Label as L
@@ -27,7 +28,7 @@ getAllMetrics :: HowToConnect -> IO ()
 getAllMetrics endpoint = do
   forwarderStore <- EKG.newStore
   acceptorStore  <- EKG.newStore
-  weAreDone <- newIORef False
+  weAreDone <- newTVarIO False
 
   let acceptorConfig = mkAcceptorConfig endpoint weAreDone GetAllMetrics
       forwarderConfig = mkForwarderConfig endpoint
@@ -44,7 +45,7 @@ getAllMetrics endpoint = do
 
   threadDelay 2000000
 
-  atomicModifyIORef' weAreDone (const (True, ()))
+  atomically $ modifyTVar' weAreDone (const True)
 
   threadDelay 1000000
 

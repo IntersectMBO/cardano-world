@@ -3,8 +3,8 @@ module Test.MkConfig
   , mkForwarderConfig
   ) where
 
+import           Control.Concurrent.STM.TVar (TVar)
 import           Control.Tracer (nullTracer)
-import           Data.IORef (IORef)
 import           Data.Time.Clock (secondsToNominalDiffTime)
 
 import           System.Metrics.Configuration (AcceptorConfiguration (..),
@@ -14,7 +14,7 @@ import           System.Metrics.ReqResp (Request (..))
 
 mkAcceptorConfig
   :: HowToConnect
-  -> IORef Bool
+  -> TVar Bool
   -> Request
   -> AcceptorConfiguration
 mkAcceptorConfig endpoint weAreDone request =
@@ -23,9 +23,7 @@ mkAcceptorConfig endpoint weAreDone request =
     , forwarderEndpoint = endpoint
     , requestFrequency  = secondsToNominalDiffTime 1
     , whatToRequest     = request
-    , actionOnResponse  = \_ -> return ()
     , shouldWeStop      = weAreDone
-    , actionOnDone      = putStrLn "Acceptor: we are done!"
     }
 
 mkForwarderConfig

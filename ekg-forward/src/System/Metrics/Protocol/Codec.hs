@@ -14,9 +14,9 @@ import           Codec.CBOR.Read (DeserialiseFailure)
 import           Control.Monad.Class.MonadST (MonadST)
 import qualified Data.ByteString.Lazy as LBS
 import           Text.Printf (printf)
-import           Ouroboros.Network.Codec (Codec, PeerHasAgency (..),
-                                          PeerRole (..), SomeMessage (..),
-                                          mkCodecCborLazyBS)
+import           Network.TypedProtocol.Codec.CBOR (Codec, PeerHasAgency (..),
+                                                   PeerRole (..), SomeMessage (..),
+                                                   mkCodecCborLazyBS)
 
 import           System.Metrics.Protocol.Type
 
