@@ -70,6 +70,7 @@ library
                        , text
                        , time
                        , typed-protocols
+                       , typed-protocols-cborg
                        , unordered-containers
 
 executable demo-forwarder
@@ -95,6 +96,7 @@ executable demo-acceptor
                        , contra-tracer
                        , ekg-core
                        , ekg-forward
+                       , stm
                        , text
                        , time
 
@@ -117,6 +119,7 @@ test-suite ekg-forward-test
                        , ekg-core
                        , ekg-forward
                        , hspec
+                       , stm
                        , time
                        , unordered-containers
   ghc-options:         -threaded

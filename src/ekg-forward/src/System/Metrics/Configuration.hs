@@ -36,7 +36,7 @@ data AcceptorConfiguration = AcceptorConfiguration
   , requestFrequency  :: !NominalDiffTime
     -- | Specifies what to request: all existing metrics or particular metrics.
   , whatToRequest     :: !Request
-    -- | 'IORef' that can be used as a brake: if an external thread will set it to
+    -- | 'TVar' that can be used as a brake: if an external thread will set it to
     -- 'True', the acceptor will send 'MsgDone' message to the forwarder and their
     -- session will be closed.
   , shouldWeStop      :: !(TVar Bool)

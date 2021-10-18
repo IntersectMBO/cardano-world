@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 
+import           Control.Concurrent.STM.TVar (newTVarIO)
 import           Control.Tracer (contramap, stdoutTracer)
-import           Data.IORef (newIORef)
 import           Data.Fixed (Pico)
 import           Data.Text (pack)
 import           Data.Time.Clock (secondsToNominalDiffTime)
@@ -21,16 +21,14 @@ main = do
     [path, freq]       -> return (LocalPipe path, freq)
     [host, port, freq] -> return (RemoteSocket (pack host) (read port :: Port), freq)
     _                  -> die "Usage: demo-acceptor (pathToLocalPipe | host port) freqInSecs"
-  weAreDone <- newIORef False
+  weAreDone <- newTVarIO False
   let config =
         AcceptorConfiguration
           { acceptorTracer    = contramap show stdoutTracer
           , forwarderEndpoint = listenIt
           , requestFrequency  = secondsToNominalDiffTime (read freq :: Pico)
           , whatToRequest     = GetAllMetrics
-          , actionOnResponse  = print
           , shouldWeStop      = weAreDone
-          , actionOnDone      = putStrLn "We are done!"
           }
 
   -- Create an empty EKG store.
