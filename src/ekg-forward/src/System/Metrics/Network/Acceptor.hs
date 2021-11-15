@@ -31,8 +31,7 @@ import           Ouroboros.Network.Socket (AcceptedConnectionsLimit (..),
                                            SomeResponderApplication (..),
                                            cleanNetworkMutableState, newNetworkMutableState,
                                            nullNetworkServerTracers, withServerNode)
-import           Ouroboros.Network.Protocol.Handshake.Codec (cborTermVersionDataCodec,
-                                                             noTimeLimitsHandshake,
+import           Ouroboros.Network.Protocol.Handshake.Codec (noTimeLimitsHandshake,
                                                              timeLimitsHandshake)
 import           Ouroboros.Network.Protocol.Handshake.Type (Handshake)
 import           Ouroboros.Network.Protocol.Handshake.Unversioned (UnversionedProtocol (..),
@@ -84,7 +83,7 @@ doListenToForwarder snocket address timeLimits app = do
     address
     unversionedHandshakeCodec
     timeLimits
-    (cborTermVersionDataCodec unversionedProtocolDataCodec)
+    unversionedProtocolDataCodec
     acceptableVersion
     (simpleSingletonVersions
       UnversionedProtocol
