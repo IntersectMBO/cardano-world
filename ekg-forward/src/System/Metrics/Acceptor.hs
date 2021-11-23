@@ -20,9 +20,13 @@ runEKGAcceptor
   :: AcceptorConfiguration  -- ^ Acceptor configuration.
   -> EKG.Store              -- ^ The store all received metrics will be stored in.
   -> IO ()
-runEKGAcceptor config ekgStore = do
-  metricsStore <- newTVarIO emptyMetricsLocalStore
-  try (void $ listenToForwarder config ekgStore metricsStore) >>= \case
-    Left (_e :: SomeException) ->
-      runEKGAcceptor config ekgStore
+runEKGAcceptor config ekgStore =
+  try (void $ listenToForwarder config mkStores peerErrorHandler) >>= \case
+    Left (_e :: SomeException) -> runEKGAcceptor config ekgStore
     Right _ -> return ()
+ where
+  mkStores = do
+    metricsStore <- newTVarIO emptyMetricsLocalStore
+    return (ekgStore, metricsStore)
+
+  peerErrorHandler = return ()

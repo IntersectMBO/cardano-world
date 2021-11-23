@@ -4,12 +4,13 @@
 module System.Metrics.Network.Acceptor
   ( listenToForwarder
   -- | Export this function for Mux purpose.
-  , acceptEKGMetrics
   , acceptEKGMetricsInit
+  , acceptEKGMetricsResp
   ) where
 
 import           Codec.CBOR.Term (Term)
 import qualified Codec.Serialise as CBOR
+import           Control.Exception (finally)
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (async, wait)
 import           Control.Concurrent.STM.TVar (TVar, readTVarIO)
@@ -21,6 +22,7 @@ import qualified Network.Socket as Socket
 import           Ouroboros.Network.Driver.Limits (ProtocolTimeLimits)
 import           Ouroboros.Network.ErrorPolicy (nullErrorPolicies)
 import           Ouroboros.Network.IOManager (withIOManager)
+import           Ouroboros.Network.Driver.Simple (runPeer)
 import           Ouroboros.Network.Mux (MiniProtocol (..), MiniProtocolLimits (..),
                                         MiniProtocolNum (..), MuxMode (..),
                                         OuroborosApplication (..), MuxPeer (..),
@@ -49,11 +51,11 @@ import           System.Metrics.Configuration (AcceptorConfiguration (..), HowTo
 
 listenToForwarder
   :: AcceptorConfiguration
-  -> EKG.Store
-  -> TVar MetricsLocalStore
+  -> IO (EKG.Store, TVar MetricsLocalStore)
+  -> IO ()
   -> IO Void
-listenToForwarder config ekgStore metricsStore = withIOManager $ \iocp -> do
-  let app = acceptorApp config ekgStore metricsStore
+listenToForwarder config mkStores peerErrorHandler = withIOManager $ \iocp -> do
+  let app = acceptorApp config mkStores peerErrorHandler
   case forwarderEndpoint config of
     LocalPipe localPipe -> do
       let snocket = localSnocket iocp
@@ -94,45 +96,49 @@ doListenToForwarder snocket address timeLimits app = do
 
 acceptorApp
   :: AcceptorConfiguration
-  -> EKG.Store
-  -> TVar MetricsLocalStore
+  -> IO (EKG.Store, TVar MetricsLocalStore)
+  -> IO ()
   -> OuroborosApplication 'ResponderMode addr LBS.ByteString IO Void ()
-acceptorApp config ekgStore metricsStore =
+acceptorApp config mkStores peerErrorHandler =
   OuroborosApplication $ \_connectionId _shouldStopSTM -> [
     MiniProtocol
       { miniProtocolNum    = MiniProtocolNum 2
-      , miniProtocolLimits = MiniProtocolLimits {
-                               maximumIngressQueue = maxBound
-                             }
-      , miniProtocolRun    = acceptEKGMetrics config ekgStore metricsStore
+      , miniProtocolLimits = MiniProtocolLimits { maximumIngressQueue = maxBound }
+      , miniProtocolRun    = acceptEKGMetricsResp config mkStores peerErrorHandler
       }
   ]
 
-acceptEKGMetrics
+acceptEKGMetricsResp
   :: AcceptorConfiguration
-  -> EKG.Store
-  -> TVar MetricsLocalStore
+  -> IO (EKG.Store, TVar MetricsLocalStore)
+  -> IO ()
   -> RunMiniProtocol 'ResponderMode LBS.ByteString IO Void ()
-acceptEKGMetrics config ekgStore metricsStore =
-  ResponderProtocolOnly $
-    MuxPeer
-      (acceptorTracer config)
-      (Acceptor.codecEKGForward CBOR.encode CBOR.decode
-                                CBOR.encode CBOR.decode)
-      (Acceptor.ekgAcceptorPeer $ acceptorActions True config ekgStore metricsStore)
+acceptEKGMetricsResp config mkStores peerErrorHandler =
+  ResponderProtocolOnly $ runPeerWithStores config mkStores peerErrorHandler
 
 acceptEKGMetricsInit
   :: AcceptorConfiguration
-  -> EKG.Store
-  -> TVar MetricsLocalStore
+  -> IO (EKG.Store, TVar MetricsLocalStore)
+  -> IO ()
   -> RunMiniProtocol 'InitiatorMode LBS.ByteString IO () Void
-acceptEKGMetricsInit config ekgStore metricsStore =
-  InitiatorProtocolOnly $
-    MuxPeer
+acceptEKGMetricsInit config mkStores peerErrorHandler =
+  InitiatorProtocolOnly $ runPeerWithStores config mkStores peerErrorHandler
+
+runPeerWithStores
+  :: AcceptorConfiguration
+  -> IO (EKG.Store, TVar MetricsLocalStore)
+  -> IO ()
+  -> MuxPeer LBS.ByteString IO ()
+runPeerWithStores config mkStores peerErrorHandler =
+  MuxPeerRaw $ \channel -> do
+    (ekgStore, metricsStore) <- mkStores
+    runPeer
       (acceptorTracer config)
       (Acceptor.codecEKGForward CBOR.encode CBOR.decode
                                 CBOR.encode CBOR.decode)
+      channel
       (Acceptor.ekgAcceptorPeer $ acceptorActions True config ekgStore metricsStore)
+    `finally` peerErrorHandler
 
 acceptorActions
   :: Bool
