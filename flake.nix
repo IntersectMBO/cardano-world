@@ -43,7 +43,7 @@
           domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfile.default;
-          deploySshKey = "./secrets/ssh-cardano-testnet";
+          deploySshKey = "./secrets/ssh-cardano";
         }
     ) {
       infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;

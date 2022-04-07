@@ -22,7 +22,7 @@
           std
           ;
         inherit (devshell.legacyPackages) mkShell;
-        inherit (main.clusters.cardano-testnet) _proto;
+        inherit (main.clusters.cardano) _proto;
 
         walletWorld = {
           extraModulesPath,
@@ -36,7 +36,7 @@
           ];
           bitte = {
             domain = "world.dev.cardano.org";
-            cluster = "testnet";
+            cluster = "cardano";
             namespace = "testnet-prod";
             provider = "AWS";
             cert = null;

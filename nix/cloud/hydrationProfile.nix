@@ -40,7 +40,7 @@ in {
     #
     # --------------
     cluster = {
-      name = "cardano-testnet";
+      name = "cardano";
       adminNames = [
         "samuel.leathers"
         "david.arnold"
