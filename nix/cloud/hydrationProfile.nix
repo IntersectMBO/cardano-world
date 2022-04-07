@@ -4,7 +4,7 @@
 }: let
   inherit (inputs.bitte-cells) patroni cardano;
   namespaces = ["infra" "testnet-prod" "testnet-dev"];
-  components = ["prism-node" "database" "db-sync" "wallet"];
+  components = ["database" "cardano-node" "db-sync" "wallet"];
 in {
   # Bitte Hydrate Module
   # -----------------------------------------------------------------------
@@ -26,7 +26,7 @@ in {
     d = "delete";
     l = "list";
     s = "sudo";
-    secretsFolder = "nomadEnvs/encrypted";
+    secretsFolder = "encrypted";
     starttimeSecretsPath = "kv/nomad-cluster";
     runtimeSecretsPath = "runtime";
   in {
@@ -41,12 +41,15 @@ in {
     # --------------
     cluster = {
       name = "cardano-testnet";
-      adminNames = ["disassembler"];
+      adminNames = [
+        "samuel.leathers"
+        "david.arnold"
+      ];
       developerGithubNames = [];
       developerGithubTeamNames = ["cardano-devs"];
-      domain = "dev.cardano.org";
+      domain = "world.dev.cardano.org";
       extraAcmeSANs = [];
-      kms = "arn:aws:kms:eu-central-1:405612635301:key/42d12cf2-91b3-4181-82b3-edd39c00e033";
+      kms = "arn:aws:kms:eu-central-1:052443713844:key/c1d7a205-5d3d-4ca7-8842-9f7fb2ccc847";
       s3Bucket = "iog-cardano-bitte";
     };
     services = {
@@ -65,17 +68,7 @@ in {
     # cluster level
     # --------------
     tf.hydrate-cluster.configuration = {
-      # data.vault_policy_document.admin.rule = [
-      #   { path = "${runtimeSecretsPath}/*"; capabilities = [ c r u d l ]; }
-      # ];
-      # resource.vault_mount.${runtimeSecretsPath} = {
-      #   path = "${runtimeSecretsPath}";
-      #   type = "kv-v2";
-      #   description = "Applications can access runtime secrets if they have access credentials for them";
-      # };
       locals.policies = {
-        vault.nomad-cluster.path."consul/creds/connect".capabilities = [r];
-
         consul.developer.service_prefix."testnet-" = {
           policy = "write";
           intentions = "write";

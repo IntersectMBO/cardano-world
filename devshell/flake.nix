@@ -35,12 +35,12 @@
             bitte.devshellModule
           ];
           bitte = {
-            domain = "dev.cardano.org";
+            domain = "world.dev.cardano.org";
             cluster = "testnet";
             namespace = "testnet-prod";
             provider = "AWS";
             cert = null;
-            aws_profile = "testnet-prod";
+            aws_profile = "cardano";
             aws_region = "eu-central-1";
             aws_autoscaling_groups =
               _proto.config.cluster.awsAutoScalingGroups;

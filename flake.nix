@@ -30,7 +30,7 @@
         (inputs.std.installables "packages")
         (inputs.std.functions "hydrationProfile")
         # just repo automation; std - just integration pending
-        (inputs.std.runnables "justTasks")
+        (inputs.std.runnables "jobs")
       ];
     }
     # soil (TODO: eat up soil)
@@ -40,7 +40,7 @@
         inputs.bitte.lib.mkBitteStack {
           inherit inputs;
           inherit (inputs) self;
-          domain = "dev.cardano.org";
+          domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfile.default;
           deploySshKey = "./secrets/ssh-cardano-testnet";

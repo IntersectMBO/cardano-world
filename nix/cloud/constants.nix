@@ -4,7 +4,7 @@
 }: let
   # Metadata
   # -----------------------------------------------------------------------
-  baseDomain = "dev.cardano.org";
+  baseDomain = "world.dev.cardano.org";
 in {
   # App Components
   # -----------------------------------------------------------------------
