@@ -1,0 +1,19 @@
+# numtide/devshell
+.data
+
+# direnv/direnv
+.direnv
+.envrc.local
+
+# hashicorp/terraform
+.terraform
+config.tf.json
+*.plan
+
+# iog/bitte
+secrets/
+
+# nixos/nix
+result*
+
+

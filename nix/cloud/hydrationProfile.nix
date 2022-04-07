@@ -145,36 +145,34 @@ in {
             // (
               lib.optionalAttrs (hasSecretFile g) (
                 if g.stage == "starttime"
-                then
-                  {
-                    # Loading secrets into the generic kv secrets resource
-                    "${g.component}-${g.namespace}-${g.stage}" = {
-                      path = "${starttimeSecretsPath}/${g.namespace}/${g.component}";
-                      data_json =
-                        var "jsonencode(yamldecode(data.sops_file.${
-                          g.component
-                        }-secrets-${
-                          g.namespace
-                        }-${
-                          g.stage
-                        }.raw))";
-                    };
-                  }
-                else
-                  {
-                    # Loading secrets into the generic kv secrets resource
-                    "${g.component}-${g.namespace}-${g.stage}" = {
-                      path = "${runtimeSecretsPath}/${g.namespace}/${g.component}";
-                      data_json =
-                        var "jsonencode(yamldecode(data.sops_file.${
-                          g.component
-                        }-secrets-${
-                          g.namespace
-                        }-${
-                          g.stage
-                        }.raw))";
-                    };
-                  }
+                then {
+                  # Loading secrets into the generic kv secrets resource
+                  "${g.component}-${g.namespace}-${g.stage}" = {
+                    path = "${starttimeSecretsPath}/${g.namespace}/${g.component}";
+                    data_json =
+                      var "jsonencode(yamldecode(data.sops_file.${
+                        g.component
+                      }-secrets-${
+                        g.namespace
+                      }-${
+                        g.stage
+                      }.raw))";
+                  };
+                }
+                else {
+                  # Loading secrets into the generic kv secrets resource
+                  "${g.component}-${g.namespace}-${g.stage}" = {
+                    path = "${runtimeSecretsPath}/${g.namespace}/${g.component}";
+                    data_json =
+                      var "jsonencode(yamldecode(data.sops_file.${
+                        g.component
+                      }-secrets-${
+                        g.namespace
+                      }-${
+                        g.stage
+                      }.raw))";
+                  };
+                }
               )
             )
         ) {}

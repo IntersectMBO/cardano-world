@@ -1,8 +1,9 @@
 {
   description = "Cardano Repository top-level development shell";
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-  inputs.devshell.url = "github:numtide/devshell?ref=refs/pull/169/head";
+  inputs.devshell.url = "github:numtide/devshell";
   inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs.capsules.url = "github:input-output-hk/devshell-capsules";
   inputs.main.url = "path:../.";
   outputs = inputs:
     inputs.flake-utils.lib.eachSystem ["x86_64-linux" "x86_64-darwin"] (
@@ -12,6 +13,7 @@
           main
           devshell
           nixpkgs
+          capsules
           ;
         inherit
           (main.inputs.std.deSystemize system inputs.main.inputs)
@@ -19,45 +21,53 @@
           bitte
           std
           ;
-        inherit
-          (std.deSystemize system bitte.inputs)
-          cli
-          ;
+        inherit (devshell.legacyPackages) mkShell;
         inherit (main.clusters.cardano-testnet) _proto;
+
+        walletWorld = {
+          extraModulesPath,
+          pkgs,
+          ...
+        }: {
+          name = nixpkgs.lib.mkForce "Cardano World";
+          imports = [
+            std.std.devshellProfiles.default
+            bitte.devshellModule
+          ];
+          bitte = {
+            domain = "dev.cardano.org";
+            cluster = "testnet";
+            namespace = "testnet-prod";
+            provider = "AWS";
+            cert = null;
+            aws_profile = "testnet-prod";
+            aws_region = "eu-central-1";
+            aws_autoscaling_groups =
+              _proto.config.cluster.awsAutoScalingGroups;
+          };
+          cellsFrom = "./nix";
+        };
       in {
-        devShells.__default = devshell.legacyPackages.mkShell (
-          {
-            extraModulesPath,
-            pkgs,
-            ...
-          }: {
-            name = nixpkgs.lib.mkForce "Cardano Shell";
-            imports = [
-              std.std.devshellProfiles.default
-              cli.devshellModules.bitte
-              bitte-cells.patroni.devshellProfiles.default
-              bitte-cells.cardano.devshellProfiles.default
-            ];
-            bitte = {
-              domain = "dev.cardano.org";
-              cluster = "testnet";
-              namespace = "testnet-prod";
-              provider = "AWS";
-              cert = null;
-              aws_profile = "testnet-prod";
-              aws_region = "eu-central-1";
-              aws_autoscaling_groups =
-                _proto.config.cluster.awsAutoScalingGroups;
-            };
-            cellsFrom = "./nix";
-            packages = [
-              # formatters
-              nixpkgs.legacyPackages.alejandra
-              # nixpkgs.legacyPackages.shfmt
-              # nixpkgs.legacyPackages.nodePackages.prettier
-            ];
-          }
-        );
+        devShells.dev = mkShell {
+          imports = [
+            walletWorld
+            capsules.base
+            capsules.cloud
+          ];
+        };
+        devShells.ops = mkShell {
+          imports = [
+            walletWorld
+            capsules.base
+            capsules.cloud
+            capsules.hooks
+            capsules.metal
+            capsules.integrations
+            capsules.tools
+            bitte-cells.patroni.devshellProfiles.default
+            bitte-cells.cardano.devshellProfiles.default
+          ];
+        };
       }
     );
 }

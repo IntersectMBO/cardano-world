@@ -1,5 +1,5 @@
 {
-  description = "Cardano Bitte-based deployment";
+  description = "Cardano World";
   inputs.std.url = "github:divnix/std";
   inputs.std.inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   inputs.n2c.url = "github:nlewo/nix2container";
@@ -11,9 +11,6 @@
     # --------------------------------------------------------------
     # --- Auxiliary Nixpkgs ----------------------------------------
     nixpkgs.follows = "std/nixpkgs";
-    # --------------------------------------------------------------
-    # --- Makes Stack ----------------------------------------------
-    makes.url = "github:fluidattacks/makes";
     # --------------------------------------------------------------
   };
   outputs = inputs: let
