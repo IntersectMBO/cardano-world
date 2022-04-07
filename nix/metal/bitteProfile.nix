@@ -193,6 +193,7 @@ in {
               services.oauth2_proxy.email.domains = ["iohk.io" "atixlabs.com"];
               services.traefik.acmeDnsCertMgr = false;
               services.traefik.useVaultBackend = true;
+              services.traefik.useDockerRegistry = false;
             }
           ];
         };
