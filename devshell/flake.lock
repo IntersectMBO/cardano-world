@@ -487,11 +487,11 @@
         "ragenix": "ragenix"
       },
       "locked": {
-        "lastModified": 1649447244,
-        "narHash": "sha256-mopBWtBg+9EEx8V0N6kjLzrKzao31YK1Z4QGIR4P2uw=",
+        "lastModified": 1649627970,
+        "narHash": "sha256-+Oc4PjPp6+nriEazNQKpzLYQUbASF3ulRlSsaIpLLFs=",
         "owner": "input-output-hk",
         "repo": "devshell-capsules",
-        "rev": "d90eb996d7d74e8e13dc997e12ce4db481a3f8d6",
+        "rev": "beab72db72cc2b7c0ab172cea4b4375b1a81b10a",
         "type": "github"
       },
       "original": {
