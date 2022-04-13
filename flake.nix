@@ -3,6 +3,8 @@
   inputs.std.url = "github:divnix/std";
   inputs.std.inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   inputs.n2c.url = "github:nlewo/nix2container";
+  # TODO: remove when moved to monorepo
+  inputs.cardano-node.url = "github:input-output-hk/cardano-node";
   inputs.data-merge.url = "github:divnix/data-merge";
   inputs = {
     # --- Bitte Stack ----------------------------------------------
@@ -21,7 +23,7 @@
       inherit inputs;
       as-nix-cli-epiphyte = false;
       cellsFrom = ./nix;
-      # debug = ["cells" "cloud" "nomadEnvs"];
+      #debug = ["cells" "cloud" "packages"];
       organelles = [
         (inputs.std.data "nomadEnvs")
         (inputs.std.data "constants")
@@ -31,6 +33,7 @@
         (inputs.std.functions "hydrationProfile")
         # just repo automation; std - just integration pending
         (inputs.std.runnables "jobs")
+        (inputs.std.runnables "entrypoints")
       ];
     }
     # soil (TODO: eat up soil)
