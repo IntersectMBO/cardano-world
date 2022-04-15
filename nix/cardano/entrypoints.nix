@@ -5,19 +5,35 @@
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (cell) packages;
+  inherit (cell) config-data;
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
     text = ''
+
       # Exit if any required variables are not set
       [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
+
+      mkdir -p "$DATA_DIR"
+      DB_DIR="$DATA_DIR/db"
+      mkdir -p "$DATA_DIR/config"
+      chmod -R +w "$DATA_DIR/config"
+      ${config-data.copyEnvsTemplate config-data.environments}
+      if [ -n "''${ENVIRONMENT:-}" ]
+      then
+        NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
+        NODE_TOPOLOGY="$DATA_DIR/config/$ENVIRONMENT/topology.json"
+        DB_DIR="$DATA_DIR/db-$ENVIRONMENT"
+      fi
+
+
       # TODO: Need more logic here if config/topology are not set e.g. mainnet/testnet
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
       [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
-      args+=("--database-path" "$DATA_DIR/db")
+      args+=("--database-path" "$DB_DIR")
       args+=("--topology" "$NODE_TOPOLOGY")
       [ -n "''${HOST_ADDR:-}" ] && args+=("--host-addr" "$HOST_ADDR")
       [ -n "''${HOST_IPV6_ADDR:-}" ] && args+=("--host-ipv6-addr" "$HOST_IPV6_ADDR")

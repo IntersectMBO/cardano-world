@@ -30,6 +30,7 @@
         (inputs.std.functions "bitteProfile")
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
+        (inputs.std.installables "config-data")
         (inputs.std.functions "hydrationProfile")
         # just repo automation; std - just integration pending
         (inputs.std.runnables "jobs")
