@@ -21,7 +21,6 @@
   in
     inputs.std.growOn {
       inherit inputs;
-      as-nix-cli-epiphyte = false;
       cellsFrom = ./nix;
       #debug = ["cells" "cloud" "packages"];
       organelles = [

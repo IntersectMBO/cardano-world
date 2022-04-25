@@ -10076,11 +10076,11 @@
     },
     "nixpkgs_45": {
       "locked": {
-        "lastModified": 1649961138,
-        "narHash": "sha256-8ZCPrazs+qd2V8Elw84lIWuk0kKfVQ8Ei/19gahURhM=",
+        "lastModified": 1650847071,
+        "narHash": "sha256-fEq5rKXcDvzg6q/v3uRPHdSJ3fSOAczd3eSnKFr+JWk=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d08394e7cd5c7431a1e8f53b7f581e74ee909548",
+        "rev": "b43d3db76831cb80db01dd2ed50d66175fa2a325",
         "type": "github"
       },
       "original": {
@@ -11282,10 +11282,7 @@
         "cardano-node": "cardano-node_2",
         "data-merge": "data-merge_3",
         "n2c": "n2c_2",
-        "nixpkgs": [
-          "std",
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs_45",
         "std": "std_2"
       }
     },
@@ -11723,15 +11720,17 @@
     },
     "std_2": {
       "inputs": {
-        "nixpkgs": "nixpkgs_45",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
         "yants": "yants_4"
       },
       "locked": {
-        "lastModified": 1647235919,
-        "narHash": "sha256-fO4dlRO0zeZtzY1QF7iLatx81jena6QP7HZEA83AJ8E=",
+        "lastModified": 1650908148,
+        "narHash": "sha256-eXVh7/pvhpFPwGCUzFgip208x98cWrMT4buOJc25GPs=",
         "owner": "divnix",
         "repo": "std",
-        "rev": "133fb0c1cc8d0d477a3d339971ef09fa57a60fd3",
+        "rev": "2e761e3c3271d37ffeffabda8c5d1552eb1f3189",
         "type": "github"
       },
       "original": {
