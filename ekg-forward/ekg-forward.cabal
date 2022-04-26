@@ -73,7 +73,7 @@ library
                        , typed-protocols-cborg
                        , unordered-containers
 
-executable demo-forwarder
+executable ekg-forward-demo-forwarder
   hs-source-dirs:      demo
   main-is:             forwarder.hs
   build-depends:         base
@@ -89,7 +89,7 @@ executable demo-forwarder
                        -rtsopts
                        -with-rtsopts=-T
 
-executable demo-acceptor
+executable ekg-forward-demo-acceptor
   hs-source-dirs:      demo
   main-is:             acceptor.hs
   build-depends:         base

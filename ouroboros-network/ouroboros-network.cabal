@@ -33,8 +33,7 @@ flag asserts
 Flag ipv6
   Description: Enable IPv6 test cases
   Manual: True
-  -- Default to False since travis lacks IPv6 support
-  Default: False
+  Default: True
 
 flag cddl
   Description: Enable CDDL based tests of the CBOR encoding
@@ -190,14 +189,12 @@ library
                        contra-tracer,
                        monoidal-synchronisation,
 
-                       io-classes        >=0.1 && <0.3,
-                       network-mux       >=0.1 && <1.0,
-                       ouroboros-network-framework
-                                         >=0.1 && <1.0,
-                       strict-stm        >=0.1 && <0.2,
-                       typed-protocols   >=0.1 && <1.0,
+                       io-classes,
+                       network-mux,
+                       ouroboros-network-framework,
+                       strict-stm,
+                       typed-protocols,
                        typed-protocols-cborg
-                                         >=0.1 && <1.0
   if !os(windows)
     build-depends:     unix
 

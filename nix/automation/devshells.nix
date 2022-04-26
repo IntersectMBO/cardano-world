@@ -18,7 +18,7 @@
     deploySshKey = "not-a-key";
   };
 
-  walletWorld = {
+  cardanoWorld = {
     extraModulesPath,
     pkgs,
     ...
@@ -27,6 +27,7 @@
     imports = [
       std.devshellProfiles.default
       bitte.devshellModule
+      cardano.devshellProfiles.default
     ];
     bitte = {
       domain = "world.dev.cardano.org";
@@ -43,14 +44,14 @@
 in {
   dev = std.lib.mkShell {
     imports = [
-      walletWorld
+      cardanoWorld
       capsules.base
       capsules.cloud
     ];
   };
   ops = std.lib.mkShell {
     imports = [
-      walletWorld
+      cardanoWorld
       capsules.base
       capsules.cloud
       capsules.hooks

@@ -16,3 +16,6 @@ secrets/
 # nixos/nix
 result*
 
+# cabal
+dist-newstyle/
+.nix-cabal.project

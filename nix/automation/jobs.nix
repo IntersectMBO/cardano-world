@@ -2,16 +2,50 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs;
+  inherit (inputs) nixpkgs iohkNix;
   inherit (inputs.cells.cardano) packages library nixosProfiles;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.nixpkgs.lib.strings) fileContents;
+
+  cabal-project-utils = nixpkgs.callPackages iohkNix.utils.cabal-project { };
+
   # TODO: pass down repository cache-hash key
 in {
-  # TODO: script to update materialization:
-  # $ nix build .\#cardano-node.passthru.generateMaterialized
-  # $ ./result cells/cardano/packages/materialized
-  node-2nix = packages.cardano-node.passthru.generateMaterialized;
+  regenerate-nix = writeShellApplication {
+    name = "regenerate-nix";
+    text = ''
+        find_up() {
+        while [[ \$PWD != / ]] ; do
+          if [[ -e "\$1" ]]; then
+            echo "\$PWD"
+            return
+          fi
+          cd ..
+        done
+      }
+
+      toplevel=\$(find_up "cabal.project")
+
+      >&2 echo "Updating sha256 of cabal.project 'source-repository-package's..."
+      cabal-project-regenerate
+
+      >&2 echo "Materializing list of project packages and executables..."
+      ${packages.project.generatePackagesExesMat} nix/cardano/packages/packages-exes.nix
+    '';
+    runtimeInputs = [nixpkgs.nix cabal-project-utils.cabalProjectRegenerate];
+  };
+  cabal-project-check = cabal-project-utils.checkCabalProject;
+  hlint-check = nixpkgs.callPackage iohkNix.checks.hlint {
+    inherit (packages) hlint;
+    inherit (packages.project.args) src;
+  };
+  stylish-haskell = nixpkgs.callPackage inputs.iohkNix.checks.stylish-haskell {
+    inherit (packages) stylish-haskell;
+    inherit (packages.project.args) src;
+  };
+  shell = nixpkgs.callPackage inputs.iohkNix.checks.shell {
+    src = inputs.self;
+  };
   run-testnet-node = let
     envName = "testnet";
     config =

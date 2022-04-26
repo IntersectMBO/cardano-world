@@ -1,21 +1,40 @@
 {
   description = "Cardano World";
-  inputs.std.url = "github:divnix/std";
-  inputs.std.inputs.nixpkgs.follows = "nixpkgs";
-  inputs.n2c.url = "github:nlewo/nix2container";
-  inputs.data-merge.url = "github:divnix/data-merge";
+
   inputs = {
+    std = {
+      url = "path:/home/jbgi/Dev/iohk/std";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    n2c.url = "github:nlewo/nix2container";
+    haskellNix = {
+      url = "path:/home/jbgi/Dev/iohk/haskell.nix";
+      inputs.hackage.follows = "hackageNix";
+      inputs.nixpkgs.follows = "nixpkgs-haskell";
+    };
+    hackageNix = {
+      url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
+    iohkNix = {
+      url = "path:/home/jbgi/Dev/iohk/iohk-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    data-merge.url = "github:divnix/data-merge";
+    byron-chain = {
+      url = "github:input-output-hk/cardano-mainnet-mirror";
+      flake = false;
+    };
     # --- Bitte Stack ----------------------------------------------
     bitte.url = "github:input-output-hk/bitte";
     bitte-cells.url = "github:input-output-hk/bitte-cells";
     # --------------------------------------------------------------
     # --- Auxiliaries ----------------------------------------------
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs-haskell.follows = "haskellNix/nixpkgs-unstable";
     capsules.url = "github:input-output-hk/devshell-capsules";
     # --------------------------------------------------------------
     # --- Bride Heads ----------------------------------------------
-    # TODO: remove when moved to monorepo
-    cardano-node.url = "github:input-output-hk/cardano-node";
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/12.0.1-flake-improvements";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet";
     # --------------------------------------------------------------
@@ -42,6 +61,7 @@
         (inputs.std.runnables "entrypoints")
         (inputs.std.devshells "devshells")
       ];
+      nixpkgsConfig = inputs.haskellNix.config;
     }
     # soil (TODO: eat up soil)
     (
