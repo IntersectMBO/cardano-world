@@ -4,6 +4,8 @@
 }: let
   inherit (inputs.std) std;
   inherit (inputs) capsules bitte-cells bitte nixpkgs;
+  inherit (inputs.cells) cardano;
+
   # FIXME: this is a work around just to get access
   # to 'awsAutoScalingGroups'
   # TODO: std ize bitte properly to make this interface nicer
@@ -47,6 +49,10 @@ in {
     ];
   };
   ops = std.lib.mkShell {
+    packages = [
+      cardano.packages.cardano-cli
+      cardano.packages.cardano-node
+    ];
     imports = [
       walletWorld
       capsules.base
@@ -56,7 +62,6 @@ in {
       capsules.integrations
       capsules.tools
       bitte-cells.patroni.devshellProfiles.default
-      bitte-cells.cardano.devshellProfiles.default
     ];
   };
 }

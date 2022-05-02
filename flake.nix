@@ -4,7 +4,7 @@
   inputs.std.inputs.nixpkgs.follows = "nixpkgs";
   inputs.n2c.url = "github:nlewo/nix2container";
   # TODO: remove when moved to monorepo
-  inputs.cardano-node.url = "github:input-output-hk/cardano-node";
+  inputs.cardano-node.url = "github:input-output-hk/cardano-node/genesis-create-cardano";
   inputs.data-merge.url = "github:divnix/data-merge";
   inputs = {
     # --- Bitte Stack ----------------------------------------------
