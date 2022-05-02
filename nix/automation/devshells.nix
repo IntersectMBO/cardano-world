@@ -50,8 +50,8 @@ in {
   };
   ops = std.lib.mkShell {
     packages = [
-      cardano.packages.cardano-cli
-      cardano.packages.cardano-node
+      cardano.packages.cli
+      cardano.packages.node
     ];
     imports = [
       walletWorld

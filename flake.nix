@@ -3,8 +3,6 @@
   inputs.std.url = "github:divnix/std";
   inputs.std.inputs.nixpkgs.follows = "nixpkgs";
   inputs.n2c.url = "github:nlewo/nix2container";
-  # TODO: remove when moved to monorepo
-  inputs.cardano-node.url = "github:input-output-hk/cardano-node/genesis-create-cardano";
   inputs.data-merge.url = "github:divnix/data-merge";
   inputs = {
     # --- Bitte Stack ----------------------------------------------
@@ -14,6 +12,12 @@
     # --- Auxiliaries ----------------------------------------------
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     capsules.url = "github:input-output-hk/devshell-capsules";
+    # --------------------------------------------------------------
+    # --- Bride Heads ----------------------------------------------
+    # TODO: remove when moved to monorepo
+    cardano-node.url = "github:input-output-hk/cardano-node/genesis-create-cardano";
+    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/12.0.1-flake-improvements";
+    cardano-wallet.url = "github:input-output-hk/cardano-wallet";
     # --------------------------------------------------------------
   };
   outputs = inputs: let
