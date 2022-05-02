@@ -1,8 +1,8 @@
 # numtide/devshell
 .data
 
-# direnv/direnv
-.direnv
+# direnv/direnv + divnix/std
+.std
 .envrc.local
 
 # hashicorp/terraform

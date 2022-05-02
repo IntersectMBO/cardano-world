@@ -11,8 +11,9 @@
     bitte.url = "github:input-output-hk/bitte";
     bitte-cells.url = "github:input-output-hk/bitte-cells";
     # --------------------------------------------------------------
-    # --- Auxiliary Nixpkgs ----------------------------------------
+    # --- Auxiliaries ----------------------------------------------
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    capsules.url = "github:input-output-hk/devshell-capsules";
     # --------------------------------------------------------------
   };
   outputs = inputs: let
@@ -34,6 +35,7 @@
         # just repo automation; std - just integration pending
         (inputs.std.runnables "jobs")
         (inputs.std.runnables "entrypoints")
+        (inputs.std.devshells "devshells")
       ];
     }
     # soil (TODO: eat up soil)
