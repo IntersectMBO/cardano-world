@@ -21,7 +21,7 @@
     "keyDeposit": 2000000,
     "nOpt": 150,
     "rho": 0.003,
-    "tau": 0.20,
+    "tau": 0.2,
     "a0": 0.3
   },
   "genDelegs": {

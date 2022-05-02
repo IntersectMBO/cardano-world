@@ -2,7 +2,6 @@
 ###############          Staging           ###############
 ############### Cardano Node Configuration ###############
 ##########################################################
-
 {
   ##### Locations #####
 
@@ -12,7 +11,6 @@
   ShelleyGenesisHash = "cbb0f57a001120ef11d97b943ce6953b75d26adc11dc68451e9dec7989a62c85";
   AlonzoGenesisFile = ./staging + "/alonzo-genesis.json";
   AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
-
 
   ##### Core protocol parameters #####
 
