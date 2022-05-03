@@ -22,7 +22,7 @@
       materialized = ./materialized/cardano-node;
     };
 in {
-  node =
+  cardano-node =
     cardano-node-project.hsPkgs.cardano-node.components.exes.cardano-node
     // {
       # dispatch c/o automation/jobs.nix
@@ -37,7 +37,7 @@ in {
     .components
     .exes
     .cardano-submit-api;
-  cli = cardano-node-project.hsPkgs.cardano-cli.components.exes.cardano-cli;
+  cardano-cli = cardano-node-project.hsPkgs.cardano-cli.components.exes.cardano-cli;
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
   wallet = cardano-wallet.packages.cardano-wallet;
   address = cardano-wallet.packages.cardano-address;

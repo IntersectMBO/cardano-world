@@ -4,14 +4,14 @@
 }: let
   inherit (inputs) nixpkgs;
   inherit (inputs.cells.cardano) packages library nixosProfiles;
-  inherit (inputs.cells._writers.library) writeShellApplication;
+  inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.nixpkgs.lib.strings) fileContents;
   # TODO: pass down repository cache-hash key
 in {
   # TODO: script to update materialization:
   # $ nix build .\#cardano-node.passthru.generateMaterialized
   # $ ./result cells/cardano/packages/materialized
-  node-2nix = packages.node.passthru.generateMaterialized;
+  node-2nix = packages.cardano-node.passthru.generateMaterialized;
   run-testnet-node = let
     envName = "testnet";
     config =
@@ -29,8 +29,8 @@ in {
         inherit envName;
       };
       runtimeInputs = [
-        packages.node
-        packages.cli
+        packages.cardano-node
+        packages.cardano-cli
         # TODO: take from somewhere else than aws, e.g. an iohk hydra published path or similar
         nixpkgs.awscli2
         nixpkgs.gnutar
