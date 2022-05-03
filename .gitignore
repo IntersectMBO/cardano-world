@@ -4,7 +4,6 @@
 # direnv/direnv + divnix/std
 .std
 .envrc.local
-.direnv
 
 # hashicorp/terraform
 .terraform
