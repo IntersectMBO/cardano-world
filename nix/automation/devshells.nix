@@ -49,10 +49,6 @@ in {
     ];
   };
   ops = std.lib.mkShell {
-    packages = [
-      cardano.packages.cli
-      cardano.packages.node
-    ];
     imports = [
       walletWorld
       capsules.base
@@ -62,6 +58,7 @@ in {
       capsules.integrations
       capsules.tools
       bitte-cells.patroni.devshellProfiles.default
+      inputs.cells.cardano.devshellProfiles.default
     ];
   };
 }

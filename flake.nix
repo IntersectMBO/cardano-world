@@ -36,6 +36,7 @@
         (inputs.std.installables "packages")
         (inputs.std.installables "config-data")
         (inputs.std.functions "hydrationProfile")
+        (inputs.std.functions "devshellProfiles")
         # just repo automation; std - just integration pending
         (inputs.std.runnables "jobs")
         (inputs.std.runnables "entrypoints")

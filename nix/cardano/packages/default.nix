@@ -38,8 +38,8 @@ in {
     .exes
     .cardano-submit-api;
   cardano-cli = cardano-node-project.hsPkgs.cardano-cli.components.exes.cardano-cli;
+  cardano-wallet = cardano-wallet.packages.cardano-wallet;
+  cardano-address = cardano-wallet.packages.cardano-address;
+  cardano-db-sync = cardano-db-sync.packages.cardano-db-sync;
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
-  wallet = cardano-wallet.packages.cardano-wallet;
-  address = cardano-wallet.packages.cardano-address;
-  db-sync = cardano-db-sync.packages.cardano-db-sync;
 }
