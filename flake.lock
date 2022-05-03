@@ -2591,16 +2591,15 @@
         "utils": "utils_36"
       },
       "locked": {
-        "lastModified": 1651503034,
-        "narHash": "sha256-CLGxLxFNU1jhYsNLu2K9hOtNW2pLSpCZzuG0mc4rQJg=",
+        "lastModified": 1651579812,
+        "narHash": "sha256-7Sl5P2y68zhSh9qZjLqSRNerV5lYvXtLkaExW8n6shM=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "dede525fb2c288962bcb9bcf3a44211c3da17fab",
+        "rev": "c7cd1e4d958242a752eb1e7381ac9b8e5407620b",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "genesis-create-cardano",
         "repo": "cardano-node",
         "type": "github"
       }
