@@ -16,8 +16,8 @@
       args = [];
       # FIXME: switch back to fully qualified invocation
       # after: https://github.com/nlewo/nix2container/issues/15
-      # command = "${healthChecks.node-network-testnet-sync}/bin/cardano-node-network-testnet-sync-check";
-      command = "/bin/cardano-node-network-testnet-sync-check";
+      # command = "${healthChecks.cardano-node-network-sync}/bin/healthcheck";
+      command = "/bin/healthcheck";
       interval = "30s";
       # on_update = "ignore_warnings";
       # check_restart.ignore_warnings = true;
