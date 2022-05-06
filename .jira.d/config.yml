@@ -1,0 +1,7 @@
+project: CAD
+custom-commands:
+- name: ls-sre
+  help: jira ls on 'Delivering Team = Resident SRE'
+  script: |
+    jira ls -q 'resolution = unresolved AND "Delivering Team[Dropdown]" = "Resident SRE" AND project = CAD ORDER BY priority ASC, created'
+

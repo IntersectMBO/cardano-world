@@ -46,6 +46,7 @@ in {
       walletWorld
       capsules.base
       capsules.cloud
+      capsules.integrations
     ];
   };
   ops = std.lib.mkShell {
