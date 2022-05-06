@@ -16,11 +16,11 @@ in
       domain,
       nodeClass,
       scaling,
-      ...
     }: let
       id = "cardano";
       type = "service";
       priority = 50;
+      persistanceMount = "/persist";
     in {
       job.cardano = {
         inherit namespace datacenters id type priority;
@@ -79,6 +79,12 @@ in
             service = [
               (import ./srv-node.nix {inherit namespace healthChecks;})
             ];
+            volume = {
+              "persist-cardano-node-local" = {
+                source = "${namespace}-persist-cardano-node-local";
+                type = "host";
+              };
+            };
             ephemeral_disk = {
               migrate = true;
               size = 80000;
@@ -87,26 +93,30 @@ in
             network = {
               dns = {servers = ["172.17.0.1"];};
               mode = "bridge";
-              port = {
-                envoyPrometheus = {to = 9091;};
-                node = {to = 3001;};
-                # nodeProm = {to = 12798;};
-                # dbSyncProm = {to = 8080;};
-                # walletProm = {to = 8081;};
-              };
+              port.node = {to = 3001;};
             };
             task = {
               # ----------
               # Task: Node
               # ----------
               node = {
-                config.image = ociNamer oci-images.node-testnet;
+                env.DATA_DIR = persistanceMount;
+                env.CONSUL_HTTP_ADDR = "testnet"; # not self-contained; only defaults
+                env.CONSUL_CACERT = "testnet"; # not self-contained; only defaults
+                env.CONSUL_CLIENT_CERT = "testnet"; # not self-contained; only defaults
+                env.CONSUL_CLIENT_KEY = "testnet"; # not self-contained; only defaults
+                config.image = ociNamer oci-images.cardano-node;
                 driver = "docker";
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
                   cpu = 5000;
                   memory = 8192;
+                };
+                volume_mount = {
+                  destination = persistanceMount;
+                  propagation_mode = "private";
+                  volume = "persist-cardano-node-local";
                 };
               };
             };

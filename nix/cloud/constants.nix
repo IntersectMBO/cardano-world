@@ -10,8 +10,11 @@ in {
   # -----------------------------------------------------------------------
   envs = {
   };
-  testnet-prod = {
-  };
-  testnet-dev = {
+  vasil-qa = {
+    namespace = "vasil-qa";
+    datacenters = ["eu-central-1" "eu-west-1" "us-east-2"];
+    domain = "vasil-qa.${baseDomain}";
+    nodeClass = "qa";
+    scaling = 4;
   };
 }

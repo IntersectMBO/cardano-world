@@ -15,21 +15,79 @@
     DB_DIR="$DATA_DIR/db"
     mkdir -p "$DATA_DIR/config"
     chmod -R +w "$DATA_DIR/config"
+
+    # the menu of environments that we ship as built-in envs
     ${config-data.copyEnvsTemplate config-data.environments}
     if [ -n "''${ENVIRONMENT:-}" ]
     then
       NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
       NODE_TOPOLOGY="$DATA_DIR/config/$ENVIRONMENT/topology.json"
       DB_DIR="$DATA_DIR/db-$ENVIRONMENT"
+    elif [ -n "''${CONSUL_KV_PATH:-}" || -n "''${VAULT_KV_PATH:-}" ]
+    ${legacy-kv-config-instrumentation}
+    else
+      # the custom environments (e.g. load testing, permissioned, etc)
+      # TODO: Need more logic here if config/topology are not set e.g. mainnet/testnet
+      [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
+      [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
     fi
+  '';
 
-    # TODO: Need more logic here if config/topology are not set e.g. mainnet/testnet
-    [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
-    [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
+  legacy-kv-config-instrumentation = ''
+    export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
+    export NODE_TOPOLOGY="$DATA_DIR/config/custom/topology.json"
+    export SHELLEY_GENESIS_FILE=./shelley-genesis-file.json"
+    export BYRON_GENESIS_FILE=./shelley-genesis-file.json"
+    export ALONZO_GENESIS_FILE=./alonzo-genesis-file.json"
+
+    export BYRON_DELEG_CERT=/secrets/byron_deleg_cert.cert
+    export BYRON_SIGNING_KEY=/secrets/byron_signing_key.key
+    export SHELLEY_KES_KEY=/secrets/shelley_kes_key.skey
+    export SHELLEY_VRF_KEY=/secrets/shelley_vrf_key.skey
+    export SHELLEY_OPCERT=/secrets/shelley_opcert.opscert
+
+    [ -z "''${CONSUL_KV_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
+    [ -z "''${CONSUL_HTTP_ADDR:-}" ] && echo "CONSUL_HTTP_ADDR env var must be set -- aborting" && exit 1
+    [ -z "''${CONSUL_CACERT:-}" ] && echo "CONSUL_CACERT env var must be set -- aborting" && exit 1
+    [ -z "''${CONSUL_CLIENT_CERT:-}" ] && echo "CONSUL_CLIENT_CERT env var must be set -- aborting" && exit 1
+    [ -z "''${CONSUL_CLIENT_KEY:-}" ] && echo "CONSUL_CLIENT_KEY env var must be set -- aborting" && exit 1
+    # FIXME: add this to the app's DCS capabilities
+    [ -z "''${CONSUL_KV_TOPOLOGY_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
+
+    [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
+    [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
+    [ -z "''${VAULT_CACERT:-}" ] && echo "VAULT_CACERT env var must be set -- aborting" && exit 1
+    [ -z "''${VAULT_CLIENT_CERT:-}" ] && echo "VAULT_CLIENT_CERT env var must be set -- aborting" && exit 1
+    [ -z "''${VAULT_CLIENT_KEY:-}" ] && echo "VAULT_CLIENT_KEY env var must be set -- aborting" && exit 1
+
+    consul kv get "$CONSUL_KV_TOPOLOGY_PATH"|jq '.'  > "$NODE_TOPOLOGY"
+    consul kv get "$CONSUL_KV_PATH"|jq '.config'  > "$NODE_CONFIG"
+
+    consul kv get "$CONSUL_KV_PATH"|jq '.shelley-genesis'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+    consul kv get "$CONSUL_KV_PATH"|jq '.byron-genesis'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
+    consul kv get "$CONSUL_KV_PATH"|jq '.alonzo-genesis'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
+
+    consul kv get "$VAULT_KV_PATH"|jq '.byron_deleg_cert'  > "$BYRON_DELEG_CERT"
+    consul kv get "$VAULT_KV_PATH"|jq '.byron_signing_key'  > "$BYRON_SIGNING_KEY"
+    consul kv get "$VAULT_KV_PATH"|jq '.shelley_kes_key'  > "$SHELLEY_KES_KEY"
+    consul kv get "$VAULT_KV_PATH"|jq '.shelley_vrf_key'  > "$SHELLEY_VRF_KEY"
+    consul kv get "$VAULT_KV_PATH"|jq '.shelley_opcert'  > "$SHELLEY_OPCERT"
+
+    func ensure_file_location_contract {
+      local key="$1"
+      lecal file="$2"
+      [ jq -e --arg KEY $key --arg FILE $file '.[$KEY] == $FILE' ] && echo "$file is not located where it needs to be -- aborting" && exit 1
+    }
+
+    # ensure genisis file contracts
+    ensure_file_location_contract ".ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
+    ensure_file_location_contract ".ByronGenesisFile" "$BYRON_GENESIS_FILE"
+    ensure_file_location_contract ".AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
   '';
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
+    runtimeInputs = [nixpkgs.consul nixpkgs.jq];
     text = ''
 
       ${prelude}
