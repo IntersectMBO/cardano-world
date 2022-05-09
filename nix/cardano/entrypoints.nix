@@ -279,7 +279,11 @@ in {
         [ "''${ENVIRONMENT}" == "mainnet" ]
         && echo "--mainnet"
         || echo "--testnet-magic $(
-          cat $(cat "$NODE_CONFIG" | jq '.ShelleyGenesisFile' )
+          cat "$(
+            file="$(cat "$NODE_CONFIG" | jq '.ShelleyGenesisFile' )"
+            folder="$(dirname $NODE_CONFIG)"
+            [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+          )"
           | jq '.networkMagic'
         )"
       )")

@@ -9,23 +9,59 @@
   inherit (inputs.nixpkgs.lib.strings) fileContents;
 
   prelude = ''
-    # Exit if any required variables are not set
     [ -z "''${SOCKET_PATH:-}" ] && echo "SOCKET_PATH env var must be set -- aborting" && exit 1
+    [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
 
+    mkdir -p "$DATA_DIR"
+    DB_DIR="$DATA_DIR/db"
+    mkdir -p "$DATA_DIR/config"
+    chmod -R +w "$DATA_DIR/config"
+
+    # the menu of environments that we ship as built-in envs
     ${config-data.copyEnvsTemplate config-data.environments}
-    if [ -n "''${ENVIRONMENT:-}" ]
-    then
-      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
-    fi
 
-    # TODO: Need more logic here if config/topology are not set e.g. mainnet/testnet
-    [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
+    # CASE: built-in environment
+    if [ -n "''${ENVIRONMENT:-}" ]; then
+
+      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
+
+    # CASE: premissioned long running environment
+    elif [ -n "''${CONSUL_KV_PATH:-}" ]
+
+      export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
+      export SHELLEY_GENESIS_FILE=./shelley-genesis-file.json"
+
+      [ -z "''${CONSUL_KV_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
+      [ -z "''${CONSUL_HTTP_ADDR:-}" ] && echo "CONSUL_HTTP_ADDR env var must be set -- aborting" && exit 1
+      [ -z "''${CONSUL_HTTP_TOKEN:-}" ] && echo "CONSUL_HTTP_TOKEN env var must be set -- aborting" && exit 1
+
+      [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+      export CONSUL_CACERT="$WORKLOAD_CACERT"
+      export CONSUL_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+      export CONSUL_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+
+
+      consul kv get "$CONSUL_KV_PATH"|jq '.config'  > "$NODE_CONFIG"
+      consul kv get "$CONSUL_KV_PATH"|jq '.shelley-genesis'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+
+    # CASE: permissioned short running environment
+    else
+
+      [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
+
+    fi
 
     CARDANO_CLI_ENV_FLAG="$(
       [ "''${ENVIRONMENT}" == "mainnet" ]
       && echo "--mainnet"
       || echo "--testnet-magic $(
-        cat $(cat "$NODE_CONFIG" | jq '.ShelleyGenesisFile' )
+        cat "$(
+          file="$(cat "$NODE_CONFIG" | jq '.ShelleyGenesisFile' )"
+          folder="$(dirname $NODE_CONFIG)"
+          [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+        )"
         | jq '.networkMagic'
       )"
     )"
