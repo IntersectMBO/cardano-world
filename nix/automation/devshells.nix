@@ -14,7 +14,7 @@
     inherit (inputs) self;
     domain = "world.dev.cardano.org";
     bitteProfile = inputs.cells.metal.bitteProfile.default;
-    hydrationProfile = inputs.cells.cloud.hydrationProfile.default;
+    hydrationProfile = inputs.cells.cloud.hydrationProfiles.default;
     deploySshKey = "not-a-key";
   };
 

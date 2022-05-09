@@ -35,7 +35,7 @@
         (inputs.std.functions "bitteProfile")
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
-        (inputs.std.functions "hydrationProfile")
+        (inputs.std.functions "hydrationProfiles")
         (inputs.std.functions "devshellProfiles")
         (inputs.std.runnables "jobs")
         (inputs.std.runnables "entrypoints")
@@ -51,7 +51,7 @@
           inherit (inputs) self;
           domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
-          hydrationProfile = inputs.self.${system}.cloud.hydrationProfile.default;
+          hydrationProfile = inputs.self.${system}.cloud.hydrationProfiles.default;
           deploySshKey = "./secrets/ssh-cardano";
         }
     ) {
