@@ -5,8 +5,7 @@
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
-  inherit (cell) packages;
-  inherit (cell) config-data;
+  inherit (cell) packages environments library;
 
   prelude = ''
     [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
@@ -17,7 +16,7 @@
     chmod -R +w "$DATA_DIR/config"
 
     # the menu of environments that we ship as built-in envs
-    ${config-data.copyEnvsTemplate config-data.environments}
+    ${library.copyEnvsTemplate environments}
 
     # the legacy implementation to access kv config
     ${legacy-kv-config-instrumentation}

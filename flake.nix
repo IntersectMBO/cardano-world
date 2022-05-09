@@ -31,10 +31,10 @@
       organelles = [
         (inputs.std.data "nomadEnvs")
         (inputs.std.data "constants")
+        (inputs.std.data "environments")
         (inputs.std.functions "bitteProfile")
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
-        (inputs.std.installables "config-data")
         (inputs.std.functions "hydrationProfile")
         (inputs.std.functions "devshellProfiles")
         (inputs.std.runnables "jobs")
