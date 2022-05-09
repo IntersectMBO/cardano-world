@@ -5,6 +5,7 @@
   inherit (inputs) data-merge cells;
   inherit (inputs.nixpkgs) lib;
   inherit (inputs.nixpkgs) system;
+  inherit (inputs.bitte-cells._utils) nomadFragments;
   inherit (cell) healthChecks constants oci-images;
   # OCI-Image Namer
   ociNamer = oci: "${oci.imageName}:${oci.imageTag}";
@@ -21,6 +22,7 @@ in
       type = "service";
       priority = 50;
       persistanceMount = "/persist";
+      vaultPkiPath = "pki/issue/cardano";
     in {
       job.cardano = {
         inherit namespace datacenters id type priority;
@@ -101,10 +103,10 @@ in
               # ----------
               node = {
                 env.DATA_DIR = persistanceMount;
-                env.CONSUL_HTTP_ADDR = "testnet"; # not self-contained; only defaults
-                env.CONSUL_CACERT = "testnet"; # not self-contained; only defaults
-                env.CONSUL_CLIENT_CERT = "testnet"; # not self-contained; only defaults
-                env.CONSUL_CLIENT_KEY = "testnet"; # not self-contained; only defaults
+                template = nomadFragments.workload-identity-vault {inherit vaultPkiPath;};
+                env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
+                env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
+                env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
                 config.image = ociNamer oci-images.cardano-node;
                 driver = "docker";
                 kill_signal = "SIGINT";
@@ -117,6 +119,11 @@ in
                   destination = persistanceMount;
                   propagation_mode = "private";
                   volume = "persist-cardano-node-local";
+                };
+                vault = {
+                  change_mode = "noop";
+                  env = true;
+                  policies = ["cardano"];
                 };
               };
             };

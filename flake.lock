@@ -629,15 +629,16 @@
         "vulnix": "vulnix"
       },
       "locked": {
-        "lastModified": 1649309162,
-        "narHash": "sha256-kE1grkfAfLlQjiHDLm90n0vioA3YI4hh+wDWHuQpLck=",
+        "lastModified": 1652055895,
+        "narHash": "sha256-73a0hpsITgpjlJMqjD/vtQ85kfpz1QZCNBeY3K1zVOc=",
         "owner": "input-output-hk",
         "repo": "bitte",
-        "rev": "4d2073a1976320a62db7f55a1b7ddc1277aaf779",
+        "rev": "f318f5187046d46b13c5ef70e93717d2714e9ab2",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "feat/add-pki-roles-everywhere",
         "repo": "bitte",
         "type": "github"
       }
@@ -12433,11 +12434,11 @@
         "utils": "utils_4"
       },
       "locked": {
-        "lastModified": 1649062947,
-        "narHash": "sha256-il92h97qdOevDuIQnRpXjobjLoyDRcbyLTydRqR3l/Y=",
+        "lastModified": 1649836589,
+        "narHash": "sha256-0mKWIfF7RtkwiJv2NlWKisdyivsSlHMTAQ3P72RSD3k=",
         "owner": "input-output-hk",
         "repo": "nomad-follower",
-        "rev": "5a749294755ce7ff315fdae99fa3abf47d7f62d1",
+        "rev": "18cafe87df773e61a6ce300d9ff91dee4aeae053",
         "type": "github"
       },
       "original": {
@@ -12899,11 +12900,11 @@
     "ops-lib": {
       "flake": false,
       "locked": {
-        "lastModified": 1637750711,
-        "narHash": "sha256-Il/cWznjosBV8bWP9aeDfpLfT6K1jjXdi72hWazBK68=",
+        "lastModified": 1649848729,
+        "narHash": "sha256-5zN9gpn+DwdB67bcHfDD8zgMnR0EaJd2JVNMyL6J1N0=",
         "owner": "input-output-hk",
         "repo": "ops-lib",
-        "rev": "20646de3e33cd46780418c64ba7c99d8d3547653",
+        "rev": "517c747f4d5d56e626f62618803bfccb09f14019",
         "type": "github"
       },
       "original": {

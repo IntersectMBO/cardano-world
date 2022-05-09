@@ -6,7 +6,7 @@
   inputs.data-merge.url = "github:divnix/data-merge";
   inputs = {
     # --- Bitte Stack ----------------------------------------------
-    bitte.url = "github:input-output-hk/bitte";
+    bitte.url = "github:input-output-hk/bitte?ref=feat/add-pki-roles-everywhere";
     bitte-cells.url = "github:input-output-hk/bitte-cells";
     # --------------------------------------------------------------
     # --- Auxiliaries ----------------------------------------------
