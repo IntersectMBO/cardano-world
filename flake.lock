@@ -629,11 +629,11 @@
         "vulnix": "vulnix"
       },
       "locked": {
-        "lastModified": 1652129518,
-        "narHash": "sha256-QZtax2G/0Nv+rWMI/4SLEJTdeyASBuUtFRYGC/61SFE=",
+        "lastModified": 1652182038,
+        "narHash": "sha256-FdEKr8oJ5bcboR13lPAdGnELVhhL+gXyMNq++RSa9Y0=",
         "owner": "input-output-hk",
         "repo": "bitte",
-        "rev": "d858b707250f39b8de387f14fdb636036be674cf",
+        "rev": "c9976e6330099d11eb0481ec07b8a6ea751ada20",
         "type": "github"
       },
       "original": {
@@ -655,11 +655,11 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1649440865,
-        "narHash": "sha256-SOJoo8tXClCpc0gI+dVyG1F1mAKgUaOgcb0oQ/M5UDU=",
+        "lastModified": 1652044941,
+        "narHash": "sha256-H45xgp4S2ThhmSdFHXRLIrIeFJppoHl9/QSqxaky9dM=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "53c8707ac07f07ca7adc8b0cced59b0cec51c5ca",
+        "rev": "24a3176561480ab0d0b52febed4626989bb1846b",
         "type": "github"
       },
       "original": {

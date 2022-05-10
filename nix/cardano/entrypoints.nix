@@ -37,7 +37,7 @@
       load_kv_config
       [ "$producer" == "1"] && load_kv_secrets
 
-      if [ -n "''${NODE_TOPOLOGY:-}" ]; then; :; else
+      if [ ! -n "''${NODE_TOPOLOGY:-}" ]; then;
         global srv_discovery=1
         srv_discovery
       fi
@@ -47,7 +47,7 @@
 
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
 
-      if [ -n "''${NODE_TOPOLOGY:-}" ]; then; :; else
+      if [ ! -n "''${NODE_TOPOLOGY:-}" ]; then;
         global srv_discovery=1
         srv_discovery
       fi
@@ -56,13 +56,13 @@
   '';
 
   legacy-kv-config-instrumentation = ''
-    func ensure_file_location_contract {
+    function ensure_file_location_contract {
       local key="$1"
       lecal file="$2"
       [ jq -e --arg KEY $key --arg FILE $file '.[$KEY] == $FILE' ] && echo "$file is not located where it needs to be -- aborting" && exit 1
     }
 
-    func load_kv_config {
+    function load_kv_config {
       export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
       export SHELLEY_GENESIS_FILE=./shelley-genesis-file.json"
       export BYRON_GENESIS_FILE=./shelley-genesis-file.json"
@@ -94,7 +94,7 @@
       ensure_file_location_contract ".AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
     }
 
-    func load_kv_secrets {
+    function load_kv_secrets {
       export BYRON_DELEG_CERT=/secrets/byron_deleg_cert.cert
       export BYRON_SIGNING_KEY=/secrets/byron_signing_key.key
       export SHELLEY_KES_KEY=/secrets/shelley_kes_key.skey
@@ -123,7 +123,7 @@
   '';
 
   legacy-srv-discovery = ''
-    func watch_srv_discovery {
+    function watch_srv_discovery {
       declare -i pid_to_signal=$1
       while true
       do
@@ -135,7 +135,7 @@
       done
     }
 
-    func srv_discovery {
+    function srv_discovery {
 
       [ -z "''${LOCAL_ROOTS_SRV_DNS:-}" ] && echo "LOCAL_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
       [ -z "''${PUBLIC_ROOTS_SRV_DNS:-}" ] && echo "PUBLIC_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1

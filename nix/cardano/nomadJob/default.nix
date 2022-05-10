@@ -5,10 +5,10 @@
   inherit (inputs) data-merge cells;
   inherit (inputs.nixpkgs) lib;
   inherit (inputs.nixpkgs) system;
-  inherit (inputs.bitte-cells._utils) nomadFragments;
+  inherit (inputs.bitte-cells) vector _utils;
   inherit (cell) healthChecks constants oci-images;
   # OCI-Image Namer
-  ociNamer = oci: "${oci.imageName}:${oci.imageTag}";
+  ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
 in
   with data-merge; {
     default = {
@@ -44,7 +44,7 @@ in
             value = "true";
           }
         ];
-        spread = [{attribute = "\${node.datacenter}";}];
+        spread = [{attribute = "\${attr.platform.aws.placement.availability-zone}";}];
         # ----------
         # Update
         # ----------
@@ -73,7 +73,8 @@ in
         # ----------
         group.cardano =
           merge
-          (cells.vector.nomadTask.default {
+          (vector.nomadTask.default {
+            inherit namespace;
             endpoints = ["http://127.0.0.1:12798/metrics"]; # prometheus metrics for cardano-node
           })
           {
@@ -103,7 +104,7 @@ in
               # ----------
               node = {
                 env.DATA_DIR = persistanceMount;
-                template = nomadFragments.workload-identity-vault {inherit vaultPkiPath;};
+                template = _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;};
                 env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                 env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                 env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";

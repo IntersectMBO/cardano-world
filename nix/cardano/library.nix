@@ -3,6 +3,17 @@
   cell,
 }: let
   inherit (inputs.nixpkgs) jq writeText runCommand lib;
+
+  protNames = {
+    RealPBFT = {n = "byron";};
+    TPraos = {n = "shelley";};
+    Cardano = {
+      n = "byron";
+      shelley = "shelley";
+      alonzo = "alonzo";
+    };
+  };
+
   mkEdgeTopology = {
     hostAddr ? "127.0.0.1",
     port ? 3001,

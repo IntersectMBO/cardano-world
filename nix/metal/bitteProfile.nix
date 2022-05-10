@@ -63,7 +63,7 @@ in {
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];
-              node_class = "infra";
+              node_class = "qa";
             })
           )
           (args: let

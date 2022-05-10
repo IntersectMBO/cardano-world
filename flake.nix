@@ -29,17 +29,19 @@
       cellsFrom = ./nix;
       #debug = ["cells" "cloud" "packages"];
       organelles = [
-        (inputs.std.data "nomadEnvs")
         (inputs.std.data "constants")
         (inputs.std.data "environments")
+        (inputs.std.data "nomadEnvs")
+        (inputs.std.devshells "devshells")
         (inputs.std.functions "bitteProfile")
+        (inputs.std.functions "devshellProfiles")
+        (inputs.std.functions "hydrationProfiles")
+        (inputs.std.functions "library")
+        (inputs.std.functions "nomadJob")
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
-        (inputs.std.functions "hydrationProfiles")
-        (inputs.std.functions "devshellProfiles")
-        (inputs.std.runnables "jobs")
         (inputs.std.runnables "entrypoints")
-        (inputs.std.devshells "devshells")
+        (inputs.std.runnables "jobs")
       ];
     }
     # soil (TODO: eat up soil)
@@ -55,9 +57,7 @@
           deploySshKey = "./secrets/ssh-cardano";
         }
     ) {
-      infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;
-      testnet-prod = inputs.bitte.lib.mkNomadJobs "testnet-prod" nomadEnvs;
-      testnet-dev = inputs.bitte.lib.mkNomadJobs "testnet-dev" nomadEnvs;
+      vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
     };
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
