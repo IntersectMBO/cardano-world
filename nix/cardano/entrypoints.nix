@@ -24,6 +24,8 @@
     # the legacy service discovery implementation
     ${legacy-srv-discovery}
 
+    srv_discovery=0
+
     # CASE: built-in environment
     if [ -n "''${ENVIRONMENT:-}" ]; then
 
@@ -32,12 +34,12 @@
       DB_DIR="$DATA_DIR/db-$ENVIRONMENT"
 
     # CASE: premissioned long running environment
-    elif [ -n "''${CONSUL_KV_PATH:-}" || -n "''${VAULT_KV_PATH:-}" ]
+    elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
 
       load_kv_config
-      [ "$producer" == "1"] && load_kv_secrets
+      [ "$producer" == "1" ] && load_kv_secrets
 
-      if [ ! -n "''${NODE_TOPOLOGY:-}" ]; then;
+      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
         global srv_discovery=1
         srv_discovery
       fi
@@ -47,7 +49,7 @@
 
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
 
-      if [ ! -n "''${NODE_TOPOLOGY:-}" ]; then;
+      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
         global srv_discovery=1
         srv_discovery
       fi
@@ -57,16 +59,14 @@
 
   legacy-kv-config-instrumentation = ''
     function ensure_file_location_contract {
-      local key="$1"
-      lecal file="$2"
-      [ jq -e --arg KEY $key --arg FILE $file '.[$KEY] == $FILE' ] && echo "$file is not located where it needs to be -- aborting" && exit 1
+      jq -e --arg KEY "$1" --arg FILE "$2" '.[$KEY] == $FILE' && echo "$2 is not located where it needs to be -- aborting" && exit 1
     }
 
     function load_kv_config {
       export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
-      export SHELLEY_GENESIS_FILE=./shelley-genesis-file.json"
-      export BYRON_GENESIS_FILE=./shelley-genesis-file.json"
-      export ALONZO_GENESIS_FILE=./alonzo-genesis-file.json"
+      export SHELLEY_GENESIS_FILE="./shelley-genesis-file.json"
+      export BYRON_GENESIS_FILE="./shelley-genesis-file.json"
+      export ALONZO_GENESIS_FILE="./alonzo-genesis-file.json"
 
       [ -z "''${CONSUL_KV_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
       [ -z "''${CONSUL_HTTP_ADDR:-}" ] && echo "CONSUL_HTTP_ADDR env var must be set -- aborting" && exit 1
@@ -131,7 +131,7 @@
         original_hash="$(md5sum "$NODE_TOPOLOGY")"
         srv_discovery
         new_hash="$(md5sum "$NODE_TOPOLOGY")"
-        [ "$original_hash" != "$new_hash" ] && kill -1 $pid_to_signal
+        [ "$original_hash" != "$new_hash" ] && kill -1 "$pid_to_signal"
       done
     }
 
@@ -149,7 +149,7 @@
       }' > ./topology-common.json
 
       # local roots -> SIGHUP
-      srvaddr -json locals=$LOCAL_ROOTS_SRV_DNS | jq '{
+      srvaddr -json locals="$LOCAL_ROOTS_SRV_DNS" | jq '{
         LocalRoots: {
           groups: [
             {
@@ -166,7 +166,7 @@
       # public roots -> SIGHUP
       # this contains also the "self" root, else we would need to filter that out
       # and that would be _ugly_
-      srvaddr -json publics=$PUBLIC_ROOTS_SRV_DNS | jq '{
+      srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
         PublicRoots: [
           { publicRoots: {
             accessPoints: .[] | map({address: .Host, port: .Port})
@@ -212,20 +212,20 @@ in {
       [ -n "''${SHELLEY_VRF_KEY:-}" ] && args+=("--shelley-vrf-key" "$SHELLEY_VRF_KEY")
       [ -n "''${SHELLEY_OPCERT:-}" ] && args+=("--shelley-operational-certificate" "$SHELLEY_OPCERT")
 
-      if [ "''${srv_discovery}" == "1"]; then
+      if [ "''${srv_discovery}" == "1" ]; then
 
         # turn on bash's job control
         set -m
 
         # Define handler for SIGINT
-        trap "kill ''${sid[@]}" INT
+        trap "kill" "''${sid[@]}" INT
 
         # SIGHUP reloads --topology
         ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
         sid=($!)
 
         watch_srv_discovery $! &
-        sid=+($!)
+        sid+=($!)
 
         # foreground the cardano-node process
         fg %1
