@@ -1,5 +1,3 @@
 creation_rules:
-  - path_regex: testnet-prod
-    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
-  - path_regex: testnet-dev
-    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
+  - path_regex: cardano/vasil-qa/*
+    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"

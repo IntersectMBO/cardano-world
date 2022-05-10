@@ -85,9 +85,9 @@ in {
       vault = bittelib.mkVaultResources {inherit (vault') dir prefix;};
       consul = bittelib.mkConsulResources {inherit (consul') dir prefix;};
     in {
-      # data = {inherit (vault) sops_file;};
+      data = {inherit (vault) sops_file;};
       resource = {
-        # inherit (vault) vault_generic_secret;
+        inherit (vault) vault_generic_secret;
         inherit (consul) consul_keys;
       };
     };

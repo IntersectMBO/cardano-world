@@ -1,6 +1,482 @@
 {
-  "config": "",
-  "shelley-genesis": "",
-  "byron-genesis": "",
-  "alonzo-genesis": ""
+  "alonzo-genesis.json": {
+    "collateralPercentage": 150,
+    "costModels": {
+      "PlutusV1": {
+        "addInteger-cpu-arguments-intercept": 197209,
+        "addInteger-cpu-arguments-slope": 0,
+        "addInteger-memory-arguments-intercept": 1,
+        "addInteger-memory-arguments-slope": 1,
+        "appendByteString-cpu-arguments-intercept": 396231,
+        "appendByteString-cpu-arguments-slope": 621,
+        "appendByteString-memory-arguments-intercept": 0,
+        "appendByteString-memory-arguments-slope": 1,
+        "appendString-cpu-arguments-intercept": 150000,
+        "appendString-cpu-arguments-slope": 1000,
+        "appendString-memory-arguments-intercept": 0,
+        "appendString-memory-arguments-slope": 1,
+        "bData-cpu-arguments": 150000,
+        "bData-memory-arguments": 32,
+        "blake2b-cpu-arguments-intercept": 2477736,
+        "blake2b-cpu-arguments-slope": 29175,
+        "blake2b-memory-arguments": 4,
+        "cekApplyCost-exBudgetCPU": 29773,
+        "cekApplyCost-exBudgetMemory": 100,
+        "cekBuiltinCost-exBudgetCPU": 29773,
+        "cekBuiltinCost-exBudgetMemory": 100,
+        "cekConstCost-exBudgetCPU": 29773,
+        "cekConstCost-exBudgetMemory": 100,
+        "cekDelayCost-exBudgetCPU": 29773,
+        "cekDelayCost-exBudgetMemory": 100,
+        "cekForceCost-exBudgetCPU": 29773,
+        "cekForceCost-exBudgetMemory": 100,
+        "cekLamCost-exBudgetCPU": 29773,
+        "cekLamCost-exBudgetMemory": 100,
+        "cekStartupCost-exBudgetCPU": 100,
+        "cekStartupCost-exBudgetMemory": 100,
+        "cekVarCost-exBudgetCPU": 29773,
+        "cekVarCost-exBudgetMemory": 100,
+        "chooseData-cpu-arguments": 150000,
+        "chooseData-memory-arguments": 32,
+        "chooseList-cpu-arguments": 150000,
+        "chooseList-memory-arguments": 32,
+        "chooseUnit-cpu-arguments": 150000,
+        "chooseUnit-memory-arguments": 32,
+        "consByteString-cpu-arguments-intercept": 150000,
+        "consByteString-cpu-arguments-slope": 1000,
+        "consByteString-memory-arguments-intercept": 0,
+        "consByteString-memory-arguments-slope": 1,
+        "constrData-cpu-arguments": 150000,
+        "constrData-memory-arguments": 32,
+        "decodeUtf8-cpu-arguments-intercept": 150000,
+        "decodeUtf8-cpu-arguments-slope": 1000,
+        "decodeUtf8-memory-arguments-intercept": 0,
+        "decodeUtf8-memory-arguments-slope": 8,
+        "divideInteger-cpu-arguments-constant": 148000,
+        "divideInteger-cpu-arguments-model-arguments-intercept": 425507,
+        "divideInteger-cpu-arguments-model-arguments-slope": 118,
+        "divideInteger-memory-arguments-intercept": 0,
+        "divideInteger-memory-arguments-minimum": 1,
+        "divideInteger-memory-arguments-slope": 1,
+        "encodeUtf8-cpu-arguments-intercept": 150000,
+        "encodeUtf8-cpu-arguments-slope": 1000,
+        "encodeUtf8-memory-arguments-intercept": 0,
+        "encodeUtf8-memory-arguments-slope": 8,
+        "equalsByteString-cpu-arguments-constant": 150000,
+        "equalsByteString-cpu-arguments-intercept": 112536,
+        "equalsByteString-cpu-arguments-slope": 247,
+        "equalsByteString-memory-arguments": 1,
+        "equalsData-cpu-arguments-intercept": 150000,
+        "equalsData-cpu-arguments-slope": 10000,
+        "equalsData-memory-arguments": 1,
+        "equalsInteger-cpu-arguments-intercept": 136542,
+        "equalsInteger-cpu-arguments-slope": 1326,
+        "equalsInteger-memory-arguments": 1,
+        "equalsString-cpu-arguments-constant": 1000,
+        "equalsString-cpu-arguments-intercept": 150000,
+        "equalsString-cpu-arguments-slope": 1000,
+        "equalsString-memory-arguments": 1,
+        "fstPair-cpu-arguments": 150000,
+        "fstPair-memory-arguments": 32,
+        "headList-cpu-arguments": 150000,
+        "headList-memory-arguments": 32,
+        "iData-cpu-arguments": 150000,
+        "iData-memory-arguments": 32,
+        "ifThenElse-cpu-arguments": 1,
+        "ifThenElse-memory-arguments": 1,
+        "indexByteString-cpu-arguments": 150000,
+        "indexByteString-memory-arguments": 1,
+        "lengthOfByteString-cpu-arguments": 150000,
+        "lengthOfByteString-memory-arguments": 4,
+        "lessThanByteString-cpu-arguments-intercept": 103599,
+        "lessThanByteString-cpu-arguments-slope": 248,
+        "lessThanByteString-memory-arguments": 1,
+        "lessThanEqualsByteString-cpu-arguments-intercept": 103599,
+        "lessThanEqualsByteString-cpu-arguments-slope": 248,
+        "lessThanEqualsByteString-memory-arguments": 1,
+        "lessThanEqualsInteger-cpu-arguments-intercept": 145276,
+        "lessThanEqualsInteger-cpu-arguments-slope": 1366,
+        "lessThanEqualsInteger-memory-arguments": 1,
+        "lessThanInteger-cpu-arguments-intercept": 179690,
+        "lessThanInteger-cpu-arguments-slope": 497,
+        "lessThanInteger-memory-arguments": 1,
+        "listData-cpu-arguments": 150000,
+        "listData-memory-arguments": 32,
+        "mapData-cpu-arguments": 150000,
+        "mapData-memory-arguments": 32,
+        "mkCons-cpu-arguments": 150000,
+        "mkCons-memory-arguments": 32,
+        "mkNilData-cpu-arguments": 150000,
+        "mkNilData-memory-arguments": 32,
+        "mkNilPairData-cpu-arguments": 150000,
+        "mkNilPairData-memory-arguments": 32,
+        "mkPairData-cpu-arguments": 150000,
+        "mkPairData-memory-arguments": 32,
+        "modInteger-cpu-arguments-constant": 148000,
+        "modInteger-cpu-arguments-model-arguments-intercept": 425507,
+        "modInteger-cpu-arguments-model-arguments-slope": 118,
+        "modInteger-memory-arguments-intercept": 0,
+        "modInteger-memory-arguments-minimum": 1,
+        "modInteger-memory-arguments-slope": 1,
+        "multiplyInteger-cpu-arguments-intercept": 61516,
+        "multiplyInteger-cpu-arguments-slope": 11218,
+        "multiplyInteger-memory-arguments-intercept": 0,
+        "multiplyInteger-memory-arguments-slope": 1,
+        "nullList-cpu-arguments": 150000,
+        "nullList-memory-arguments": 32,
+        "quotientInteger-cpu-arguments-constant": 148000,
+        "quotientInteger-cpu-arguments-model-arguments-intercept": 425507,
+        "quotientInteger-cpu-arguments-model-arguments-slope": 118,
+        "quotientInteger-memory-arguments-intercept": 0,
+        "quotientInteger-memory-arguments-minimum": 1,
+        "quotientInteger-memory-arguments-slope": 1,
+        "remainderInteger-cpu-arguments-constant": 148000,
+        "remainderInteger-cpu-arguments-model-arguments-intercept": 425507,
+        "remainderInteger-cpu-arguments-model-arguments-slope": 118,
+        "remainderInteger-memory-arguments-intercept": 0,
+        "remainderInteger-memory-arguments-minimum": 1,
+        "remainderInteger-memory-arguments-slope": 1,
+        "sha2_256-cpu-arguments-intercept": 2477736,
+        "sha2_256-cpu-arguments-slope": 29175,
+        "sha2_256-memory-arguments": 4,
+        "sha3_256-cpu-arguments-intercept": 0,
+        "sha3_256-cpu-arguments-slope": 82363,
+        "sha3_256-memory-arguments": 4,
+        "sliceByteString-cpu-arguments-intercept": 150000,
+        "sliceByteString-cpu-arguments-slope": 5000,
+        "sliceByteString-memory-arguments-intercept": 0,
+        "sliceByteString-memory-arguments-slope": 1,
+        "sndPair-cpu-arguments": 150000,
+        "sndPair-memory-arguments": 32,
+        "subtractInteger-cpu-arguments-intercept": 197209,
+        "subtractInteger-cpu-arguments-slope": 0,
+        "subtractInteger-memory-arguments-intercept": 1,
+        "subtractInteger-memory-arguments-slope": 1,
+        "tailList-cpu-arguments": 150000,
+        "tailList-memory-arguments": 32,
+        "trace-cpu-arguments": 150000,
+        "trace-memory-arguments": 32,
+        "unBData-cpu-arguments": 150000,
+        "unBData-memory-arguments": 32,
+        "unConstrData-cpu-arguments": 150000,
+        "unConstrData-memory-arguments": 32,
+        "unIData-cpu-arguments": 150000,
+        "unIData-memory-arguments": 32,
+        "unListData-cpu-arguments": 150000,
+        "unListData-memory-arguments": 32,
+        "unMapData-cpu-arguments": 150000,
+        "unMapData-memory-arguments": 32,
+        "verifySignature-cpu-arguments-intercept": 3345831,
+        "verifySignature-cpu-arguments-slope": 1,
+        "verifySignature-memory-arguments": 1
+      }
+    },
+    "executionPrices": {
+      "prMem": 0.0577,
+      "prSteps": 7.21e-5
+    },
+    "lovelacePerUTxOWord": 34482,
+    "maxBlockExUnits": {
+      "exUnitsMem": 50000000,
+      "exUnitsSteps": 40000000000
+    },
+    "maxCollateralInputs": 3,
+    "maxTxExUnits": {
+      "exUnitsMem": 10000000,
+      "exUnitsSteps": 10000000000
+    },
+    "maxValueSize": 5000
+  },
+  "bft-0.json": {
+    "delegate-keys/shelley.kes.skey": {
+      "type": "KesSigningKey_ed25519_kes_2^6",
+      "description": "",
+      "cborHex": "5902606e14aa97f0ac6c0ae966f1f790045d8faa9c3a4ca9cc1ad2b2d9eb76abc7f20700d9a2b85f633ad4788ac854353ad6dd2a75d30a3e3f14a68ab392e1ea8334a584ff1766180039336633afaa09ff1c76e2cb9f866a193de5c533a7c183546fa2aafdda97ce9ef80d1e28b6c8f31e15adc01c626e394478e2ddd371e817bdb203d3792e77c907438d68af1f3eef1e3fcdec8636be52ac37e742408ff288e16b63e647e5c3091eb3662458e0bb73222b638deacd74309934be80f79b218d60f533ac3443461b18de69d57c70e29234b7fc5efc7d05c76e319e97c8b14239c0ab49df2c888e12b58c9e992cc17aa5bdd6e301eed4186998c0635799bfde3d16541828acfacdfd98ec970711e142e59436e43eefd940eb2a2bf832ea32409fd23a64b4eb2246cae2e5ebad96ca2d6ab8f72b16b49de83ce457ce4c29df33f075ed15ad026d44368ff790dd2ab75746c7779f929ef5ea997961a06d67f362e81977cb59ff0d5849106e5f86f11ebe259ab7154d4e979576cc69af8c04d3686039780e53e2629f5cdd8635e34c8f0cb05e8c097c68f33b235df9f33b345bad9f90e5562cbc734ad15278f69129840dd70e129c2151528c4a16cd8c5fd1635f9140f33c5fd0fe0936f8d2795a11be2024c789b32d2588d1abd65fada203b0ad6845b7a78b82e6b19a147e36ca044461a42c7205f8cc9d46a9acaeff242e8b0c51a47f967444477ca5d8bdd89174412c16a1a82a62d02ee6d81a529352db6b59f34ff75bf4c74a260fa8dd4ac7aed85e329230dd0d0071b4556b01d7db47c6f92491b754d60a4d124eaef1d5f4c02fdbab248981db1cee9d4d2acb5ecc5eef29609455d8"
+    },
+    "delegate-keys/shelley.vrf.skey": {
+      "type": "VrfSigningKey_PraosVRF",
+      "description": "",
+      "cborHex": "58404746516559885033bea5f91728c129e65870c1a54d6a9fc043a3e70fbfe0f774ec6859a26fb889cb729057970e86a00978b9bb1076babc00ceb6c5d908833d73"
+    },
+    "delegate-keys/shelley.opcert.json": {
+      "type": "NodeOperationalCertificate",
+      "description": "",
+      "cborHex": "8284582024f4d1d4da9b926b6b91181dc9320b87439e22a45844ff35b34dd3f65f1a804a00005840ebc0532ae8c7632a35f787fb2c00e7269ff0b24d48f0d1cfe2843dcffdaa9037cc172a210aefe8f9ccc470d14647d2795279845ed54673b38b9022a5f2ed69085820a5205017901b3454bccc6fe75dd79face241365530aad7900446a2218113bc2c"
+    },
+    "delegate-keys/byron.cert.json": {
+      "omega": 0,
+      "issuerPk": "S0YjPDPubzTGMQK7tRmf9L3l1+elLiifHqoNx3IoFLbcucrnXAp2vvjQdmW2VerqCeUJAPc81IobiozfPYwPpw==",
+      "delegatePk": "pSBQF5AbNFS8zG/nXdefrOJBNlUwqteQBEaiIYETvCwl57knF/z35f8eaiXumoGWZppEVi8oyh2ePtN7ZPRhTw==",
+      "cert": "9b26385bd8fb29671b041a82f1107d3f401480bceb6a73d6189be8b9b3a7ff87b42a83b9de9c4bb94da3e1f1741c8d9548e8a6d04d0d92c7bf666205f398f007"
+    },
+    "delegate-keys/shelley.skey": {
+      "type": "GenesisDelegateExtendedSigningKey_ed25519_bip32",
+      "description": "",
+      "cborHex": "588098adc1a896fb6401fc42f4c801968f44d401592c3a16e492442d0d5567921849f0bb4a3ae3ad40610697d65a2e4562b8c253d731e72f919435ec0accf19f967aa5205017901b3454bccc6fe75dd79face241365530aad7900446a2218113bc2c25e7b92717fcf7e5ff1e6a25ee9a8196669a44562f28ca1d9e3ed37b64f4614f"
+    }
+  },
+  "bft-1.json": {
+    "delegate-keys/shelley.kes.skey": {
+      "type": "KesSigningKey_ed25519_kes_2^6",
+      "description": "",
+      "cborHex": "5902606595390a3b1736abb28a7b2b505011898630d89ae25b870907205fb0e93d12425d7ac36ce1603f8904a577fd4d7d8522de8254a1c19368d30b56105c4a2815bfb38b11a733ca3c00e5e117ed5bdad640001fb9d1c954b8a5f5ee66cd47f95c8993042d30a56da79cfbaa3e69afb51e6462d3595971e76ac994b25e3f04c316e8094eadfb9c69c7b77450e576b579cb745bb905a634161454a547168392b719129449ee25f916efbd93bd8dd466651ce1f952af571f17243df0ecb0ad4791ea85c973a494638f61e8676bf184f3ef9b1f94bd483c22d0303597b8c8821576e0143f25afb25abd0c247cc11b32b4947e7ac95e48af84cd1f15035d7f744dfc1bf6166ed47c404a44e1f19ef6b8bf8010220a9ae99b8c9f17643fb68186d730fad59f9df279b89cdb27fe530abdfb59213cc26d1d879065cb7b6e998d5e12e546158db732e8cf08c5f29f32c3138093fc3365ef89d880a39312056060fb1d31eebedd35f3522fbeb562d073742af9d8ea83d3a405e57bf9f4032560c8a71261c5277a9fb03f416c0abe0265f763683ff2155c8331ae0438237e2efe584c26db2370e21b965b430f301789554c7b8355736c15b0f0a9252d80cdb5c10907f623283185b8fdd1f58fbce4f698f10cac2ed1580420cf9a9999bdcdaf4652e7358b644c9b6a69437518a825e33c0c30a93ceba39452f413327cd42cf409965dacc98d1ed152d99b22f6c7d0073041d226ed4df2f99969248af647bf4dcde03db72f9d1b54990c5ad15f30f9326e9790dc8980e48a93ffa8be7dbb42d899dc1049675fbd271bd028fed3dd6403c7366544b2edbba45e748aa36c9e651b77f51bdbedbc93"
+    },
+    "delegate-keys/shelley.vrf.skey": {
+      "type": "VrfSigningKey_PraosVRF",
+      "description": "",
+      "cborHex": "584080ffe1775e240405a72e4b887c61d0caad84ebe4beee24a69904d617eadb79c316fd13491583c87cc411a9d07be64e896960b059ae56102014f49c1cb702a52c"
+    },
+    "delegate-keys/shelley.opcert.json": {
+      "type": "NodeOperationalCertificate",
+      "description": "",
+      "cborHex": "82845820539ff1fa9b557cbf9c748825c9938edc37d367300a82b198e12cf04b6f7284a500005840e1ce56d4ad5677e3793dadf83c3c49389108971c33aae69c37783c82e83fa3db6f681a8424ee2e8699183ced98fa12b3b7547f9f36edb6db2bb006fbd019430a5820e47bbb96f6624af6abf63c9367feff7ad70ad895bbc466c4f24511baee7e699e"
+    },
+    "delegate-keys/byron.cert.json": {
+      "omega": 0,
+      "issuerPk": "k1jWt8rfv3Y5VaTDXQgt41e4T/QGBY/c62jJ6wR1aLxyDyB4klUbTMUCAgZNA+IRbTQ+c0cRilkOCdj1Iy74bA==",
+      "delegatePk": "5Hu7lvZiSvar9jyTZ/7/etcK2JW7xGbE8kURuu5+aZ40eKJbe4ES1TzVqZdI93451OTstgc+QzCznJ54W033Bw==",
+      "cert": "c0b2cb61f7decdceaac74d06bb1d4fc85c5497d2eae7630f2ad4c31b68c4a3eda4e2a7b98755d007a1d5b950de78c6e8cedad3f021e426bcb1c7480231d44302"
+    },
+    "delegate-keys/shelley.skey": {
+      "type": "GenesisDelegateExtendedSigningKey_ed25519_bip32",
+      "description": "",
+      "cborHex": "5880e0bf179e66e62bdea460d0f042fc249fca236b6abd22b0aa9415787dc2e74247d5d73cf35212bed9dc69a766f2e2efe0d8e5674ec9a9181204c86d5bb62c8c81e47bbb96f6624af6abf63c9367feff7ad70ad895bbc466c4f24511baee7e699e3478a25b7b8112d53cd5a99748f77e39d4e4ecb6073e4330b39c9e785b4df707"
+    }
+  },
+  "bft-2.json": {
+    "delegate-keys/shelley.kes.skey": {
+      "type": "KesSigningKey_ed25519_kes_2^6",
+      "description": "",
+      "cborHex": "59026069d57396f40112580985f196541ac652cefafdd192929e0d80839a0a5a394155dc17790ea893935d32f2dd0906fb95020a70a4270bc7c1d70a0c90f7a173954912dc048742c5454b93c0532c2883329412ec29feac86198da57a08760c1d3b53d61f077aa11844ebfc3ac071acb6dc750cdd7bb4493c75cfb6f0b4c5c581c7d96050d45fe1f2c15d7b87118267e2007bb0e5b22a5ee58d53dacbd690b90b18a9713f33584285cf01a3cb22b834029a80180b039b49ae73030b3b4867768662e77bc10ffa4622d03a22278cde0a3e912a56aa3227216d3bb4d89abd77a2233a21c4d2838794340452a5ddc064a53c94fe28fd17475761bcee836d5d9bdf5ca3556b9535be92ce4314f28ad646147f60ba0e7aac7fd18abba4a9cc7213f85bd057437607a0abafe5c611291e7894174fa80a0a63fb8cb75a1d7b45317bd923fdae137f91c3a4dc237efbd7077a68036eba1dea62d032265492bd7c237cfc5355d522d13c547571f95760a556b46969bd1510fcf439fb3ac955f608b1fba8014f00ca11ce9ce33b344b82b15f0f143ede0f0573d640d3a67f9d2fe2b1c1992bdb0f61b5bab535e1721b099acc6ad4401e40f35bc3f3dc3cb7b0336a9ecce4dbd89ca9fe536731a28aaeffe3ca8f677f9ae73e80c2a5571bed6f1bfc15123209679aeed380b36da713f68dba8156133228e95616fbd4f172b43bcb739ce6969cc0a76cb7b56ca1b7877089922f67e213ce82150a171dfcfca867d891a495c14ea3ebd29c90f6d3898e6dcf170b0270ef068782e3f06ebe3f05d00fb6f97a7ec98f5dfaa2bf54747dc8a89e7c0a33a1e1be787e5edbd7e174a4c25e0bf52de58ec9a8"
+    },
+    "delegate-keys/shelley.vrf.skey": {
+      "type": "VrfSigningKey_PraosVRF",
+      "description": "",
+      "cborHex": "5840a3986b6a00f644ad0dfc8be025e50fb35f017112c79cb48c21b0af9813e116384012f097fda8fa0a2a21ba378915fa3a63cf3f1363a1850047a673970dff62b1"
+    },
+    "delegate-keys/shelley.opcert.json": {
+      "type": "NodeOperationalCertificate",
+      "description": "",
+      "cborHex": "8284582033e5b669af5a26e98cb2eaa41eae5ca11bde8579ab7300f672cfbb7a7620479800005840dad1f04a060b2700ac8fdcda36cf4f769b1269ae4f279612adc2ffc9b2f89b5c57608eaaf2b73e28d57521071d491d6d4fe18f7bee93ebe1bed645036e8aba0c5820ac791c27ac4fe2eb98ccc39416f71f8c45ed1a2ddf31a95f2b1c2569324f79a1"
+    },
+    "delegate-keys/byron.cert.json": {
+      "omega": 0,
+      "issuerPk": "iutxBd7/1N10G42aEQMo6obFwFrQrFXSf6egU5VsDu6Hi6Db57qxbhS5UcVI69KRSlB+QFLvr3QceKdaxMhxeg==",
+      "delegatePk": "rHkcJ6xP4uuYzMOUFvcfjEXtGi3fMalfKxwlaTJPeaFf8cligOU1Uxa+byAJhRGM/2pFs6omHAJl/yYOQB+YXg==",
+      "cert": "85d463bf2b89d02f7a5a5a544fc833111a58f80a5968bfde830902174c459137b0b724481d3a48dfb36d47bf5934017a8a3a283cac9880d2ccea135f5539890a"
+    },
+    "delegate-keys/shelley.skey": {
+      "type": "GenesisDelegateExtendedSigningKey_ed25519_bip32",
+      "description": "",
+      "cborHex": "5880b04aba484c0e1dc400b5d3227bdd0b76e7ec2bff216313281ec4f34a8b050a45af7c3fadac992aa2e3de0c1f3f508662eb6669d551ee1e971746a530d9ac5e62ac791c27ac4fe2eb98ccc39416f71f8c45ed1a2ddf31a95f2b1c2569324f79a15ff1c96280e5355316be6f200985118cff6a45b3aa261c0265ff260e401f985e"
+    }
+  },
+  "byron-genesis.json": {
+    "bootStakeholders": {
+      "24d08c118ae8047f265051841b62820492d6cbd921e8c5e939da4061": 1,
+      "afe1b51d08dce96d3e5746c2b8fa324d1db5058dd06ee3b24b9374c6": 1,
+      "ddac8f27e7666fba7099355b1f6657ab7122aacaa0be36af82c1b82b": 1
+    },
+    "heavyDelegation": {
+      "24d08c118ae8047f265051841b62820492d6cbd921e8c5e939da4061": {
+        "omega": 0,
+        "issuerPk": "iutxBd7/1N10G42aEQMo6obFwFrQrFXSf6egU5VsDu6Hi6Db57qxbhS5UcVI69KRSlB+QFLvr3QceKdaxMhxeg==",
+        "delegatePk": "rHkcJ6xP4uuYzMOUFvcfjEXtGi3fMalfKxwlaTJPeaFf8cligOU1Uxa+byAJhRGM/2pFs6omHAJl/yYOQB+YXg==",
+        "cert": "85d463bf2b89d02f7a5a5a544fc833111a58f80a5968bfde830902174c459137b0b724481d3a48dfb36d47bf5934017a8a3a283cac9880d2ccea135f5539890a"
+      },
+      "afe1b51d08dce96d3e5746c2b8fa324d1db5058dd06ee3b24b9374c6": {
+        "omega": 0,
+        "issuerPk": "S0YjPDPubzTGMQK7tRmf9L3l1+elLiifHqoNx3IoFLbcucrnXAp2vvjQdmW2VerqCeUJAPc81IobiozfPYwPpw==",
+        "delegatePk": "pSBQF5AbNFS8zG/nXdefrOJBNlUwqteQBEaiIYETvCwl57knF/z35f8eaiXumoGWZppEVi8oyh2ePtN7ZPRhTw==",
+        "cert": "9b26385bd8fb29671b041a82f1107d3f401480bceb6a73d6189be8b9b3a7ff87b42a83b9de9c4bb94da3e1f1741c8d9548e8a6d04d0d92c7bf666205f398f007"
+      },
+      "ddac8f27e7666fba7099355b1f6657ab7122aacaa0be36af82c1b82b": {
+        "omega": 0,
+        "issuerPk": "k1jWt8rfv3Y5VaTDXQgt41e4T/QGBY/c62jJ6wR1aLxyDyB4klUbTMUCAgZNA+IRbTQ+c0cRilkOCdj1Iy74bA==",
+        "delegatePk": "5Hu7lvZiSvar9jyTZ/7/etcK2JW7xGbE8kURuu5+aZ40eKJbe4ES1TzVqZdI93451OTstgc+QzCznJ54W033Bw==",
+        "cert": "c0b2cb61f7decdceaac74d06bb1d4fc85c5497d2eae7630f2ad4c31b68c4a3eda4e2a7b98755d007a1d5b950de78c6e8cedad3f021e426bcb1c7480231d44302"
+      }
+    },
+    "startTime": 1652117400,
+    "nonAvvmBalances": {
+      "2657WMsDfac57D8iBYmPGgb3VriZ8c5oRsszT8JRakZa1SzTP8fXG5SayhUUTaPzS": "0",
+      "2657WMsDfac5cw9xNftkTAehx9JFn5sL8jRnBPFKiJb4jVVq2vYGKSHRLH9DyBS5n": "0",
+      "2657WMsDfac6jwjQy6XfG3iVXnmcqJdHbQJevzeSsHGKx6wFCVaGjzZCh6XVbqHFK": "30000000000000000",
+      "2657WMsDfac6nMqNULcqUN1ZgCCfpGfXtqtBKuLfmDHVFRzEFkhxo1tMczmphU1nB": "0"
+    },
+    "blockVersionData": {
+      "scriptVersion": 0,
+      "slotDuration": "20000",
+      "maxBlockSize": "2000000",
+      "maxHeaderSize": "2000000",
+      "maxTxSize": "4096",
+      "maxProposalSize": "700",
+      "mpcThd": "20000000000000",
+      "heavyDelThd": "300000000000",
+      "updateVoteThd": "1000000000000",
+      "updateProposalThd": "100000000000000",
+      "updateImplicit": "10000",
+      "softforkRule": {
+        "initThd": "900000000000000",
+        "minThd": "600000000000000",
+        "thdDecrement": "50000000000000"
+      },
+      "txFeePolicy": {
+        "summand": "155381000000000",
+        "multiplier": "43946000000"
+      },
+      "unlockStakeEpoch": "18446744073709551615"
+    },
+    "protocolConsts": {
+      "k": 108,
+      "protocolMagic": 42
+    },
+    "avvmDistr": {}
+  },
+  "node-config.json": {
+    "AlonzoGenesisFile": "alonzo-genesis.json",
+    "AlonzoGenesisHash": "77b4d1dde534cf42c17d8f403196ce52a0c9eaf2f9b97adb01e1d744f5e263e8",
+    "ApplicationName": "cardano-sl",
+    "ApplicationVersion": 0,
+    "ByronGenesisFile": "byron-genesis.json",
+    "ByronGenesisHash": "4f4caff8e0104c6db8a3980ac25d4c2a4c86d06e083459ecc725dc55df510dae",
+    "LastKnownBlockVersion-Alt": 0,
+    "LastKnownBlockVersion-Major": 3,
+    "LastKnownBlockVersion-Minor": 1,
+    "MaxConcurrencyDeadline": 4,
+    "MaxKnownMajorProtocolVersion": 2,
+    "PBftSignatureThreshold": 1.1,
+    "Protocol": "Cardano",
+    "RequiresNetworkMagic": "RequiresMagic",
+    "ShelleyGenesisFile": "shelley-genesis.json",
+    "ShelleyGenesisHash": "37c3bb851cedc641cf5777798dc15240a303f09ac05762324930ed484bed097b",
+    "TestAllegraHardForkAtEpoch": 2,
+    "TestAlonzoHardForkAtEpoch": 4,
+    "TestMaryHardForkAtEpoch": 3,
+    "TestShelleyHardForkAtEpoch": 1,
+    "TraceAcceptPolicy": true,
+    "TraceBlockFetchClient": false,
+    "TraceBlockFetchDecisions": false,
+    "TraceBlockFetchProtocol": false,
+    "TraceBlockFetchProtocolSerialised": false,
+    "TraceBlockFetchServer": false,
+    "TraceChainDb": true,
+    "TraceChainSyncBlockServer": false,
+    "TraceChainSyncClient": false,
+    "TraceChainSyncHeaderServer": false,
+    "TraceChainSyncProtocol": false,
+    "TraceConnectionManager": true,
+    "TraceDNSResolver": true,
+    "TraceDNSSubscription": true,
+    "TraceDiffusionInitialization": true,
+    "TraceErrorPolicy": true,
+    "TraceForge": true,
+    "TraceHandshake": false,
+    "TraceInboundGovernor": true,
+    "TraceIpSubscription": true,
+    "TraceLedgerPeers": true,
+    "TraceLocalChainSyncProtocol": false,
+    "TraceLocalErrorPolicy": true,
+    "TraceLocalHandshake": false,
+    "TraceLocalRootPeers": true,
+    "TraceLocalTxSubmissionProtocol": false,
+    "TraceLocalTxSubmissionServer": false,
+    "TraceMempool": false,
+    "TraceMux": false,
+    "TracePeerSelection": true,
+    "TracePeerSelectionActions": true,
+    "TracePublicRootPeers": true,
+    "TraceServer": true,
+    "TraceTxInbound": false,
+    "TraceTxOutbound": false,
+    "TraceTxSubmissionProtocol": false,
+    "TracingVerbosity": "NormalVerbosity",
+    "TurnOnLogMetrics": true,
+    "TurnOnLogging": true,
+    "defaultBackends": ["KatipBK"],
+    "defaultScribes": [["StdoutSK", "cardano"]],
+    "hasEKG": 12788,
+    "hasPrometheus": ["0.0.0.0", 12798],
+    "minSeverity": "Debug",
+    "options": {
+      "mapBackends": {
+        "cardano.node.metrics": ["EKGViewBK"],
+        "cardano.node.resources": ["EKGViewBK"]
+      },
+      "mapSubtrace": {
+        "cardano.node.metrics": {
+          "subtrace": "Neutral"
+        }
+      }
+    },
+    "rotation": {
+      "rpKeepFilesNum": 10,
+      "rpLogLimitBytes": 5000000,
+      "rpMaxAgeHours": 24
+    },
+    "setupBackends": ["KatipBK"],
+    "setupScribes": [
+      {
+        "scFormat": "ScText",
+        "scKind": "StdoutSK",
+        "scName": "cardano"
+      }
+    ]
+  },
+  "shelley-genesis.json": {
+    "activeSlotsCoeff": 0.05,
+    "epochLength": 21600,
+    "genDelegs": {
+      "408340edaa4a875800fc6780057613f2e1b1ba023571cf76d0f23c12": {
+        "delegate": "f2d54a2425375e748def3badf4dba063b2a855fc5a2ffd0840b37c3e",
+        "vrf": "e1399dc3fd8d77516b6e51ad586a5a92ee7877b1aeb2aa4fe2752c29378ff5a3"
+      },
+      "7c405a2c01136edf1d4dc567af22e3bfcbb0f76f295660950f02bb5a": {
+        "delegate": "175b84a5d86cada87622951f02a6b567adf211470ea8b1f46436a4ca",
+        "vrf": "2e58be3631af77d7a4062595d744a7c24e8e56190e3d77166bc4b97e59a8d10b"
+      },
+      "fdfd2db037eef5c73cd7cc70e9d0c9160974eaf7036cc6101c61a866": {
+        "delegate": "20879d525afb7e660d2402af899443be5996e1b0111bb87ef577554d",
+        "vrf": "c35418ce9589a2fcccefefbacef795ab5fbeea31ac72db6badfc89bc31b18135"
+      }
+    },
+    "initialFunds": {},
+    "maxKESEvolutions": 120,
+    "maxLovelaceSupply": 45000000000000000,
+    "networkId": "Testnet",
+    "networkMagic": 42,
+    "protocolParams": {
+      "a0": 0.1,
+      "decentralisationParam": 1,
+      "eMax": 18,
+      "extraEntropy": {
+        "tag": "NeutralNonce"
+      },
+      "keyDeposit": 400000,
+      "maxBlockBodySize": 65536,
+      "maxBlockHeaderSize": 1100,
+      "maxTxSize": 16384,
+      "minFeeA": 44,
+      "minFeeB": 155381,
+      "minPoolCost": 0,
+      "minUTxOValue": 0,
+      "nOpt": 50,
+      "poolDeposit": 500000000,
+      "protocolVersion": {
+        "major": 0,
+        "minor": 0
+      },
+      "rho": 0.00178650067,
+      "tau": 0.1
+    },
+    "securityParam": 108,
+    "slotLength": 1,
+    "slotsPerKESPeriod": 86400,
+    "staking": {
+      "pools": {},
+      "stake": {}
+    },
+    "systemStart": "2022-05-09T17:30:00Z",
+    "updateQuorum": 3
+  }
 }

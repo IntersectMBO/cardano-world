@@ -2,7 +2,8 @@
   inputs,
   cell,
 }: let
-  inherit (inputs.bitte-cells) patroni cardano rabbit;
+  inherit (inputs.bitte-cells) patroni;
+  inherit (inputs.cells) cardano;
   inherit (inputs) nixpkgs;
 in {
   default = {
@@ -52,47 +53,18 @@ in {
         (
           lib.forEach
           (
-            # Infra node for cardano & patroni
+            # Infra node for cardano
             (eachRegion {
-              instanceType = "t3.xlarge";
-              volumeSize = 500;
-              modules =
-                defaultModules
-                ++ [
-                  (patroni.nixosProfiles.client "infra")
-                  rabbit.nixosProfiles.client
-                  {
-                    boot.kernelModules = ["softdog"];
-                    #
-                    # Watchdog events will be logged but not force the nomad client node to restart
-                    # Comment this line out to allow forced watchdog restarts
-                    # Patroni HA Postgres jobs will utilize watchdog and log additional info if it's available
-                    boot.extraModprobeConfig = "options softdog soft_noboot=1";
-                  }
-                ];
-              node_class = "infra";
-            })
-            ++ (eachRegion {
               instanceType = "t3.2xlarge";
               volumeSize = 500;
               modules =
                 defaultModules
                 ++ [
-                  (cardano.nixosProfiles.client "infra")
+                  # for scheduling constraints
+                  {services.nomad.client.meta.cardano = "yeah";}
                 ];
               node_class = "infra";
             })
-            ++
-            # Development NodeClass -- only one node
-            [
-              {
-                region = "eu-central-1";
-                instanceType = "t3a.xlarge";
-                volumeSize = 500;
-                modules = defaultModules ++ [rabbit.nixosProfiles.client];
-                node_class = "development";
-              }
-            ]
           )
           (args: let
             attrs =

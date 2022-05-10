@@ -629,16 +629,15 @@
         "vulnix": "vulnix"
       },
       "locked": {
-        "lastModified": 1652055895,
-        "narHash": "sha256-73a0hpsITgpjlJMqjD/vtQ85kfpz1QZCNBeY3K1zVOc=",
+        "lastModified": 1652129518,
+        "narHash": "sha256-QZtax2G/0Nv+rWMI/4SLEJTdeyASBuUtFRYGC/61SFE=",
         "owner": "input-output-hk",
         "repo": "bitte",
-        "rev": "f318f5187046d46b13c5ef70e93717d2714e9ab2",
+        "rev": "d858b707250f39b8de387f14fdb636036be674cf",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "feat/add-pki-roles-everywhere",
         "repo": "bitte",
         "type": "github"
       }

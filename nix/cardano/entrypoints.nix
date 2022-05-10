@@ -79,13 +79,13 @@
       export CONSUL_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
       export CONSUL_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
-      consul kv get "$CONSUL_KV_PATH"|jq '.config'  > "$NODE_CONFIG"
+      consul kv get "$CONSUL_KV_PATH"|jq '."node-config.json"'  > "$NODE_CONFIG"
 
-      consul kv get "$CONSUL_KV_PATH"|jq '.byron-genesis'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
-      consul kv get "$CONSUL_KV_PATH"|jq '.shelley-genesis'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+      consul kv get "$CONSUL_KV_PATH"|jq '."byron-genesis.json"'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
+      consul kv get "$CONSUL_KV_PATH"|jq '."shelley-genesis.json"'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
       # alegra
       # mary
-      consul kv get "$CONSUL_KV_PATH"|jq '.alonzo-genesis'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
+      consul kv get "$CONSUL_KV_PATH"|jq '."alonzo-genesis.json"'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
       # vasil
 
       # ensure genisis file contracts
@@ -113,11 +113,12 @@
       export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
       export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
-      vault kv get "$VAULT_KV_PATH"|jq '.byron_deleg_cert'  > "$BYRON_DELEG_CERT"
-      vault kv get "$VAULT_KV_PATH"|jq '.byron_signing_key'  > "$BYRON_SIGNING_KEY"
-      vault kv get "$VAULT_KV_PATH"|jq '.shelley_kes_key'  > "$SHELLEY_KES_KEY"
-      vault kv get "$VAULT_KV_PATH"|jq '.shelley_vrf_key'  > "$SHELLEY_VRF_KEY"
-      vault kv get "$VAULT_KV_PATH"|jq '.shelley_opcert'  > "$SHELLEY_OPCERT"
+      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
+      # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
+      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.skey"' | jq -r '.cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
+      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.kes.skey"'  > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
+      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.vrf.skey"'  > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
+      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.opcert.json"'  > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
     }
   '';
 
@@ -185,7 +186,7 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.consul nixpkgs.vault nixpkgs.jq];
+    runtimeInputs = [nixpkgs.consul nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
     text = ''
 
       # in nomad: producer is always the node with index 0
