@@ -4,7 +4,7 @@
 }: {
   consul-workload-policy = {
     tf.hydrate-cluster.configuration.locals.policies.consul.cardano = {
-      key_prefix."config/cardano/*" = {
+      key_prefix."config/cardano" = {
         policy = "read";
         intentions = "deny";
       };

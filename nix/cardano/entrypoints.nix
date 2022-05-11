@@ -14,6 +14,8 @@
     DB_DIR="$DATA_DIR/db"
     mkdir -p "$DATA_DIR/config"
     chmod -R +w "$DATA_DIR/config"
+    mkdir -p "$DATA_DIR/config/custom"
+    chmod -R +w "$DATA_DIR/config/custom"
 
     # the menu of environments that we ship as built-in envs
     ${library.copyEnvsTemplate environments}
@@ -37,7 +39,7 @@
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
 
       load_kv_config
-      [ "$producer" == "1" ] && load_kv_secrets
+      [ "''${producer:-}" == "1" ] && load_kv_secrets
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
         global srv_discovery=1
@@ -59,14 +61,17 @@
 
   legacy-kv-config-instrumentation = ''
     function ensure_file_location_contract {
-      jq -e --arg KEY "$1" --arg FILE "$2" '.[$KEY] == $FILE' && echo "$2 is not located where it needs to be -- aborting" && exit 1
+      local key="$1"
+      local value="$2"
+      jq -e --arg KEY "$key" --arg VALUE "$value" '.[$KEY] == $VALUE' "$NODE_CONFIG" > /dev/null || \
+        (echo "$value is not located where it needs to be ($(jq -r --arg KEY "$key" '.[$KEY]' "$NODE_CONFIG")) -- aborting" && exit 1)
     }
 
     function load_kv_config {
       export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
-      export SHELLEY_GENESIS_FILE="./shelley-genesis-file.json"
-      export BYRON_GENESIS_FILE="./shelley-genesis-file.json"
-      export ALONZO_GENESIS_FILE="./alonzo-genesis-file.json"
+      export SHELLEY_GENESIS_FILE="shelley-genesis.json"
+      export BYRON_GENESIS_FILE="byron-genesis.json"
+      export ALONZO_GENESIS_FILE="alonzo-genesis.json"
 
       [ -z "''${CONSUL_KV_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
       [ -z "''${CONSUL_HTTP_ADDR:-}" ] && echo "CONSUL_HTTP_ADDR env var must be set -- aborting" && exit 1
@@ -79,19 +84,29 @@
       export CONSUL_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
       export CONSUL_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
-      consul kv get "$CONSUL_KV_PATH"|jq '."node-config.json"'  > "$NODE_CONFIG"
+      local cmd=(
+        "curl"
+        "$CONSUL_HTTP_ADDR/v1/kv/$CONSUL_KV_PATH?raw"
+        "--header" "X-Consul-Token: $CONSUL_HTTP_TOKEN"
+        "--header" "Content-Type: application/json"
+      )
 
-      consul kv get "$CONSUL_KV_PATH"|jq '."byron-genesis.json"'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
-      consul kv get "$CONSUL_KV_PATH"|jq '."shelley-genesis.json"'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+      local json
+      json=$("''${cmd[@]}")
+
+      echo "$json"|jq '."node-config.json"'  > "$NODE_CONFIG"
+
+      echo "$json"|jq '."byron-genesis.json"'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
+      echo "$json"|jq '."shelley-genesis.json"'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
       # alegra
       # mary
-      consul kv get "$CONSUL_KV_PATH"|jq '."alonzo-genesis.json"'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
+      echo "$json"|jq '."alonzo-genesis.json"'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
       # vasil
 
       # ensure genisis file contracts
-      ensure_file_location_contract ".ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
-      ensure_file_location_contract ".ByronGenesisFile" "$BYRON_GENESIS_FILE"
-      ensure_file_location_contract ".AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
+      ensure_file_location_contract "ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
+      ensure_file_location_contract "ByronGenesisFile" "$BYRON_GENESIS_FILE"
+      ensure_file_location_contract "AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
     }
 
     function load_kv_secrets {
@@ -113,12 +128,25 @@
       export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
       export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
-      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
+      local cmd=(
+        "curl"
+        "$VAULT_ADDR/v1/$VAULT_KV_PATH"
+        "--header" "X-Vault-Token: $VAULT_TOKEN"
+        "--header" "Content-Type: application/json"
+        "|"
+        "jq"
+        "'.data.data'"
+      )
+
+      local json
+      json=$("''${cmd[@]}")
+
+      echo "$json"|jq -e '."delegate-keys/byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
       # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
-      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.skey"' | jq -r '.cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
-      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.kes.skey"'  > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
-      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.vrf.skey"'  > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
-      vault kv get "$VAULT_KV_PATH"|jq -e '."delegate-keys/shelley.opcert.json"'  > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
+      echo "$json"|jq -e '."delegate-keys/shelley.skey"' | jq -r '.cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
+      echo "$json"|jq -e '."delegate-keys/shelley.kes.skey"'  > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
+      echo "$json"|jq -e '."delegate-keys/shelley.vrf.skey"'  > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
+      echo "$json"|jq -e '."delegate-keys/shelley.opcert.json"'  > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
     }
   '';
 
@@ -186,11 +214,12 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.consul nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
     text = ''
 
       # in nomad: producer is always the node with index 0
-      producer="$(! test "0" -eq "''${NOMAD_ALLOC_INDEX:-}")$?"
+      producer=0
+      [ "''${NOMAD_ALLOC_INDEX:-}" -eq "0" ] && producer=1
 
       ${prelude}
 

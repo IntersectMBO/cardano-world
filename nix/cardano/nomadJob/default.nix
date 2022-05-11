@@ -23,7 +23,7 @@ in
       priority = 50;
       persistanceMount = "/persist";
       vaultPkiPath = "pki/issue/cardano";
-      consulPolicy = "cardano";
+      consulRolePath = "consul/creds/cardano";
     in {
       job.cardano = {
         inherit namespace datacenters id type priority;
@@ -107,7 +107,7 @@ in
                 env.DATA_DIR = persistanceMount;
                 template =
                   _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
-                  ++ _utils.nomadFragments.workload-identity-consul {inherit consulPolicy;};
+                  ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
                 env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                 env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                 env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
