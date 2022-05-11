@@ -56,10 +56,18 @@ in {
             # Infra node for cardano
             (eachRegion {
               instanceType = "t3.2xlarge";
+              desiredCapacity = 3;
               volumeSize = 500;
               modules =
                 defaultModules
                 ++ [
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    [
+                      "vasil-qa-persist-cardano-node-local"
+                    ]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];
