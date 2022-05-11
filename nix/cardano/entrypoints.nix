@@ -235,6 +235,15 @@ in {
     '';
   };
 
+  cardano-tracer = writeShellApplication {
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    name = "entrypoint";
+    text = ''
+      args+("")
+      exec ${packages.cardano-tracer}/bin/cardano-tracer run "''${args[@]}"
+    '';
+  };
+
   cardano-db-sync = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
     name = "entrypoint";

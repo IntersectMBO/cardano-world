@@ -30,6 +30,7 @@ in {
         inherit (cardano-node-project.plan-nix.passthru) generateMaterialized;
       };
     };
+  cardano-tracer = "TODO";
   submit-api =
     cardano-node-project
     .hsPkgs
