@@ -190,7 +190,7 @@ in {
     text = ''
 
       # in nomad: producer is always the node with index 0
-      producer="$(! test "0" -eq "''${NOMAD_ALLOC_ID:-}")$?"
+      producer="$(! test "0" -eq "''${NOMAD_ALLOC_INDEX:-}")$?"
 
       ${prelude}
 
