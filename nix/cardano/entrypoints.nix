@@ -186,7 +186,7 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.consul nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.consul nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
     text = ''
 
       # in nomad: producer is always the node with index 0
