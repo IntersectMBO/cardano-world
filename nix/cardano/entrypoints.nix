@@ -94,13 +94,13 @@
       local json
       json=$("''${cmd[@]}")
 
-      echo "$json"|jq '."node-config.json"'  > "$NODE_CONFIG"
+      echo "$json"|jq '.nodeConfig'  > "$NODE_CONFIG"
 
-      echo "$json"|jq '."byron-genesis.json"'  > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
-      echo "$json"|jq '."shelley-genesis.json"'  > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+      echo "$json"|jq -r '.byronGenesisBlob'  |base64 -d > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
+      echo "$json"|jq -r '.shelleyGenesisBlob'|base64 -d > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
       # alegra
       # mary
-      echo "$json"|jq '."alonzo-genesis.json"'  > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
+      echo "$json"|jq -r '.alonzoGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
       # vasil
 
       # ensure genisis file contracts
