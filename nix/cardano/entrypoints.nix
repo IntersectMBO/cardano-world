@@ -133,13 +133,10 @@
         "$VAULT_ADDR/v1/$VAULT_KV_PATH"
         "--header" "X-Vault-Token: $VAULT_TOKEN"
         "--header" "Content-Type: application/json"
-        "|"
-        "jq"
-        "'.data.data'"
       )
 
       local json
-      json=$("''${cmd[@]}")
+      json=$("''${cmd[@]}" | jq '.data.data')
 
       echo "$json"|jq -e '."delegate-keys/byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
       # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
@@ -147,6 +144,12 @@
       echo "$json"|jq -e '."delegate-keys/shelley.kes.skey"'  > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
       echo "$json"|jq -e '."delegate-keys/shelley.vrf.skey"'  > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
       echo "$json"|jq -e '."delegate-keys/shelley.opcert.json"'  > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
+
+      [ -z "''${BYRON_DELEG_CERT:-}" ] || chmod 0400 "$BYRON_DELEG_CERT"
+      [ -z "''${BYRON_SIGNING_KEY:-}" ] || chmod 0400 "$BYRON_SIGNING_KEY"
+      [ -z "''${SHELLEY_KES_KEY:-}" ] || chmod 0400 "$SHELLEY_KES_KEY"
+      [ -z "''${SHELLEY_VRF_KEY:-}" ] || chmod 0400 "$SHELLEY_VRF_KEY"
+      [ -z "''${SHELLEY_OPCERT:-}" ] || chmod 0400 "$SHELLEY_OPCERT"
     }
   '';
 
