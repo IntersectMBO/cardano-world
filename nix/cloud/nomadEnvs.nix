@@ -28,17 +28,8 @@ in
           # job."cardano-bft-0".group.cardano.task.node.env.DEBUG_SLEEP = 6000;
           job."cardano-bft-0".group.cardano.task.node.env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
           job."cardano-bft-0".group.cardano.task.node.env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/bft-0";
-          # job."cardano-bft-0".group.cardano.task.node.env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-bft-0-node._tcp.service.consul";
-          # job."cardano-bft-0".group.cardano.task.node.env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
-          # override with dummy node topology
-          job."cardano-bft-0".group.cardano.task.node.env.NODE_TOPOLOGY = "/local/topology.json";
-          job."cardano-bft-0".group.cardano.task.node.template = append [
-            {
-              data = builtins.toJSON {Producers = [];};
-              destination = "/local/topology.json";
-              change_mode = "noop";
-            }
-          ];
+          job."cardano-bft-0".group.cardano.task.node.env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-bft-0-node._tcp.service.consul";
+          job."cardano-bft-0".group.cardano.task.node.env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
         };
       bft-1 =
         merge (

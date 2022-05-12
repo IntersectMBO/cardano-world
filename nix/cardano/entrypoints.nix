@@ -42,7 +42,7 @@
       [ "''${producer:-}" == "1" ] && load_kv_secrets
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
-        global srv_discovery=1
+        srv_discovery=1
         srv_discovery
       fi
 
@@ -52,7 +52,7 @@
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
-        global srv_discovery=1
+        srv_discovery=1
         srv_discovery
       fi
 
@@ -167,6 +167,7 @@
     }
 
     function srv_discovery {
+      set -x
 
       [ -z "''${LOCAL_ROOTS_SRV_DNS:-}" ] && echo "LOCAL_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
       [ -z "''${PUBLIC_ROOTS_SRV_DNS:-}" ] && echo "PUBLIC_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
@@ -178,6 +179,24 @@
       echo '{}' | jq '{
         useLedgerAfterSlot: 7200
       }' > ./topology-common.json
+
+      # public roots -> SIGHUP
+      # this contains also the "self" root, else we would need to filter that out
+      # and that would be _ugly_
+      srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
+        PublicRoots: [
+          { publicRoots: {
+            accessPoints: .[] | map({address: .Host, port: .Port})
+            advertise: false
+          } }
+        ]
+      }' || echo '{ "PublicRoots": {
+        "publicRoots": {
+          "accessPoints": [
+          ],
+          "advertise": false
+        }
+      } }'> ./topology-publics.json
 
       # local roots -> SIGHUP
       srvaddr -json locals="$LOCAL_ROOTS_SRV_DNS" | jq '{
@@ -192,32 +211,34 @@
             }
           ]
         }
-      }' > ./topology-locals.json
-
-      # public roots -> SIGHUP
-      # this contains also the "self" root, else we would need to filter that out
-      # and that would be _ugly_
-      srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
-        PublicRoots: [
-          { publicRoots: {
-            accessPoints: .[] | map({address: .Host, port: .Port})
-            advertise: false
-          } }
+      }' || echo '{ "LocalRoots": {
+        "groups": [
+          {
+            "localRoots": {
+              "accessPoints": [
+              ],
+              "advertise": false
+            },
+            "valency": 1
+          }
         ]
-      }' > ./topology-publics.json
+      } }' > ./topology-locals.json
 
       # construe topology
-      cat \ # the p2p case
+      sleep 60000
+      cat \
         ./topology-common.json \
         ./topology-locals.json \
         ./topology-publics.json \
         | jq -s 'add' > "$NODE_TOPOLOGY"
+
+      set +x
     }
   '';
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.vault nixpkgs.jq nixpkgs.xxd];
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.vault nixpkgs.jq nixpkgs.xxd srvaddr];
     text = ''
 
       # in nomad: producer is always the node with index 0
@@ -245,6 +266,7 @@ in {
       [ -n "''${SHELLEY_OPCERT:-}" ] && args+=("--shelley-operational-certificate" "$SHELLEY_OPCERT")
 
       if [ "''${srv_discovery}" == "1" ]; then
+        set -x
 
         # turn on bash's job control
         set -m
