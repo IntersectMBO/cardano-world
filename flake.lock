@@ -655,11 +655,11 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1652309530,
-        "narHash": "sha256-hK90YZUo+HFA4GtMsl01WCc/CXeBofRBcEpFZJq2yF8=",
+        "lastModified": 1652373040,
+        "narHash": "sha256-WDsHN8Nw1HN5I1H309hvy9cxtkfkp9ywnuBD1yZISH0=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "fa8c20634e94fa33ecef92f7bb68e0fc980c2652",
+        "rev": "ecf60570fd8b75e3a3e1da92d444249bb92dfb0d",
         "type": "github"
       },
       "original": {
