@@ -12,20 +12,21 @@
 in
   with data-merge; {
     default = {
+      jobname ? "cardano",
       namespace,
       datacenters ? ["eu-central-1" "eu-west-1" "us-east-2"],
       domain,
       nodeClass,
       scaling,
     }: let
-      id = "cardano";
+      id = jobname;
       type = "service";
       priority = 50;
       persistanceMount = "/persist";
       vaultPkiPath = "pki/issue/cardano";
       consulRolePath = "consul/creds/cardano";
     in {
-      job.cardano = {
+      job.${id} = {
         inherit namespace datacenters id type priority;
         # ----------
         # Scheduling
