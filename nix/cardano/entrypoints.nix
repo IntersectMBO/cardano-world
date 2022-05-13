@@ -206,7 +206,7 @@
               localRoots: {
                 accessPoints: .[] | map({address: .Host, port: .Port})
                 advertise: false
-              }
+              },
               valency: 1
             }
           ]
