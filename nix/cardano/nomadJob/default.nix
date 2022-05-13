@@ -83,6 +83,7 @@ in
             count = scaling;
             service = [
               (import ./srv-node.nix {inherit namespace healthChecks;})
+              (import ./srv-node-local.nix {inherit namespace jobname;})
             ];
             volume = {
               "persist-cardano-node-local" = {
