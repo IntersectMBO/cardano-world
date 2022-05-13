@@ -30,6 +30,7 @@
 
     # CASE: built-in environment
     if [ -n "''${ENVIRONMENT:-}" ]; then
+      echo "Using the preset environment $ENVIRONMENT ..." > /dev/stderr
 
       NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
       NODE_TOPOLOGY="$DATA_DIR/config/$ENVIRONMENT/topology.json"
@@ -37,23 +38,31 @@
 
     # CASE: premissioned long running environment
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
+      echo "Using a long running environment as defined by kv (consul & vault) ..." > /dev/stderr
 
       load_kv_config
       [ "''${producer:-}" == "1" ] && load_kv_secrets
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
+        echo "Doing legacy service discovery ..." > /dev/stderr
         srv_discovery=1
         srv_discovery
+      else
+        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
       fi
 
     # CASE: permissioned short running environment
     else
+      echo "Using custom config: $NODE_CONFIG ..." > /dev/stderr
 
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
+        echo "Doing legacy service discovery ..." > /dev/stderr
         srv_discovery=1
         srv_discovery
+      else
+        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
       fi
 
     fi
@@ -159,6 +168,7 @@
       while true
       do
         sleep 30
+        echo "Service discovery heartbeat - every 30 seconds" > /dev/stderr
         original_hash="$(md5sum "$NODE_TOPOLOGY")"
         srv_discovery
         new_hash="$(md5sum "$NODE_TOPOLOGY")"
@@ -167,7 +177,6 @@
     }
 
     function srv_discovery {
-      set -x
 
       [ -z "''${LOCAL_ROOTS_SRV_DNS:-}" ] && echo "LOCAL_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
       [ -z "''${PUBLIC_ROOTS_SRV_DNS:-}" ] && echo "PUBLIC_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
@@ -230,14 +239,12 @@
         ./topology-locals.json \
         ./topology-publics.json \
         | jq -s 'add' > "$NODE_TOPOLOGY"
-
-      set +x
     }
   '';
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.vault nixpkgs.jq nixpkgs.xxd srvaddr];
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
     text = ''
 
       # in nomad: producer is always the node with index 0
@@ -274,11 +281,11 @@ in {
         trap "kill" "''${sid[@]}" INT
 
         # SIGHUP reloads --topology
-        echo Running node in background
-        echo ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
+        echo Running node in background > /dev/stderr
         ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
         CARDANO_PID="$!"
         sid=("$CARDANO_PID")
+        echo Running service discovery loop > /dev/stderr
         watch_srv_discovery "$CARDANO_PID"
       else
         exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
