@@ -74,16 +74,6 @@
 
   '';
 in {
-  cardano-node-network-sync = writeShellApplication {
-    runtimeInputs = [packages.cardano-cli nixpkgs.jq nixpkgs.coreutils];
-    name = "healthcheck";
-    text = ''
-
-      ${prelude}
-
-      jq -e '.syncProgress == "100.00"' <<<"$NODE_STATUS" || exit 1
-    '';
-  };
   cardano-wallet-network-sync = writeShellApplication {
     runtimeInputs = [srvaddr nixpkgs.jq nixpkgs.coreutils];
     name = "healthcheck";
@@ -100,29 +90,20 @@ in {
       jq -e '.state.status == "ready"' <<<"$STATUS" || exit 1
     '';
   };
-  cardano-db-sync-network-sync = writeShellApplication {
-    runtimeInputs = [packages.cardano-cli nixpkgs.jq nixpkgs.coreutils];
+  cardano-submit-api-network-sync = writeShellApplication {
+    runtimeInputs = [srvaddr nixpkgs.jq nixpkgs.coreutils];
     name = "healthcheck";
     text = ''
+      #!/bin/bash
 
-      ${prelude}
+      [ -z "${WALLET_SRV_FQDN:-}" ] && echo "WALLET_SRV_FQDN env var must be set -- aborting" && exit 1
+      [ -z "${CARDANO_WALLET_ID:-}" ] && echo "CARDANO_WALLET_ID env var must be set -- aborting" && exit 1
 
-      NODE_BLOCK_HEIGHT="$(jq -e -r '.block' <<<"$NODE_STATUS" 2>/dev/null || :)"
+      mapfile -t wallet_urls <<<"$(srvaddr "${WALLET_SRV_FQDN}")"
 
-      DB_STATUS="$(curl -s localhost:8080 2>/dev/null | grep -v '#' || :)"
-      DB_BLOCK_HEIGHT="$(echo "$DB_STATUS" | grep -oP '^cardano_db_sync_db_block_height\s+\K[0-9]+' || :)"
-
-      echo "Cardano db sync status:"
-      echo "$DB_STATUS" || :
-      echo
-      echo "Compare node to db blockHeight: ($NODE_BLOCK_HEIGHT, $DB_BLOCK_HEIGHT)"
-
-      # Failure modes:
-      [ -z "$NODE_BLOCK_HEIGHT" ] && [ -z "$DB_BLOCK_HEIGHT" ] && exit 1
-
-      # Exits as a warning if DB Sync is more than 10 blocks behind node
-      [ $(("$NODE_BLOCK_HEIGHT" - "$DB_BLOCK_HEIGHT")) -le 10 ] || exit 1
-
+      STATUS="$(curl -sf "${wallet_urls [0]}/v2/wallets/$CARDANO_WALLET_ID" || :)"
+      jq <<<"$STATUS" || :
+      jq -e '.state.status == "ready"' <<<"$STATUS" || exit 1
     '';
   };
 }
