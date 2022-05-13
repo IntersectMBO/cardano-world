@@ -24,6 +24,8 @@
     "TestMaryHardForkAtEpoch": 3,
     "TestShelleyHardForkAtEpoch": 1,
     "EnableP2P": true,
+    "TestEnableDevelopmentNetworkProtocols": true,
+    "TestEnableDevelopmentHardForkEras": true,
     "TargetNumberOfActivePeers": 20,
     "TargetNumberOfEstablishedPeers": 50,
     "TargetNumberOfKnownPeers": 100,
