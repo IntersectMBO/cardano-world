@@ -106,6 +106,9 @@ in
               # ----------
               node = {
                 env.DATA_DIR = persistanceMount;
+                env.HOST_ADDR = "0.0.0.0";
+                env.PORT = "3001";
+                env.SOCKET_PATH = "/alloc/tmp/node.socket";
                 template =
                   _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
                   ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
