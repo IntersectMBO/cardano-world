@@ -245,6 +245,7 @@ in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
     runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
+    debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
 
       # in nomad: producer is always the node with index 0
@@ -295,6 +296,7 @@ in {
 
   cardano-tracer = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [packages.cardano-tracer];
     name = "entrypoint";
     text = ''
       args+("")
@@ -304,6 +306,11 @@ in {
 
   cardano-db-sync = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [
+      packages.cardano-db-sync
+      packages.cardano-cli
+      nixpkgs.strace # for debugging libq
+    ];
     name = "entrypoint";
     text = ''
 
@@ -330,6 +337,7 @@ in {
 
   cardano-wallet = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [packages.cardano-wallet packages.cardano-cli];
     name = "entrypoint";
     text = ''
 
@@ -367,6 +375,7 @@ in {
 
   cardano-submit-api = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [packages.cardano-submit-api packages.cardano-cli];
     name = "entrypoint";
     text = ''
 

@@ -655,11 +655,11 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1652452678,
-        "narHash": "sha256-PGLN9S7pY/yjiivWrnxzIdDg2duHR/HTqLr1fIQh79I=",
+        "lastModified": 1652469253,
+        "narHash": "sha256-3QHlqE3i5a1MsyFS5vgH1rPdRS4SVuJBTZXEvvBZboA=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "da6d51f5dd3975727e4f1fe997475a3845d77b44",
+        "rev": "1cb85a2cc17258944db12d1fdafd566cb9ddd02e",
         "type": "github"
       },
       "original": {
@@ -1862,11 +1862,11 @@
         "ragenix": "ragenix_3"
       },
       "locked": {
-        "lastModified": 1651520937,
-        "narHash": "sha256-haHi0jHktwP2w3U7I6a8Umct4DvBc6RImIYyrsV5Id4=",
+        "lastModified": 1652469939,
+        "narHash": "sha256-ViRz9k1YXSTJj1v7nFDr+Vw17iHk2tO6sWMpN61uQr8=",
         "owner": "input-output-hk",
         "repo": "devshell-capsules",
-        "rev": "1f3fc7513bb421647b791382cc042f9abd8f1a35",
+        "rev": "38eb926966f081746ccf5343da574d606caa3923",
         "type": "github"
       },
       "original": {
