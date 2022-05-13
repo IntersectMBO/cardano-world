@@ -174,6 +174,22 @@ in {
               services.traefik.acmeDnsCertMgr = false;
               services.traefik.useVaultBackend = true;
               services.traefik.useDockerRegistry = false;
+              services.traefik.staticConfigOptions = {
+                entryPoints =
+                  lib.pipe {
+                    vasil-qa = 30000;
+                  } [
+                    (
+                      lib.mapAttrsToList (
+                        namespace: port: {
+                          name = "${namespace}-node-tcp";
+                          value.address = ":${toString port}";
+                        }
+                      )
+                    )
+                    lib.listToAttrs
+                  ];
+              };
             }
           ];
         };

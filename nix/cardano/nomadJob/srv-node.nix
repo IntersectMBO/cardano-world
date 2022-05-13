@@ -28,4 +28,12 @@
   ];
   name = "${namespace}-node";
   port = "node";
+  tags = [
+    "\${NOMAD_ALLOC_ID}"
+    "${namespace}"
+    "ingress"
+    "traefik.enable=true"
+    "traefik.tcp.routers.${namespace}-node.rule=HostSNI(`*`)"
+    "traefik.tcp.routers.${namespace}-node.entrypoints=${namespace}-node-tcp"
+  ];
 }
