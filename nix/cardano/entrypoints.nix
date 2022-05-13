@@ -275,13 +275,9 @@ in {
 
         # SIGHUP reloads --topology
         ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
-        sid=($!)
-
-        watch_srv_discovery $! &
-        sid+=($!)
-
-        # foreground the cardano-node process
-        fg %1
+        CARDANO_PID="$!"
+        sid=("$CARDANO_PID")
+        watch_srv_discovery "$CARDANO_PID"
       else
         exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
       fi
