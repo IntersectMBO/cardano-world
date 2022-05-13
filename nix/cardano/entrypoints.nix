@@ -225,7 +225,6 @@
       } }' > ./topology-locals.json
 
       # construe topology
-      sleep 60000
       cat \
         ./topology-common.json \
         ./topology-locals.json \
