@@ -177,34 +177,34 @@
       # general values
       # TODO: make this part of the kv-config, etc
       echo '{}' | jq '{
-        useLedgerAfterSlot: 7200
+        useLedgerAfterSlot: 86400
       }' > ./topology-common.json
 
       # public roots -> SIGHUP
       # this contains also the "self" root, else we would need to filter that out
       # and that would be _ugly_
-      srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
+      (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
         PublicRoots: [
           { publicRoots: {
-            accessPoints: .[] | map({address: .Host, port: .Port})
+            accessPoints: .[] | map({address: .Host, port: .Port}),
             advertise: false
           } }
         ]
-      }' || echo '{ "PublicRoots": {
+      }' || echo '{ "PublicRoots": [{
         "publicRoots": {
           "accessPoints": [
           ],
           "advertise": false
         }
-      } }'> ./topology-publics.json
+      }] }') > ./topology-publics.json
 
       # local roots -> SIGHUP
-      srvaddr -json locals="$LOCAL_ROOTS_SRV_DNS" | jq '{
+      (srvaddr -json locals="$LOCAL_ROOTS_SRV_DNS" | jq '{
         LocalRoots: {
           groups: [
             {
               localRoots: {
-                accessPoints: .[] | map({address: .Host, port: .Port})
+                accessPoints: .[] | map({address: .Host, port: .Port}),
                 advertise: false
               },
               valency: 1
@@ -222,7 +222,7 @@
             "valency": 1
           }
         ]
-      } }' > ./topology-locals.json
+      } }') > ./topology-locals.json
 
       # construe topology
       cat \
@@ -274,6 +274,8 @@ in {
         trap "kill" "''${sid[@]}" INT
 
         # SIGHUP reloads --topology
+        echo Running node in background
+        echo ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
         ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
         CARDANO_PID="$!"
         sid=("$CARDANO_PID")
