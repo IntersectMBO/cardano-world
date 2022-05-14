@@ -43,4 +43,6 @@ in {
   cardano-address = cardano-wallet.packages.cardano-address;
   cardano-db-sync = cardano-db-sync.packages.cardano-db-sync;
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
+  # BROKEN
+  ogmios = nixpkgs.callPackage ./ogmios {};
 }

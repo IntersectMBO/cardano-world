@@ -2604,6 +2604,23 @@
         "type": "github"
       }
     },
+    "cardano-ogmios": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1646317560,
+        "narHash": "sha256-+j/kuAYtxiH0TOcIWO+FVuM8uSAqBgWyuSrVAZOcQiY=",
+        "owner": "input-output-hk",
+        "repo": "cardano-ogmios",
+        "rev": "31c987dbe9f6c02000becc3bc32dda60640a0016",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "ref": "main",
+        "repo": "cardano-ogmios",
+        "type": "github"
+      }
+    },
     "cardano-shell": {
       "flake": false,
       "locked": {
@@ -13501,6 +13518,7 @@
         "capsules": "capsules",
         "cardano-db-sync": "cardano-db-sync_2",
         "cardano-node": "cardano-node_2",
+        "cardano-ogmios": "cardano-ogmios",
         "cardano-wallet": "cardano-wallet_2",
         "data-merge": "data-merge_3",
         "n2c": "n2c_2",
