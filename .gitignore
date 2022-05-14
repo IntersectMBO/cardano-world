@@ -16,3 +16,5 @@ secrets/
 # nixos/nix
 result*
 
+# ...
+workbench
