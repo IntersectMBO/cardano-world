@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node;
+  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node cardano-ogmios;
   cardano-node-project =
     (
       cardano-node.legacyPackages.extend (
@@ -43,4 +43,5 @@ in {
   cardano-address = cardano-wallet.packages.cardano-address;
   cardano-db-sync = cardano-db-sync.packages.cardano-db-sync;
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
+  ogmios = cardano-ogmios.packages.ogmios;
 }

@@ -18,6 +18,7 @@
     cardano-node.url = "github:input-output-hk/cardano-node";
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/12.0.1-flake-improvements";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet";
+    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
     # --------------------------------------------------------------
   };
   outputs = inputs: let
