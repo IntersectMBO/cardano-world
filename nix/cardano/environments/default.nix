@@ -152,6 +152,20 @@
       explorerConfig = mkExplorerConfig "shelley_qa" nodeConfig;
       usePeersFromLedgerAfterSlot = 23574838;
     };
+    vasil-qa = rec {
+      useByronWallet = false;
+      private = false;
+      relaysNew = "vasil-qa-node.world.dev.cardano.org";
+      explorerUrl = "https://vasil-qa-explorer.world.dev.cardano.org";
+      smashUrl = "https://vasil-qa-smash.world.dev.cardano.org";
+      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      networkConfig = import ./vasil-qa-config.nix;
+      consensusProtocol = networkConfig.Protocol;
+      nodeConfig = defaultLogConfig // networkConfig;
+      edgePort = 30000;
+      explorerConfig = mkExplorerConfig "vasil-qa" nodeConfig;
+      usePeersFromLedgerAfterSlot = 86400;
+    };
     # used for SRE development
     sre = rec {
       useByronWallet = false;
