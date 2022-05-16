@@ -94,5 +94,47 @@ in
             env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
           };
         };
+      sp-1 = let
+        jobname = "cardano-sp-1";
+      in
+        merge (
+          cardano.nomadJob.default (
+            constants.envs.vasil-qa
+            // {
+              datacenters = ["eu-west-1"];
+              inherit jobname;
+            }
+          )
+        ) {
+          job.${jobname}.group.cardano.task.node = {
+            # env.ENVIRONMENT = "testnet";
+            # env.DEBUG_SLEEP = 6000;
+            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-1";
+            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+          };
+        };
+      sp-2 = let
+        jobname = "cardano-sp-2";
+      in
+        merge (
+          cardano.nomadJob.default (
+            constants.envs.vasil-qa
+            // {
+              datacenters = ["us-east-2"];
+              inherit jobname;
+            }
+          )
+        ) {
+          job.${jobname}.group.cardano.task.node = {
+            # env.ENVIRONMENT = "testnet";
+            # env.DEBUG_SLEEP = 6000;
+            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
+            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+          };
+        };
     };
   }
