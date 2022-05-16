@@ -20,7 +20,12 @@ includes = [
   "*.yaml",
   "*.toml",
 ]
-excludes = ["*.enc.json", "*.enc.yaml", "nix/metal/bitteProfile/encrypted/*"]
+excludes = [
+  "*.enc.json",
+  "*.enc.yaml",
+  "nix/metal/bitteProfile/encrypted/*",
+  "nix/cardano/environments/*"
+]
 
 [formatter.shell]
 command = "shfmt"
