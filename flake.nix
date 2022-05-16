@@ -42,10 +42,13 @@
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
         (inputs.std.runnables "entrypoints")
+        # automation
         (inputs.std.runnables "jobs")
+        (inputs.std.functions "pipelines")
       ];
     }
-    # soil (TODO: eat up soil)
+    # Soil (layers) ...
+    # 1) bitte instrumentation (TODO: `std`ize bitte)
     (
       let
       in
@@ -57,7 +60,9 @@
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfiles.default;
           deploySshKey = "./secrets/ssh-cardano";
         }
-    ) {
+    )
+    # 2) renderes nomad environments (TODO: `std`ize as actions)
+    {
       vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
     };
   # --- Flake Local Nix Configuration ----------------------------
