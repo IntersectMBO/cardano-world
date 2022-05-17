@@ -40,6 +40,11 @@ in {
         category = "cardano";
       }
       {
+        package = packages.cardano-ping;
+        name = "cardano-ping";
+        category = "cardano";
+      }
+      {
         package = packages.cardano-node;
         name = "cardano-node";
         category = "cardano";

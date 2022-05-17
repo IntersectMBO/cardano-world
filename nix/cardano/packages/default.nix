@@ -39,6 +39,7 @@ in {
     .exes
     .cardano-submit-api;
   cardano-cli = cardano-node-project.hsPkgs.cardano-cli.components.exes.cardano-cli;
+  cardano-ping = cardano-node-project.hsPkgs.network-mux.components.exes.cardano-ping;
   cardano-wallet = cardano-wallet.packages.cardano-wallet;
   cardano-address = cardano-wallet.packages.cardano-address;
   cardano-db-sync = cardano-db-sync.packages.cardano-db-sync;
