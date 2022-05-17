@@ -147,7 +147,7 @@
       local json
       json=$("''${cmd[@]}" | jq '.data.data')
 
-      echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
+      echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT BYRON_SIGNING_KEY
       # we only want to fetch and set cold key if byron certificacte is passed to the node
       if [ -n "''${BYRON_DELEG_CERT:-}" ]; then
         # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.

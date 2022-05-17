@@ -13,6 +13,8 @@
   # Components per environment
   # -----------------------------------------------------------------------
   vasil-qa = mkComponents constants.envs.vasil-qa;
+  # TODO: pull this from nomadJob?
+  persistanceMount = "/persist";
 in
   with data-merge; {
     vasil-qa = {
@@ -88,6 +90,7 @@ in
           job.${jobname}.group.cardano.task.node = {
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
+            env.DATA_DIR = persistanceMount + "/sp-1";
             env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
             env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-1";
             env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
@@ -109,6 +112,7 @@ in
           job.${jobname}.group.cardano.task.node = {
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
+            env.DATA_DIR = persistanceMount + "/sp-2";
             env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
             env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
             env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
@@ -130,6 +134,7 @@ in
           job.${jobname}.group.cardano.task.node = {
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
+            env.DATA_DIR = persistanceMount + "/sp-3";
             env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
             env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-3";
             env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
