@@ -14556,11 +14556,11 @@
         "yants": "yants_4"
       },
       "locked": {
-        "lastModified": 1652696184,
-        "narHash": "sha256-GRLLD6SmEC9pNzECgecD3ScxKcbH6KGJdtKOko4aIvg=",
+        "lastModified": 1652784712,
+        "narHash": "sha256-ofwGapSWqzUVgIxwwmjlrOVogfjV4yd6WpY8fNfMc2o=",
         "owner": "divnix",
         "repo": "std",
-        "rev": "e2b5ada2a85b5e062fd88b4012612ebf9910be4b",
+        "rev": "3667d2d868352b0bf47c83440da48bee9f2fab47",
         "type": "github"
       },
       "original": {
