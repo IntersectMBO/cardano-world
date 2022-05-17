@@ -10,7 +10,7 @@
   buildDebugImage = ep: o: n2c.buildImage (_utils.library.mkDebugOCI ep o);
 in {
   cardano-node = buildDebugImage entrypoints.cardano-node {
-    name = "docker.infra.aws.iohkdev.io/cardano-node";
+    name = "registry.ci.iog.io/cardano-node";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-node.runtimeInputs;})
@@ -22,7 +22,7 @@ in {
     ];
   };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
-    name = "docker.infra.aws.iohkdev.io/cardano-db-sync";
+    name = "registry.ci.iog.io/cardano-db-sync";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-db-sync.runtimeInputs;})
@@ -34,7 +34,7 @@ in {
     ];
   };
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
-    name = "docker.infra.aws.iohkdev.io/cardano-wallet";
+    name = "registry.ci.iog.io/cardano-wallet";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-wallet.runtimeInputs;})
@@ -46,7 +46,7 @@ in {
     ];
   };
   cardano-submit-api = buildDebugImage entrypoints.cardano-submit-api {
-    name = "docker.infra.aws.iohkdev.io/cardano-submit-api";
+    name = "registry.ci.iog.io/cardano-submit-api";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-submit-api.runtimeInputs;})
