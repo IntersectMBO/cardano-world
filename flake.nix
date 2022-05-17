@@ -69,10 +69,10 @@
   nixConfig = {
     extra-substituters = [
       # TODO: spongix
-      "https://hydra.iohk.io"
+      "https://cache.iog.io"
     ];
     extra-trusted-public-keys = [
-      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+      "cache.iog.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
     ];
     # post-build-hook = "./upload-to-cache.sh";
     allow-import-from-derivation = "true";
