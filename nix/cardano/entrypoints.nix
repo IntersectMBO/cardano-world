@@ -149,19 +149,19 @@
 
       echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
       # we only want to fetch and set cold key if byron certificacte is passed to the node
-      if [ -n "$BYRON_DELEG_CERT" ]; then
+      if [ -n "''${BYRON_DELEG_CERT:-}" ]; then
         # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
-        echo "$json"|jq -e '."cold.skey"' | jq -r '.cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
+        echo "$json" | jq -e -r '."cold.skey".cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
       fi
-      echo "$json"|jq -e '."kes.skey"'  > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
-      echo "$json"|jq -e '."vrf.skey"'  > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
-      echo "$json"|jq -e '."opcert.json"'  > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
+      echo "$json"|jq -e '."kes.skey"'    > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
+      echo "$json"|jq -e '."vrf.skey"'    > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
+      echo "$json"|jq -e '."opcert.json"' > "$SHELLEY_OPCERT"  || unset SHELLEY_OPCERT
 
-      [ -z "''${BYRON_DELEG_CERT:-}" ] || chmod 0400 "$BYRON_DELEG_CERT"
-      [ -z "''${BYRON_SIGNING_KEY:-}" ] || chmod 0400 "$BYRON_SIGNING_KEY"
-      [ -z "''${SHELLEY_KES_KEY:-}" ] || chmod 0400 "$SHELLEY_KES_KEY"
-      [ -z "''${SHELLEY_VRF_KEY:-}" ] || chmod 0400 "$SHELLEY_VRF_KEY"
-      [ -z "''${SHELLEY_OPCERT:-}" ] || chmod 0400 "$SHELLEY_OPCERT"
+      test -z "''${BYRON_DELEG_CERT:-}"  || chmod 0400 "$BYRON_DELEG_CERT"
+      test -z "''${BYRON_SIGNING_KEY:-}" || chmod 0400 "$BYRON_SIGNING_KEY"
+      test -z "''${SHELLEY_KES_KEY:-}"   || chmod 0400 "$SHELLEY_KES_KEY"
+      test -z "''${SHELLEY_VRF_KEY:-}"   || chmod 0400 "$SHELLEY_VRF_KEY"
+      test -z "''${SHELLEY_OPCERT:-}"    || chmod 0400 "$SHELLEY_OPCERT"
     }
   '';
 
