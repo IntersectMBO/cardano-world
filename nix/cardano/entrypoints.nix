@@ -149,8 +149,7 @@
 
       echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT
       # we only want to fetch and set cold key if byron certificacte is passed to the node
-      [ -n "$BYRON_DELEG_CERT" ]
-      then
+      if [ -n "$BYRON_DELEG_CERT" ]; then
         # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
         echo "$json"|jq -e '."cold.skey"' | jq -r '.cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
       fi
