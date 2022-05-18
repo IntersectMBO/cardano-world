@@ -74,7 +74,7 @@ in {
         --shelley-template "$PRJ_ROOT"/nix/cardano/environments/testnet-template/shelley.json \
         --alonzo-template "$PRJ_ROOT"/nix/cardano/environments/testnet/alonzo-genesis.json \
         --node-config-template "$PRJ_ROOT"/nix/cardano/environments/testnet-template/config.json \
-        --security-param 108 \
+        --security-param 36 \
         --slot-length 1000 \
         --start-time "$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date "now +30 min")"
     '';
