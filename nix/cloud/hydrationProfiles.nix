@@ -3,7 +3,6 @@
   cell,
 }: let
   inherit (inputs) cells;
-  inherit (cell.library) sopsFiles vaultSecrets;
 in {
   # Bitte Hydrate Module
   # -----------------------------------------------------------------------

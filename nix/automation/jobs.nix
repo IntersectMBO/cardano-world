@@ -63,7 +63,8 @@ in {
     name = "gen-custom-node-config";
     runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
     text = ''
-      genesis_dir="workbench/custom"
+      genesis_dir="$PRJ_ROOT/workbench/custom"
+      mkdir -p "$genesis_dir"
       cardano-cli genesis create-cardano \
         --genesis-dir "$genesis_dir" \
         --gen-genesis-keys 3 \
@@ -84,7 +85,9 @@ in {
       name = "gen-custom-kv-config";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        genesis_dir="/workbench/custom"
+        genesis_dir="$PRJ_ROOT/workbench/custom"
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
         pushd "$genesis_dir"
           jq -n \
             --arg byron "$(base64 -w 0 < byron-genesis.json)" \
@@ -93,15 +96,31 @@ in {
             --argjson config "$(< node-config.json)" \
             '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
           > config.json
-          cp config.json "$PRJ_ROOT"/nix/cloud/kv/consul/cardano/custom.json
-          jq -n 'reduce inputs as $s (.; (.[input_filename|sub(".000"; "")]) += $s)' delegate-keys/*.000.{kes.skey,vrf.skey,opcert.json,cert.json,skey} > bft-0.json
-          jq -n 'reduce inputs as $s (.; (.[input_filename|sub(".001"; "")]) += $s)' delegate-keys/*.001.{kes.skey,vrf.skey,opcert.json,cert.json,skey} > bft-1.json
-          jq -n 'reduce inputs as $s (.; (.[input_filename|sub(".002"; "")]) += $s)' delegate-keys/*.002.{kes.skey,vrf.skey,opcert.json,cert.json,skey} > bft-2.json
-          cp bft-* "$PRJ_ROOT"/nix/cloud/kv/vault/cardano/custom
-          pushd "$PRJ_ROOT"/nix/cloud/kv/vault/cardano/custom
-            sops -e bft-0.json > bft-0.enc.json && rm bft-0.json
-            sops -e bft-1.json > bft-1.enc.json && rm bft-1.json
-            sops -e bft-2.json > bft-2.enc.json && rm bft-2.json
+          cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/vasil-qa.json"
+          pushd delegate-keys
+            for i in {0..2}; do
+              jq -n \
+                --argjson cold "$(<shelley."00$i".skey)" \
+                --argjson vrf "$(<shelley."00$i".vrf.skey)" \
+                --argjson kes "$(<shelley."00$i".kes.skey)" \
+                --argjson opcert "$(<shelley."00$i".opcert.json)" \
+                --argjson counter "$(<shelley."00$i".counter.json)" \
+                --argjson byron_cert "$(<byron."00$i".cert.json)" \
+                '{
+                  "kes.skey": $kes,
+                  "vrf.skey": $vrf,
+                  "opcert.json": $opcert,
+                  "byron.cert.json": $byron_cert,
+                  "cold.skey": $cold,
+                  "cold.counter": $counter
+                }' > "bft-$i.json"
+                cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+            done
+          popd
+          pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+            for i in {0..2}; do
+              sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
+            done
           popd
         popd
       '';
