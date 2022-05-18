@@ -11,7 +11,6 @@
     [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
 
     mkdir -p "$DATA_DIR"
-    DB_DIR="$DATA_DIR/db"
     mkdir -p "$DATA_DIR/config"
     chmod -R +w "$DATA_DIR/config"
     mkdir -p "$DATA_DIR/config/custom"
@@ -23,18 +22,11 @@
     # the legacy implementation to access kv config
     ${legacy-kv-config-instrumentation}
 
-    # the legacy service discovery implementation
-    ${legacy-srv-discovery}
-
-    srv_discovery=0
-
     # CASE: built-in environment
     if [ -n "''${ENVIRONMENT:-}" ]; then
       echo "Using the preset environment $ENVIRONMENT ..." > /dev/stderr
 
       NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
-      NODE_TOPOLOGY="$DATA_DIR/config/$ENVIRONMENT/topology.json"
-      DB_DIR="$DATA_DIR/db-$ENVIRONMENT"
 
     # CASE: premissioned long running environment
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
@@ -43,28 +35,11 @@
       load_kv_config
       [ "''${producer:-}" == "1" ] && load_kv_secrets
 
-      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
-        echo "Doing legacy service discovery ..." > /dev/stderr
-        srv_discovery=1
-        srv_discovery
-      else
-        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
-      fi
-
     # CASE: permissioned short running environment
     else
       echo "Using custom config: $NODE_CONFIG ..." > /dev/stderr
 
       [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
-
-      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
-        echo "Doing legacy service discovery ..." > /dev/stderr
-        srv_discovery=1
-        srv_discovery
-      else
-        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
-      fi
-
     fi
   '';
 
@@ -257,6 +232,20 @@ in {
 
       ${prelude}
 
+      # the legacy service discovery implementation
+      ${legacy-srv-discovery}
+
+      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
+      NODE_TOPOLOGY="$DATA_DIR/config/''${ENVIRONMENT:-custom}/topology.json"
+
+      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
+        echo "Doing legacy service discovery ..." > /dev/stderr
+        srv_discovery=1
+        srv_discovery
+      else
+        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
+      fi
+
       # Build args array
       args+=("--config" "$NODE_CONFIG")
       args+=("--database-path" "$DB_DIR/node")
@@ -317,8 +306,9 @@ in {
     name = "entrypoint";
     text = ''
 
-      NODE_TOPOLOGY="do-not-load"
       ${prelude}
+
+      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
       [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
       [ -z "''${SOCKET_PATH:-}" ] && echo "SOCKET_PATH env var must be set -- aborting" && exit 1
@@ -332,7 +322,7 @@ in {
       args+=("--config" "$NODE_CONFIG")
       args+=("--socket-path" "$SOCKET_PATH")
       args+=("--state-dir" "$DB_DIR/db-sync")
-      args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"})
+      args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
 
       exec ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
     '';
@@ -344,8 +334,9 @@ in {
     name = "entrypoint";
     text = ''
 
-      NODE_TOPOLOGY="do-not-load"
       ${prelude}
+
+      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
       # Build args array
       args+=("--listen-address" "0.0.0.0")
@@ -354,15 +345,14 @@ in {
       args+=("--database" "$DB_DIR/wallet")
       # FIXME: consume the node config directly
       args+=("$(
-        [ "''${ENVIRONMENT}" == "mainnet" ]
-        && echo "--mainnet"
-        || echo "--testnet-magic $(
-          cat "$(
-            file="$(cat "$NODE_CONFIG" | jq '.ShelleyGenesisFile' )"
-            folder="$(dirname $NODE_CONFIG)"
+        [ "''${ENVIRONMENT}" == "mainnet" ] &&
+          echo "--mainnet" ||
+          echo "--testnet-magic $(
+          jq '.networkMagic' "$(
+            file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
+            folder="$(dirname "$NODE_CONFIG")"
             [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
           )"
-          | jq '.networkMagic'
         )"
       )")
 
@@ -382,7 +372,6 @@ in {
     name = "entrypoint";
     text = ''
 
-      NODE_TOPOLOGY="do-not-load"
       ${prelude}
 
       # Build args array
@@ -400,7 +389,6 @@ in {
     name = "entrypoint";
     text = ''
 
-      NODE_TOPOLOGY="do-not-load"
       ${prelude}
 
       # Build args array

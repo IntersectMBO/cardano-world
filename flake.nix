@@ -42,6 +42,7 @@
         (inputs.std.functions "oci-images")
         (inputs.std.installables "packages")
         (inputs.std.runnables "entrypoints")
+        (inputs.std.runnables "healthChecks")
         # automation
         (inputs.std.runnables "jobs")
         (inputs.std.functions "pipelines")

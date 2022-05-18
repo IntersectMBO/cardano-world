@@ -31,7 +31,7 @@ in {
       };
     };
   cardano-tracer = "TODO";
-  submit-api =
+  cardano-submit-api =
     cardano-node-project
     .hsPkgs
     .cardano-submit-api

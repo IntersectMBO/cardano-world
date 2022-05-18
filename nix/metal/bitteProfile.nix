@@ -2,8 +2,6 @@
   inputs,
   cell,
 }: let
-  inherit (inputs.bitte-cells) patroni;
-  inherit (inputs.cells) cardano;
   inherit (inputs) nixpkgs;
 in {
   default = {

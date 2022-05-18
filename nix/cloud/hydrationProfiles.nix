@@ -9,8 +9,11 @@ in {
   # -----------------------------------------------------------------------
   default = {bittelib, ...}: {
     imports = [
-      (cells.cardano.hydrationProfiles.consul-workload-policy)
-      (cells.cardano.hydrationProfiles.vault-workload-policy)
+      (cells.cardano.hydrationProfiles.workload-policies-cardano)
+      (cells.cardano.hydrationProfiles.workload-policies-ogmios)
+      (cells.cardano.hydrationProfiles.workload-policies-db-sync)
+      (cells.cardano.hydrationProfiles.workload-policies-wallet)
+      (cells.cardano.hydrationProfiles.workload-policies-submit-api)
     ];
     # NixOS-level hydration
     # --------------

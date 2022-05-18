@@ -20,7 +20,8 @@ in
     id = jobname;
     type = "service";
     priority = 50;
-    # consulRolePath = "consul/creds/ogmios";
+    vaultPkiPath = "pki/issue/ogmios";
+    consulRolePath = "consul/creds/ogmios";
   in
     with data-merge; {
       job.${id} = {
