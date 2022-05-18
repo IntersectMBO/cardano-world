@@ -7,11 +7,11 @@
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.nixpkgs.lib.strings) fileContents;
 in {
-  materialize-node = {
-    command = ''
-      cp ${packages.cardano-node.passthru.generateMaterialized} ./cells/cardano/packages/materialized
+  materialize-node = writeShellApplication {
+    name = "materialize-node";
+    text = ''
+      exec ${packages.cardano-node.passthru.generateMaterialized} ./nix/cardano/packages/materialized
     '';
-    # dependencies = [packages.cardano-node.passthru.generateMaterialized];
   };
   # run-local-node = let
   #   envName = "testnet";

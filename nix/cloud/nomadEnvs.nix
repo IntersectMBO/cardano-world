@@ -142,5 +142,34 @@ in
             env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
           };
         };
+      ogmios-0 = let
+        jobname = "ogmios-0";
+      in
+        merge (cardano.nomadJob.ogmios (
+          constants.envs.vasil-qa
+          // {
+            datacenters = ["us-east-2"];
+            inherit jobname;
+          }
+        )) {
+          job.${jobname}.group.ogmios.task = {
+            node = {
+              # env.ENVIRONMENT = "testnet";
+              # env.DEBUG_SLEEP = 6000;
+              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
+              env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
+              env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            };
+            ogmios = {
+              # env.ENVIRONMENT = "testnet";
+              # env.DEBUG_SLEEP = 6000;
+              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
+              env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
+              env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            };
+          };
+        };
     };
   }

@@ -10,7 +10,7 @@
   buildDebugImage = ep: o: n2c.buildImage (_utils.library.mkDebugOCI ep o);
 in {
   cardano-node = buildDebugImage entrypoints.cardano-node {
-    name = "registry.ci.iog.io/cardano-node";
+    name = "registry.iog.io/cardano-node";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-node.runtimeInputs;})
@@ -22,7 +22,7 @@ in {
     ];
   };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
-    name = "registry.ci.iog.io/cardano-db-sync";
+    name = "registry.iog.io/cardano-db-sync";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-db-sync.runtimeInputs;})
@@ -34,7 +34,7 @@ in {
     ];
   };
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
-    name = "registry.ci.iog.io/cardano-wallet";
+    name = "registry.iog.io/cardano-wallet";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-wallet.runtimeInputs;})
@@ -46,7 +46,7 @@ in {
     ];
   };
   cardano-submit-api = buildDebugImage entrypoints.cardano-submit-api {
-    name = "registry.ci.iog.io/cardano-submit-api";
+    name = "registry.iog.io/cardano-submit-api";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = entrypoints.cardano-submit-api.runtimeInputs;})
@@ -55,6 +55,18 @@ in {
     contents = [nixpkgs.bashInteractive nixpkgs.iana-etc healthChecks.cardano-submit-api-network-sync];
     config.Cmd = [
       "${entrypoints.cardano-submit-api}/bin/entrypoint"
+    ];
+  };
+  ogmios = buildDebugImage entrypoints.ogmios {
+    name = "registry.iog.io/ogmios";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = entrypoints.ogmios.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.ogmios];})
+    ];
+    contents = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.ogmios}/bin/entrypoint"
     ];
   };
 }

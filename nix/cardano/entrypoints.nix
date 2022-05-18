@@ -393,4 +393,22 @@ in {
       exec ${packages.cardano-submit-api}/bin/cardano-submit-api "''${args[@]}"
     '';
   };
+
+  ogmios = writeShellApplication {
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [packages.ogmios];
+    name = "entrypoint";
+    text = ''
+
+      NODE_TOPOLOGY="do-not-load"
+      ${prelude}
+
+      # Build args array
+      args+=("--listen-address" "0.0.0.0")
+      args+=("--port" "8070")
+      args+=("--config" "$NODE_CONFIG")
+
+      exec ${packages.ogmios}/bin/ogmios "''${args[@]}"
+    '';
+  };
 }

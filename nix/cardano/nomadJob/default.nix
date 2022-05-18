@@ -11,7 +11,8 @@
   ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
 in
   with data-merge; {
-    default = {
+    ogmios = import ./ogmios.nix {inherit inputs cell;};
+    cardano-node = {
       jobname ? "cardano",
       namespace,
       datacenters ? ["eu-central-1" "eu-west-1" "us-east-2"],
@@ -75,6 +76,7 @@ in
         # ----------
         group.cardano =
           merge
+          # task.vector ...
           (vector.nomadTask.default {
             inherit namespace;
             endpoints = ["http://127.0.0.1:12798/metrics"]; # prometheus metrics for cardano-node
