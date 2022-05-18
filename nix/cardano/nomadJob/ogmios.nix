@@ -120,6 +120,11 @@ in
                   kill_timeout = "30s";
                   resources.cpu = 2000;
                   resources.memory = 4096;
+                  vault = {
+                    change_mode = "noop";
+                    env = true;
+                    policies = ["ogmios"];
+                  };
                 };
               };
             }

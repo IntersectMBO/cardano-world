@@ -18,6 +18,7 @@
       type = "script";
     }
   ];
+  task = "ogmios";
   name = "${namespace}-ogmios";
   port = "ogmios";
   tags = ["\${NOMAD_ALLOC_ID}" "${namespace}"];

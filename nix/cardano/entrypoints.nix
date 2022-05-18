@@ -7,6 +7,8 @@
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
   inherit (cell) packages environments library;
 
+  prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
+
   prelude = ''
     [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
 
@@ -222,7 +224,7 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
+    runtimeInputs = prelude-runtime;
     debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
 
@@ -232,24 +234,14 @@ in {
 
       ${prelude}
 
+      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
+
       # the legacy service discovery implementation
       ${legacy-srv-discovery}
-
-      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
-      NODE_TOPOLOGY="$DATA_DIR/config/''${ENVIRONMENT:-custom}/topology.json"
-
-      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
-        echo "Doing legacy service discovery ..." > /dev/stderr
-        srv_discovery=1
-        srv_discovery
-      else
-        echo "Using custom topology: $NODE_TOPOLOGY ..." > /dev/stderr
-      fi
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
       args+=("--database-path" "$DB_DIR/node")
-      args+=("--topology" "$NODE_TOPOLOGY")
       [ -n "''${HOST_ADDR:-}" ] && args+=("--host-addr" "$HOST_ADDR")
       [ -n "''${HOST_IPV6_ADDR:-}" ] && args+=("--host-ipv6-addr" "$HOST_IPV6_ADDR")
       [ -n "''${PORT:-}" ] && args+=("--port" "$PORT")
@@ -264,7 +256,10 @@ in {
       [ -n "''${SHELLEY_VRF_KEY:-}" ] && args+=("--shelley-vrf-key" "$SHELLEY_VRF_KEY")
       [ -n "''${SHELLEY_OPCERT:-}" ] && args+=("--shelley-operational-certificate" "$SHELLEY_OPCERT")
 
-      if [ "''${srv_discovery}" == "1" ]; then
+      if [ -z "''${NODE_TOPOLOGY:-}" ]; then
+        echo "Doing legacy service discovery ..." > /dev/stderr
+        srv_discovery
+        args+=("--topology" "$NODE_TOPOLOGY")
         set -x
 
         # turn on bash's job control
@@ -281,6 +276,8 @@ in {
         echo Running service discovery loop > /dev/stderr
         watch_srv_discovery "$CARDANO_PID"
       else
+        [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
+        args+=("--topology" "$NODE_TOPOLOGY")
         exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
       fi
     '';
@@ -297,7 +294,7 @@ in {
   };
 
   cardano-db-sync = writeShellApplication {
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    runtimeInputs = prelude-runtime;
     debugInputs = [
       packages.cardano-db-sync
       packages.cardano-cli
@@ -329,7 +326,7 @@ in {
   };
 
   cardano-wallet = writeShellApplication {
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    runtimeInputs = prelude-runtime;
     debugInputs = [packages.cardano-wallet packages.cardano-cli];
     name = "entrypoint";
     text = ''
@@ -367,7 +364,7 @@ in {
   };
 
   cardano-submit-api = writeShellApplication {
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    runtimeInputs = prelude-runtime;
     debugInputs = [packages.cardano-submit-api packages.cardano-cli];
     name = "entrypoint";
     text = ''
@@ -384,7 +381,7 @@ in {
   };
 
   ogmios = writeShellApplication {
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    runtimeInputs = prelude-runtime;
     debugInputs = [packages.ogmios];
     name = "entrypoint";
     text = ''
@@ -392,9 +389,10 @@ in {
       ${prelude}
 
       # Build args array
-      args+=("--listen-address" "0.0.0.0")
+      args+=("--host" "0.0.0.0")
       args+=("--port" "8070")
-      args+=("--config" "$NODE_CONFIG")
+      args+=("--node-socket" "$SOCKET_PATH")
+      args+=("--node-config" "$NODE_CONFIG")
 
       exec ${packages.ogmios}/bin/ogmios "''${args[@]}"
     '';

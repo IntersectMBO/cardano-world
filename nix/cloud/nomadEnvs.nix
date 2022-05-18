@@ -158,6 +158,7 @@ in
             node = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
+              env.DATA_DIR = persistanceMount + "/ogmios-0";
               env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
               env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
@@ -166,6 +167,7 @@ in
             ogmios = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
+              env.DATA_DIR = persistanceMount + "/ogmios-0";
               env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
               env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
