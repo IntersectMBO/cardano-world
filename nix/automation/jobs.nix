@@ -6,6 +6,62 @@
   inherit (inputs.cells.cardano) packages library nixosProfiles;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.nixpkgs.lib.strings) fileContents;
+  updateProposalTemplate = ''
+    # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $PROPOSAL_ARGS
+
+    CHANGE_ADDRESS=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --testnet-magic "$TESTNET_MAGIC")
+    TXIN=$(cardano-cli query utxo --address "$CHANGE_ADDRESS" --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout \
+            | jq -r 'to_entries[0]|.key'
+    )
+    EPOCH=$(cardano-cli query tip --testnet-magic "$TESTNET_MAGIC"|jq .epoch)
+    echo "$TXIN" > /dev/null
+    PROPOSAL_KEY_ARGS=()
+    SIGNING_ARGS=()
+    for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
+    do
+      PROPOSAL_KEY_ARGS+=("--genesis-verification-key-file" "$KEY_DIR/genesis-keys/shelley.00$i.vkey")
+      SIGNING_ARGS+=("--signing-key-file" "$KEY_DIR/delegate-keys/shelley.00$i.skey")
+    done
+
+
+    cardano-cli governance create-update-proposal \
+      --epoch "$EPOCH" \
+      "''${PROPOSAL_ARGS[@]}" \
+      "''${PROPOSAL_KEY_ARGS[@]}" \
+      --out-file d.proposal
+    cardano-cli transaction build \
+      --tx-in "$TXIN" \
+      --change-address "$CHANGE_ADDRESS" \
+      --update-proposal-file d.proposal \
+      --testnet-magic "$TESTNET_MAGIC" \
+      --out-file tx-proposal-d.txbody
+    cardano-cli transaction sign \
+      --tx-body-file tx-proposal-d.txbody \
+      --out-file tx-proposal-d.txsigned \
+      --signing-key-file "$PAYMENT_KEY".skey \
+      "''${SIGNING_ARGS[@]}"
+    # TODO: remove if we figure out how to make it detect where in epoch we are
+    if ! cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal-d.txsigned
+    then
+      cardano-cli governance create-update-proposal \
+        --epoch $(("$EPOCH" + 1)) \
+        --decentralization-parameter "$D_VALUE" \
+        "''${PROPOSAL_ARGS[@]}" \
+        --out-file d.proposal
+      cardano-cli transaction build \
+        --tx-in "$TXIN" \
+        --change-address "$CHANGE_ADDRESS" \
+        --update-proposal-file d.proposal \
+        --testnet-magic "$TESTNET_MAGIC" \
+        --out-file tx-proposal-d.txbody
+      cardano-cli transaction sign \
+        --tx-body-file tx-proposal-d.txbody \
+        --out-file tx-proposal-d.txsigned \
+        --signing-key-file "$PAYMENT_KEY".skey \
+        "''${SIGNING_ARGS[@]}"
+      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal-d.txsigned
+      fi
+  '';
 in {
   materialize-node = writeShellApplication {
     name = "materialize-node";
@@ -78,6 +134,18 @@ in {
         --security-param 36 \
         --slot-length 1000 \
         --start-time "$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date " now +30 min")"
+      # TODO remove when genesis generator outputs non-extended-key format
+      pushd "$genesis_dir/genesis-keys"
+        for i in {0..2}
+        do
+          mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
+          cardano-cli key non-extended-key \
+            --extended-verification-key-file shelley.00"$i".vkey-ext \
+            --verification-key-file shelley.00"$i".vkey
+
+        done
+
+      popd
     '';
   };
   gen-custom-kv-config =
@@ -300,6 +368,37 @@ in {
       cardano-cli transaction build-raw --tx-in "$TXIN" --tx-out "$PAYMENT_ADDRESS+$SUPPLY" --fee "$FEE" --out-file tx-byron.txbody
       cardano-cli transaction sign --tx-body-file tx-byron.txbody --out-file tx-byron.txsigned --address "$BYRON_ADDRESS" --signing-key-file "$BYRON_SIGNING_KEY"
       cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-byron.txsigned
+    '';
+  };
+  update-proposal-generic = writeShellApplication {
+    name = "update-proposal-d";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC, PROPOSAL_ARGS
+      ${updateProposalTemplate}
+    '';
+  };
+  update-proposal-d = writeShellApplication {
+    name = "update-proposal-d";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $D_VALUE, $TESTNET_MAGIC
+      PROPOSAL_ARGS=(
+        "--decentralization-parameter" "$D_VALUE"
+      )
+      ${updateProposalTemplate}
+    '';
+  };
+  update-proposal-hard-fork = writeShellApplication {
+    name = "update-proposal-d";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
+      PROPOSAL_ARGS=(
+        "--protocol-major" "$MAJOR_VERSION"
+        "--protocol-minor" "0"
+      )
+      ${updateProposalTemplate}
     '';
   };
 }
