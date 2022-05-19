@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs.nixpkgs) jq writeText runCommand lib;
+  inherit (inputs.nixpkgs) jq writeText runCommandNoCC lib;
 
   protNames = {
     RealPBFT = {n = "byron";};
@@ -51,7 +51,7 @@
     };
   in
     builtins.toFile "topology.yaml" (builtins.toJSON topology);
-in {
+in rec {
   copyEnvsTemplate = environments: ''
     mkdir -p "$DATA_DIR/config"
     ${
@@ -97,4 +97,81 @@ in {
         environments)
     }
   '';
+  generateStaticHTMLConfigs = environments: let
+    createEnvironmentConfigs = copyEnvsTemplate environments;
+    configHtml = environments:
+      ''
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Cardano Configurations</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+          <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+        </head>
+        <body>
+          <section class="hero is-small is-primary">
+            <div class="hero-body">
+              <div class="container">
+                <h1 class="title is-1">
+                  Cardano
+                </h1>
+                <h2 class="subtitle is-3">
+                  Configurations
+                </h2>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="container">
+              <div class="table-container">
+                <table class="table is-narrow is-fullwidth">
+                  <thead>
+                    <tr>
+                      <th>Cluster</th>
+                      <th>Config</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${toString (lib.mapAttrsToList (env: value:
+                      ''
+                      <tr>
+                        <td>${env}</td>
+                        <td>
+                          <div class="buttons has-addons">
+                            <a class="button is-primary" href="config/${env}/config.json">config</a>
+                            <a class="button is-info" href="config/${env}/byron-genesis.json">Byron Genesis</a>
+                            <a class="button is-info" href="config/${env}/shelley-genesis.json">Shelley Genesis</a>
+                            <a class="button is-info" href="config/${env}/alonzo-genesis.json">Alonzo Genesis</a>
+                            <a class="button is-info" href="config/${env}/topology.json">topology</a>
+                            <a class="button is-primary" href="config/${env}/db-sync-config.json">db-sync config</a>
+                            <a class="button is-primary" href="config/${env}/submit-api-config.json">submit-api config</a>
+                          </div>
+                        </td>
+                      </tr>
+                      ''
+                    ) environments) }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </body>
+      </html>
+    '';
+  in
+    runCommandNoCC "environments.html" {} ''
+      DATA_DIR="$out"
+      ENVIRONMENTS=(${lib.escapeShellArgs (builtins.attrNames environments)})
+      ${createEnvironmentConfigs}
+      for env in "''${ENVIRONMENTS[@]}"
+      do
+        pushd "$out/config/$env"
+          find ./
+        popd
+      done
+      cp ${writeText "config.html" (configHtml environments)} $out/index.html
+    '';
 }
