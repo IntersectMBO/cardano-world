@@ -397,4 +397,13 @@ in {
       exec ${packages.ogmios}/bin/ogmios "''${args[@]}"
     '';
   };
+  cardano-config-html = writeShellApplication {
+    runtimeInputs = [
+      nixpkgs.darkhttpd
+    ];
+    name = "entrypoint";
+    text = ''
+      exec darkhttpd "''${CONFIG_HTML_ROOT:-${packages.cardano-config-html-public}}" --port "''${NOMAD_PORT_http:-8080}"
+    '';
+  };
 }
