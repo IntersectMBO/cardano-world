@@ -18,7 +18,7 @@
     deploySshKey = "not-a-key";
   };
 
-  walletWorld = {
+  cardanoWorld = {
     extraModulesPath,
     pkgs,
     ...
@@ -43,16 +43,25 @@
 in {
   dev = std.lib.mkShell {
     imports = [
-      walletWorld
+      cardanoWorld
       capsules.base
       capsules.cloud
       capsules.integrations
-      inputs.cells.cardano.devshellProfiles.default
+      inputs.cells.cardano.devshellProfiles.dev
+    ];
+  };
+  devops = std.lib.mkShell {
+    imports = [
+      cardanoWorld
+      capsules.base
+      capsules.cloud
+      capsules.integrations
+      inputs.cells.cardano.devshellProfiles.world
     ];
   };
   ops = std.lib.mkShell {
     imports = [
-      walletWorld
+      cardanoWorld
       capsules.base
       capsules.cloud
       capsules.hooks
@@ -60,7 +69,19 @@ in {
       capsules.integrations
       capsules.tools
       bitte-cells.patroni.devshellProfiles.default
-      inputs.cells.cardano.devshellProfiles.default
+      inputs.cells.cardano.devshellProfiles.world
+    ];
+  };
+  monorepo = std.lib.mkShell {
+    imports = [
+      cardanoWorld
+      inputs.cells.cardano.devshellProfiles.monorepo
+    ];
+  };
+  minimal = std.lib.mkShell {
+    imports = [
+      cardanoWorld
+      inputs.cells.cardano.devshellProfiles.minimal
     ];
   };
 }
