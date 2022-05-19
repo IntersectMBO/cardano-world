@@ -66,7 +66,7 @@ in {
   materialize-node = writeShellApplication {
     name = "materialize-node";
     text = ''
-      exec ${packages.cardano-node.passthru.generateMaterialized} ./nix/cardano/packages/materialized
+      exec ${packages.cardano-node.passthru.generateMaterialized} ./nix/cardano/packages/materialized/cardano-node
     '';
   };
   # run-local-node = let
