@@ -395,8 +395,8 @@ in {
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
       PROPOSAL_ARGS=(
-        "--protocol-major" "$MAJOR_VERSION"
-        "--protocol-minor" "0"
+        "--protocol-major-version" "$MAJOR_VERSION"
+        "--protocol-minor-version" "0"
       )
       ${updateProposalTemplate}
     '';
