@@ -4,16 +4,6 @@
 }: let
   inherit (inputs.nixpkgs) jq writeText runCommandNoCC lib;
 
-  protNames = {
-    RealPBFT = {n = "byron";};
-    TPraos = {n = "shelley";};
-    Cardano = {
-      n = "byron";
-      shelley = "shelley";
-      alonzo = "alonzo";
-    };
-  };
-
   mkEdgeTopology = {
     hostAddr ? "127.0.0.1",
     port ? 3001,
@@ -51,8 +41,61 @@
     };
   in
     builtins.toFile "topology.yaml" (builtins.toJSON topology);
+  mkEdgeTopologyP2P = {
+    edgeNodes ? [
+      {
+        addr = "127.0.0.1";
+        port = 3001;
+      }
+    ],
+    useLedgerAfterSlot ? 0,
+  }: let
+    mkPublicRootsAccessPoints =
+      map (edgeNode: {
+        address = edgeNode.addr;
+        port = edgeNode.port;
+      })
+      edgeNodes;
+    topology = {
+      LocalRoots = {
+        groups = [
+          {
+            localRoots = {
+              accessPoints = [];
+              avertise = false;
+              valency = 1;
+            };
+          }
+        ];
+      };
+      PublicRoots = [
+        {
+          publicRoots = {
+            accessPoints = mkPublicRootsAccessPoints;
+            advertise = false;
+          };
+        }
+      ];
+      inherit useLedgerAfterSlot;
+    };
+  in
+    builtins.toFile "topology.yaml" (builtins.toJSON topology);
 in rec {
-  copyEnvsTemplate = environments: ''
+  copyEnvsTemplate = environments: let
+    mkTopology = env: let
+      legacyTopology = mkEdgeTopology {
+        edgeNodes = [env.relaysNew];
+        valency = 2;
+      };
+      p2pTopology = mkEdgeTopologyP2P {
+        inherit (env) edgeNodes;
+        useLedgerAfterSlot = env.usePeersFromLedgerAfterSlot;
+      };
+    in
+      if (env.nodeConfig.EnableP2P or false)
+      then p2pTopology
+      else legacyTopology;
+  in ''
     mkdir -p "$DATA_DIR/config"
     ${
       toString (lib.mapAttrsToList (
@@ -60,38 +103,21 @@ in rec {
             p = value.consensusProtocol;
           in ''
             mkdir -p "$DATA_DIR/config/${env}"
-            ${
-              if p != "Cardano"
-              then ''
-                ${jq}/bin/jq . < ${__toFile "${env}-config.json" (__toJSON (value.nodeConfig
-                  // {
-                    GenesisFile = "${protNames.${p}.n}-genesis.json";
-                  }))} > "$DATA_DIR/config/${env}/config.json"
-              ''
-              else ''
-                ${jq}/bin/jq . < ${__toFile "${env}-config.json" (__toJSON (value.nodeConfig
-                  // {
-                    ByronGenesisFile = "${protNames.${p}.n}-genesis.json";
-                    ShelleyGenesisFile = "${protNames.${p}.shelley}-genesis.json";
-                    AlonzoGenesisFile = "${protNames.${p}.alonzo}-genesis.json";
-                  }))} > "$DATA_DIR/config/${env}/config.json"
-              ''
-            }
-            ${lib.optionalString (p == "RealPBFT" || p == "Byron") ''
-              cp ${value.nodeConfig.GenesisFile} "$DATA_DIR/config/${env}/${protNames.${p}.n}-genesis.json"
-            ''}
-            ${lib.optionalString (p == "TPraos") ''
-              cp ${value.nodeConfig.GenesisFile} "$DATA_DIR/config/${env}/${protNames.${p}.n}-genesis.json"
-            ''}
-            ${lib.optionalString (p == "Cardano") ''
-              cp ${value.nodeConfig.ShelleyGenesisFile} "$DATA_DIR/config/${env}/${protNames.${p}.shelley}-genesis.json"
-              cp ${value.nodeConfig.ByronGenesisFile} "$DATA_DIR/config/${env}/${protNames.${p}.n}-genesis.json"
-              cp ${value.nodeConfig.AlonzoGenesisFile} "$DATA_DIR/config/${env}/${protNames.${p}.alonzo}-genesis.json"
-            ''}
-            ${jq}/bin/jq . < ${mkEdgeTopology {
-              edgeNodes = [value.relaysNew];
-              valency = 2;
-            }} > "$DATA_DIR/config/${env}/topology.json"
+            ${jq}/bin/jq . < ${__toFile "${env}-config.json" (__toJSON (value.nodeConfig
+              // {
+                ByronGenesisFile = "byron-genesis.json";
+                ShelleyGenesisFile = "shelley-genesis.json";
+                AlonzoGenesisFile = "alonzo-genesis.json";
+              }))} > "$DATA_DIR/config/${env}/config.json"
+            ${jq}/bin/jq . < ${__toFile "${env}-db-sync-config.json" (__toJSON (value.dbSyncConfig
+              // {
+                NodeConfigFile = "config.json";
+              }))} > "$DATA_DIR/config/${env}/db-sync-config.json"
+            ${jq}/bin/jq . < ${__toFile "${env}-submit-api-config.json" (__toJSON value.submitApiConfig)} > "$DATA_DIR/config/${env}/submit-api-config.json"
+            cp ${value.nodeConfig.ByronGenesisFile} "$DATA_DIR/config/${env}/byron-genesis.json"
+            cp ${value.nodeConfig.ShelleyGenesisFile} "$DATA_DIR/config/${env}/shelley-genesis.json"
+            cp ${value.nodeConfig.AlonzoGenesisFile} "$DATA_DIR/config/${env}/alonzo-genesis.json"
+            ${jq}/bin/jq . < ${mkTopology value} > "$DATA_DIR/config/${env}/topology.json"
           ''
         )
         environments)
@@ -99,8 +125,7 @@ in rec {
   '';
   generateStaticHTMLConfigs = environments: let
     createEnvironmentConfigs = copyEnvsTemplate environments;
-    configHtml = environments:
-      ''
+    configHtml = environments: ''
       <!DOCTYPE html>
       <html>
         <head>
@@ -135,24 +160,25 @@ in rec {
                     </tr>
                   </thead>
                   <tbody>
-                    ${toString (lib.mapAttrsToList (env: value:
-                      ''
-                      <tr>
-                        <td>${env}</td>
-                        <td>
-                          <div class="buttons has-addons">
-                            <a class="button is-primary" href="config/${env}/config.json">config</a>
-                            <a class="button is-info" href="config/${env}/byron-genesis.json">Byron Genesis</a>
-                            <a class="button is-info" href="config/${env}/shelley-genesis.json">Shelley Genesis</a>
-                            <a class="button is-info" href="config/${env}/alonzo-genesis.json">Alonzo Genesis</a>
-                            <a class="button is-info" href="config/${env}/topology.json">topology</a>
-                            <a class="button is-primary" href="config/${env}/db-sync-config.json">db-sync config</a>
-                            <a class="button is-primary" href="config/${env}/submit-api-config.json">submit-api config</a>
-                          </div>
-                        </td>
-                      </tr>
-                      ''
-                    ) environments) }
+                    ${toString (lib.mapAttrsToList (
+          env: value: ''
+            <tr>
+              <td>${env}</td>
+              <td>
+                <div class="buttons has-addons">
+                  <a class="button is-primary" href="config/${env}/config.json">config</a>
+                  <a class="button is-info" href="config/${env}/byron-genesis.json">Byron Genesis</a>
+                  <a class="button is-info" href="config/${env}/shelley-genesis.json">Shelley Genesis</a>
+                  <a class="button is-info" href="config/${env}/alonzo-genesis.json">Alonzo Genesis</a>
+                  <a class="button is-info" href="config/${env}/topology.json">topology</a>
+                  <a class="button is-primary" href="config/${env}/db-sync-config.json">db-sync config</a>
+                  <a class="button is-primary" href="config/${env}/submit-api-config.json">submit-api config</a>
+                </div>
+              </td>
+            </tr>
+          ''
+        )
+        environments)}
                   </tbody>
                 </table>
               </div>

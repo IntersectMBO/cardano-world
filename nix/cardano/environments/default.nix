@@ -5,13 +5,20 @@
   inherit (inputs.nixpkgs) jq writeText runCommand lib;
 
   defaultLogConfig = import ./generic-log-config.nix;
-  defaultExplorerLogConfig = import ./explorer-log-config.nix;
-  mkExplorerConfig = name: nodeConfig:
-    lib.filterAttrs (k: v: v != null) {
+  defaultDbSyncLogConfig = import ./db-sync-log-config.nix;
+  mkDbSyncConfig = name: nodeConfig:
+    (lib.filterAttrs (k: v: v != null) {
       NetworkName = name;
       inherit (nodeConfig) RequiresNetworkMagic;
       NodeConfigFile = "${__toFile "config-${toString name}.json" (__toJSON nodeConfig)}";
-    };
+    })
+    // defaultDbSyncLogConfig;
+  mkSubmitApiConfig = name: nodeConfig:
+    (lib.filterAttrs (k: v: v != null) {
+      GenesisHash = nodeConfig.ByronGenesisHash;
+      inherit (nodeConfig) RequiresNetworkMagic;
+    })
+    // defaultDbSyncLogConfig;
 
   environments = {
     mainnet = rec {
@@ -33,13 +40,8 @@
       networkConfig = import ./mainnet-config.nix;
       nodeConfig = networkConfig // defaultLogConfig;
       consensusProtocol = networkConfig.Protocol;
-      submitApiConfig =
-        {
-          GenesisHash = nodeConfig.ByronGenesisHash;
-          inherit (networkConfig) RequiresNetworkMagic;
-        }
-        // defaultExplorerLogConfig;
-      explorerConfig = mkExplorerConfig "mainnet" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "mainnet" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "mainnet" nodeConfig;
       usePeersFromLedgerAfterSlot = 29691317;
     };
     staging = rec {
@@ -59,13 +61,8 @@
       networkConfig = import ./staging-config.nix;
       nodeConfig = networkConfig // defaultLogConfig;
       consensusProtocol = networkConfig.Protocol;
-      submitApiConfig =
-        {
-          GenesisHash = nodeConfig.ByronGenesisHash;
-          inherit (networkConfig) RequiresNetworkMagic;
-        }
-        // defaultExplorerLogConfig;
-      explorerConfig = mkExplorerConfig "staging" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "staging" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "staging" nodeConfig;
       usePeersFromLedgerAfterSlot = 29444240;
     };
     testnet = rec {
@@ -87,13 +84,8 @@
       networkConfig = import ./testnet-config.nix;
       nodeConfig = networkConfig // defaultLogConfig;
       consensusProtocol = networkConfig.Protocol;
-      submitApiConfig =
-        {
-          GenesisHash = nodeConfig.ByronGenesisHash;
-          inherit (networkConfig) RequiresNetworkMagic;
-        }
-        // defaultExplorerLogConfig;
-      explorerConfig = mkExplorerConfig "testnet" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "testnet" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "testnet" nodeConfig;
       usePeersFromLedgerAfterSlot = 26888469;
     };
     p2p = rec {
@@ -107,7 +99,8 @@
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgePort = 3001;
-      explorerConfig = mkExplorerConfig "p2p" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "p2p" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "p2p" nodeConfig;
       usePeersFromLedgerAfterSlot = 14680;
     };
     alonzo-purple = rec {
@@ -121,7 +114,8 @@
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgePort = 3001;
-      explorerConfig = mkExplorerConfig "alonzo-purple" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "alonzo-purple" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "alonzo-purple" nodeConfig;
     };
     marlowe-pioneers = rec {
       useByronWallet = false;
@@ -134,7 +128,8 @@
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgePort = 3001;
-      explorerConfig = mkExplorerConfig "marlowe-pioneers" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "marlowe-pioneers" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "marlowe-pioneers" nodeConfig;
       usePeersFromLedgerAfterSlot = 40000;
     };
     # used for daedalus/cardano-wallet for local development
@@ -149,7 +144,8 @@
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgePort = 3001;
-      explorerConfig = mkExplorerConfig "shelley_qa" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "shelley_qa" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "shelley_qa" nodeConfig;
       usePeersFromLedgerAfterSlot = 23574838;
     };
     vasil-qa = rec {
@@ -162,9 +158,15 @@
       networkConfig = import ./vasil-qa-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
-      edgePort = 30000;
-      explorerConfig = mkExplorerConfig "vasil-qa" nodeConfig;
-      usePeersFromLedgerAfterSlot = 86400;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = 30000;
+        }
+      ];
+      submitApiConfig = mkSubmitApiConfig "vasil-qa" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "vasil-qa" nodeConfig;
+      usePeersFromLedgerAfterSlot = 136794;
     };
     # used for SRE development
     sre = rec {
@@ -178,7 +180,8 @@
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgePort = 3001;
-      explorerConfig = mkExplorerConfig "sre" nodeConfig;
+      submitApiConfig = mkSubmitApiConfig "sre" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "sre" nodeConfig;
       usePeersFromLedgerAfterSlot = 122760;
     };
   };
