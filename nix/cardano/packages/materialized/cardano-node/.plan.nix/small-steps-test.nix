@@ -35,6 +35,7 @@
         depends = [
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."goblins" or (errorHandler.buildDepError "goblins"))
+          (hsPkgs."cardano-prelude" or (errorHandler.buildDepError "cardano-prelude"))
           (hsPkgs."hedgehog" or (errorHandler.buildDepError "hedgehog"))
           (hsPkgs."tasty-hunit" or (errorHandler.buildDepError "tasty-hunit"))
           (hsPkgs."microlens" or (errorHandler.buildDepError "microlens"))

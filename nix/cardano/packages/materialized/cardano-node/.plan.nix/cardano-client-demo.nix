@@ -118,7 +118,7 @@
             (hsPkgs."cardano-data" or (errorHandler.buildDepError "cardano-data"))
             (hsPkgs."cardano-ledger-core" or (errorHandler.buildDepError "cardano-ledger-core"))
             (hsPkgs."cardano-ledger-shelley" or (errorHandler.buildDepError "cardano-ledger-shelley"))
-            (hsPkgs."compact-map" or (errorHandler.buildDepError "compact-map"))
+            (hsPkgs."vector-map" or (errorHandler.buildDepError "vector-map"))
             (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."optparse-applicative" or (errorHandler.buildDepError "optparse-applicative"))

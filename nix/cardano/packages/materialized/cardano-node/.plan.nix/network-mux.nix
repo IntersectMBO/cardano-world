@@ -118,7 +118,7 @@
             ];
           buildable = if system.isWindows then false else true;
           modules = [ "Linger" ];
-          hsSourceDirs = [ "demo" ];
+          hsSourceDirs = [ "tools" ];
           mainPath = [ "cardano-ping.hs" ] ++ [ "" ];
           };
         };

@@ -642,6 +642,7 @@
         plutus-tx = ./.plan.nix/plutus-tx.nix;
         cardano-ledger-byron = ./.plan.nix/cardano-ledger-byron.nix;
         cardano-data = ./.plan.nix/cardano-data.nix;
+        cardano-ledger-babbage-test = ./.plan.nix/cardano-ledger-babbage-test.nix;
         measures = ./.plan.nix/measures.nix;
         cardano-prelude = ./.plan.nix/cardano-prelude.nix;
         cardano-ledger-pretty = ./.plan.nix/cardano-ledger-pretty.nix;
@@ -673,7 +674,6 @@
         optparse-applicative-fork = ./.plan.nix/optparse-applicative-fork.nix;
         lobemo-backend-ekg = ./.plan.nix/lobemo-backend-ekg.nix;
         small-steps = ./.plan.nix/small-steps.nix;
-        compact-map = ./.plan.nix/compact-map.nix;
         ouroboros-network-framework = ./.plan.nix/ouroboros-network-framework.nix;
         orphans-deriving-via = ./.plan.nix/orphans-deriving-via.nix;
         word-array = ./.plan.nix/word-array.nix;
@@ -715,6 +715,7 @@
         ouroboros-consensus-protocol = ./.plan.nix/ouroboros-consensus-protocol.nix;
         cardano-crypto-wrapper = ./.plan.nix/cardano-crypto-wrapper.nix;
         plutus-ghc-stub = ./.plan.nix/plutus-ghc-stub.nix;
+        vector-map = ./.plan.nix/vector-map.nix;
         network-mux = ./.plan.nix/network-mux.nix;
         threepenny-gui = ./.plan.nix/threepenny-gui.nix;
         cardano-client-demo = ./.plan.nix/cardano-client-demo.nix;
@@ -747,6 +748,7 @@
             flags = { "test-normal-form" = lib.mkOverride 900 false; };
             };
           "cardano-data" = { flags = {}; };
+          "cardano-ledger-babbage-test" = { flags = {}; };
           "measures" = {
             flags = { "development" = lib.mkOverride 900 false; };
             };
@@ -811,7 +813,6 @@
           "small-steps" = {
             flags = { "sts_assert" = lib.mkOverride 900 false; };
             };
-          "compact-map" = { flags = {}; };
           "ouroboros-network-framework" = { flags = {}; };
           "orphans-deriving-via" = {
             flags = { "development" = lib.mkOverride 900 false; };
@@ -893,6 +894,7 @@
             };
           "cardano-crypto-wrapper" = { flags = {}; };
           "plutus-ghc-stub" = { flags = {}; };
+          "vector-map" = { flags = {}; };
           "network-mux" = {
             flags = {
               "ipv6" = lib.mkOverride 900 false;
@@ -1085,7 +1087,6 @@
           "scientific".components.library.planned = lib.mkOverride 900 true;
           "cardano-ledger-alonzo-test".components.library.planned = lib.mkOverride 900 true;
           "th-extras".components.library.planned = lib.mkOverride 900 true;
-          "compact-map".components.library.planned = lib.mkOverride 900 true;
           "hspec-discover".components.exes."hspec-discover".planned = lib.mkOverride 900 true;
           "splitmix".components.library.planned = lib.mkOverride 900 true;
           "io-sim".components.library.planned = lib.mkOverride 900 true;
@@ -1144,6 +1145,7 @@
           "uuid".components.library.planned = lib.mkOverride 900 true;
           "hedgehog-corpus".components.library.planned = lib.mkOverride 900 true;
           "time".components.library.planned = lib.mkOverride 900 true;
+          "cardano-ledger-babbage-test".components.library.planned = lib.mkOverride 900 true;
           "ouroboros-consensus-protocol".components.library.planned = lib.mkOverride 900 true;
           "cardano-prelude".components.library.planned = lib.mkOverride 900 true;
           "MonadRandom".components.library.planned = lib.mkOverride 900 true;
@@ -1298,6 +1300,7 @@
           "selective".components.library.planned = lib.mkOverride 900 true;
           "http-client".components.library.planned = lib.mkOverride 900 true;
           "async".components.library.planned = lib.mkOverride 900 true;
+          "ouroboros-network-framework".components.sublibs."testlib".planned = lib.mkOverride 900 true;
           "http-media".components.library.planned = lib.mkOverride 900 true;
           "ghc-boot".components.library.planned = lib.mkOverride 900 true;
           "word8".components.library.planned = lib.mkOverride 900 true;
@@ -1344,6 +1347,7 @@
           "singleton-bool".components.library.planned = lib.mkOverride 900 true;
           "attoparsec".components.library.planned = lib.mkOverride 900 true;
           "algebraic-graphs".components.library.planned = lib.mkOverride 900 true;
+          "vector-map".components.library.planned = lib.mkOverride 900 true;
           "data-default-instances-dlist".components.library.planned = lib.mkOverride 900 true;
           "haskell-lexer".components.library.planned = lib.mkOverride 900 true;
           "bech32".components.exes."bech32".planned = lib.mkOverride 900 true;
@@ -1407,6 +1411,7 @@
           "digest".components.library.planned = lib.mkOverride 900 true;
           "io-streams".components.library.planned = lib.mkOverride 900 true;
           "Glob".components.library.planned = lib.mkOverride 900 true;
+          "ouroboros-consensus-protocol".components.sublibs."ouroboros-consensus-protocol-test".planned = lib.mkOverride 900 true;
           "integer-gmp".components.library.planned = lib.mkOverride 900 true;
           "tasty".components.library.planned = lib.mkOverride 900 true;
           "polyparse".components.library.planned = lib.mkOverride 900 true;

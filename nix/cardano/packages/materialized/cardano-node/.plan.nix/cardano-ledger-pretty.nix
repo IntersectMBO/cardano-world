@@ -46,7 +46,7 @@
           (hsPkgs."cardano-ledger-shelley-ma" or (errorHandler.buildDepError "cardano-ledger-shelley-ma"))
           (hsPkgs."cardano-protocol-tpraos" or (errorHandler.buildDepError "cardano-protocol-tpraos"))
           (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
-          (hsPkgs."compact-map" or (errorHandler.buildDepError "compact-map"))
+          (hsPkgs."vector-map" or (errorHandler.buildDepError "vector-map"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
           (hsPkgs."hashable" or (errorHandler.buildDepError "hashable"))
           (hsPkgs."iproute" or (errorHandler.buildDepError "iproute"))

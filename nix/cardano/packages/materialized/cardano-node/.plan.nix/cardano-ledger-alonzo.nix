@@ -46,7 +46,6 @@
           (hsPkgs."cardano-ledger-shelley-ma" or (errorHandler.buildDepError "cardano-ledger-shelley-ma"))
           (hsPkgs."cardano-prelude" or (errorHandler.buildDepError "cardano-prelude"))
           (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
-          (hsPkgs."compact-map" or (errorHandler.buildDepError "compact-map"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
           (hsPkgs."data-default" or (errorHandler.buildDepError "data-default"))
           (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))

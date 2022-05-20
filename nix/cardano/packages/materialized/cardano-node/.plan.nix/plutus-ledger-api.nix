@@ -50,6 +50,7 @@
           (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
           (hsPkgs."tagged" or (errorHandler.buildDepError "tagged"))
           (hsPkgs."lens" or (errorHandler.buildDepError "lens"))
+          (hsPkgs."barbies" or (errorHandler.buildDepError "barbies"))
           ];
         buildable = true;
         modules = [
@@ -70,9 +71,11 @@
           "Plutus/V1/Ledger/Time"
           "Plutus/V1/Ledger/Value"
           "Plutus/V1/Ledger/EvaluationContext"
+          "Plutus/V1/Ledger/ProtocolVersions"
           "Plutus/V2/Ledger/Api"
           "Plutus/V2/Ledger/Contexts"
           "Plutus/V2/Ledger/Tx"
+          "Plutus/V2/Ledger/EvaluationContext"
           "Plutus/ApiCommon"
           ];
         hsSourceDirs = [ "src" ];
@@ -84,7 +87,6 @@
             (hsPkgs."mtl" or (errorHandler.buildDepError "mtl"))
             (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
             (hsPkgs."plutus-core" or (errorHandler.buildDepError "plutus-core"))
-            (hsPkgs."plutus-core".components.sublibs.plutus-core-testlib or (errorHandler.buildDepError "plutus-core:plutus-core-testlib"))
             (hsPkgs."plutus-ledger-api" or (errorHandler.buildDepError "plutus-ledger-api"))
             (hsPkgs."hedgehog" or (errorHandler.buildDepError "hedgehog"))
             (hsPkgs."tasty" or (errorHandler.buildDepError "tasty"))

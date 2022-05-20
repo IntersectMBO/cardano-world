@@ -2658,16 +2658,17 @@
         "utils": "utils_36"
       },
       "locked": {
-        "lastModified": 1652974880,
-        "narHash": "sha256-9reQrEEWbi2eOVn2qKAmeSnL7pLLuZMuXYo4NPojEb4=",
+        "lastModified": 1653030535,
+        "narHash": "sha256-PkyXPsMEL1BNZPZtzOkdNy2bRXCswPpjSAC6UVlFZmo=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "41afffd647fd92b731ebe96aaadf1dadfaaceba8",
+        "rev": "968372cb784faae6c4258649516668449afc209c",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
         "repo": "cardano-node",
+        "rev": "968372cb784faae6c4258649516668449afc209c",
         "type": "github"
       }
     },

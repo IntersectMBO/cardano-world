@@ -38,7 +38,7 @@
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
           (hsPkgs."cborg" or (errorHandler.buildDepError "cborg"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
-          (hsPkgs."compact-map" or (errorHandler.buildDepError "compact-map"))
+          (hsPkgs."vector-map" or (errorHandler.buildDepError "vector-map"))
           (hsPkgs."cryptonite" or (errorHandler.buildDepError "cryptonite"))
           (hsPkgs."deepseq" or (errorHandler.buildDepError "deepseq"))
           (hsPkgs."formatting" or (errorHandler.buildDepError "formatting"))
@@ -85,7 +85,11 @@
             (hsPkgs."QuickCheck" or (errorHandler.buildDepError "QuickCheck"))
             ];
           buildable = true;
-          modules = [ "Test/Data/UMap" "Test/Data/Coders" ];
+          modules = [
+            "Test/Data/UMap"
+            "Test/Data/Coders"
+            "Test/Data/MapExtras"
+            ];
           hsSourceDirs = [ "test" ];
           mainPath = [ "Main.hs" ];
           };

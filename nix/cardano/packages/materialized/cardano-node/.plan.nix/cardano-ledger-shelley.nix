@@ -47,7 +47,7 @@
           (hsPkgs."cardano-prelude" or (errorHandler.buildDepError "cardano-prelude"))
           (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
           (hsPkgs."cborg" or (errorHandler.buildDepError "cborg"))
-          (hsPkgs."compact-map" or (errorHandler.buildDepError "compact-map"))
+          (hsPkgs."vector-map" or (errorHandler.buildDepError "vector-map"))
           (hsPkgs."constraints" or (errorHandler.buildDepError "constraints"))
           (hsPkgs."containers" or (errorHandler.buildDepError "containers"))
           (hsPkgs."data-default-class" or (errorHandler.buildDepError "data-default-class"))
@@ -79,6 +79,7 @@
           "Cardano/Ledger/Shelley/API/Wallet"
           "Cardano/Ledger/Shelley/API/Mempool"
           "Cardano/Ledger/Shelley/API/Types"
+          "Cardano/Ledger/Shelley/AdaPots"
           "Cardano/Ledger/Shelley/BlockChain"
           "Cardano/Ledger/Shelley/CompactAddr"
           "Cardano/Ledger/Shelley/Delegation/Certificates"
@@ -114,7 +115,6 @@
           "Cardano/Ledger/Shelley/Rules/Rupd"
           "Cardano/Ledger/Shelley/Rules/Snap"
           "Cardano/Ledger/Shelley/Rules/Tick"
-          "Cardano/Ledger/Shelley/Rules/Updn"
           "Cardano/Ledger/Shelley/Rules/Upec"
           "Cardano/Ledger/Shelley/Rules/Utxo"
           "Cardano/Ledger/Shelley/Rules/Utxow"
