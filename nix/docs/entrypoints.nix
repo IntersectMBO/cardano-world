@@ -10,7 +10,7 @@ in {
     runtimeInputs = [nixpkgs.darkhttpd];
     name = "entrypoint";
     text = ''
-      exec darkhttpd "''${CONFIG_HTML_ROOT:-${packages.mdbook}}" --port "''${NOMAD_PORT_http:-8080}"
+      exec darkhttpd "''${CONFIG_HTML_ROOT:-${packages.mdbook}}" --port "''${NOMAD_PORT_http:-8080}" --mimetypes ${nixpkgs.mailcap}/etc/mime.types
     '';
   };
 }
