@@ -23,6 +23,7 @@ includes = [
 excludes = [
   "*.enc.json",
   "*.enc.yaml",
+  "docs/environments/*", # never format hashed genesis files
   "nix/metal/bitteProfile/encrypted/*",
   "nix/cardano/environments/*"
 ]

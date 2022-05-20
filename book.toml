@@ -2,7 +2,7 @@
 language = "en"
 multilingual = false
 src = "docs"
-title = "Documentation"
+title = "The Cardano Book"
 
 [build]
 build-dir = "docs/book"
