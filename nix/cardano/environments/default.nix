@@ -98,6 +98,12 @@
       networkConfig = import ./p2p-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = edgePort;
+        }
+      ];
       edgePort = 3001;
       submitApiConfig = mkSubmitApiConfig "p2p" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "p2p" nodeConfig;
