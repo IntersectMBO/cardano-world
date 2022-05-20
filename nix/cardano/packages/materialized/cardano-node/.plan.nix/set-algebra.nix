@@ -61,7 +61,10 @@
             (hsPkgs."cardano-data" or (errorHandler.buildDepError "cardano-data"))
             ];
           buildable = true;
-          modules = [ "Test/Control/Iterate/SetAlgebra" ];
+          modules = [
+            "Test/Control/Iterate/SetAlgebra"
+            "Test/Control/Iterate/RelationReference"
+            ];
           hsSourceDirs = [ "test" ];
           mainPath = [ "Main.hs" ];
           };

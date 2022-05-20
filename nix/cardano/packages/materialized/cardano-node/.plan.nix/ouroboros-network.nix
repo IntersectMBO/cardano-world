@@ -141,10 +141,6 @@
           "Ouroboros/Network/Protocol/LocalTxMonitor/Client"
           "Ouroboros/Network/Protocol/LocalTxMonitor/Server"
           "Ouroboros/Network/Protocol/LocalTxMonitor/Codec"
-          "Ouroboros/Network/Protocol/TipSample/Type"
-          "Ouroboros/Network/Protocol/TipSample/Client"
-          "Ouroboros/Network/Protocol/TipSample/Server"
-          "Ouroboros/Network/Protocol/TipSample/Codec"
           "Ouroboros/Network/Protocol/TxSubmission2/Type"
           "Ouroboros/Network/Protocol/TxSubmission2/Codec"
           "Ouroboros/Network/Protocol/TxSubmission2/Client"
@@ -167,7 +163,7 @@
         hsSourceDirs = [ "src" ];
         };
       sublibs = {
-        "ouroboros-protocol-tests" = {
+        "protocol-tests" = {
           depends = [
             (hsPkgs."base" or (errorHandler.buildDepError "base"))
             (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
@@ -212,9 +208,6 @@
             "Ouroboros/Network/Protocol/LocalTxMonitor/Direct"
             "Ouroboros/Network/Protocol/LocalTxMonitor/Examples"
             "Ouroboros/Network/Protocol/LocalTxMonitor/Test"
-            "Ouroboros/Network/Protocol/TipSample/Direct"
-            "Ouroboros/Network/Protocol/TipSample/Examples"
-            "Ouroboros/Network/Protocol/TipSample/Test"
             "Ouroboros/Network/Protocol/TxSubmission2/Direct"
             "Ouroboros/Network/Protocol/TxSubmission2/Test"
             "Ouroboros/Network/Protocol/TxSubmission2/Examples"
@@ -290,7 +283,7 @@
             (hsPkgs."ouroboros-network-framework" or (errorHandler.buildDepError "ouroboros-network-framework"))
             (hsPkgs."ouroboros-network-framework".components.sublibs.testlib or (errorHandler.buildDepError "ouroboros-network-framework:testlib"))
             (hsPkgs."ouroboros-network-testing" or (errorHandler.buildDepError "ouroboros-network-testing"))
-            (hsPkgs."ouroboros-network".components.sublibs.ouroboros-protocol-tests or (errorHandler.buildDepError "ouroboros-network:ouroboros-protocol-tests"))
+            (hsPkgs."ouroboros-network".components.sublibs.protocol-tests or (errorHandler.buildDepError "ouroboros-network:protocol-tests"))
             (hsPkgs."strict-stm" or (errorHandler.buildDepError "strict-stm"))
             (hsPkgs."typed-protocols" or (errorHandler.buildDepError "typed-protocols"))
             (hsPkgs."typed-protocols-examples" or (errorHandler.buildDepError "typed-protocols-examples"))
@@ -355,7 +348,7 @@
             (hsPkgs."typed-protocols" or (errorHandler.buildDepError "typed-protocols"))
             (hsPkgs."ouroboros-network-framework" or (errorHandler.buildDepError "ouroboros-network-framework"))
             (hsPkgs."ouroboros-network" or (errorHandler.buildDepError "ouroboros-network"))
-            (hsPkgs."ouroboros-network".components.sublibs.ouroboros-protocol-tests or (errorHandler.buildDepError "ouroboros-network:ouroboros-protocol-tests"))
+            (hsPkgs."ouroboros-network".components.sublibs.protocol-tests or (errorHandler.buildDepError "ouroboros-network:protocol-tests"))
             ];
           buildable = if flags.cddl then true else false;
           hsSourceDirs = [ "test-cddl" ];

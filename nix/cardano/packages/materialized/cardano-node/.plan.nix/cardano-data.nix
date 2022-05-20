@@ -55,7 +55,6 @@
         buildable = true;
         modules = [
           "Data/AbstractSize"
-          "Data/Relation"
           "Data/CanonicalMaps"
           "Data/MemoBytes"
           "Data/Coders"

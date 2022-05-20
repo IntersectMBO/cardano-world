@@ -1100,6 +1100,7 @@
           "temporary".components.library.planned = lib.mkOverride 900 true;
           "trace-forward".components.library.planned = lib.mkOverride 900 true;
           "tagged".components.library.planned = lib.mkOverride 900 true;
+          "ouroboros-network".components.sublibs."protocol-tests".planned = lib.mkOverride 900 true;
           "cardano-tracer".components.exes."demo-forwarder".planned = lib.mkOverride 900 true;
           "unix".components.library.planned = lib.mkOverride 900 true;
           "cardano-protocol-tpraos".components.library.planned = lib.mkOverride 900 true;
@@ -1200,7 +1201,6 @@
           "blaze-builder".components.library.planned = lib.mkOverride 900 true;
           "asn1-types".components.library.planned = lib.mkOverride 900 true;
           "cardano-data".components.library.planned = lib.mkOverride 900 true;
-          "ouroboros-network".components.sublibs."ouroboros-protocol-tests".planned = lib.mkOverride 900 true;
           "setenv".components.library.planned = lib.mkOverride 900 true;
           "generic-random".components.library.planned = lib.mkOverride 900 true;
           "lifted-base".components.library.planned = lib.mkOverride 900 true;

@@ -2658,17 +2658,17 @@
         "utils": "utils_36"
       },
       "locked": {
-        "lastModified": 1653030535,
-        "narHash": "sha256-PkyXPsMEL1BNZPZtzOkdNy2bRXCswPpjSAC6UVlFZmo=",
+        "lastModified": 1653068905,
+        "narHash": "sha256-e3oGTITOdPjg3q5invFVSUWKv2QqpnH5/3KqKiVAkTY=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "968372cb784faae6c4258649516668449afc209c",
+        "rev": "b4308efbbddf0472f9c792ac3855c6e16f840953",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "jordan/dep-bump-protocol-in-block",
         "repo": "cardano-node",
-        "rev": "968372cb784faae6c4258649516668449afc209c",
         "type": "github"
       }
     },
