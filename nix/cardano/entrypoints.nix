@@ -263,7 +263,7 @@ in {
 
       # in nomad: producer is always the node with index 0
       producer=0
-      [ "''${NOMAD_ALLOC_INDEX:-}" -eq "0" ] && producer=1
+      [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && producer=1
 
       ${prelude}
 
