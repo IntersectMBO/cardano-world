@@ -10,7 +10,7 @@
   ShelleyGenesisFile = ./vasil-qa + "/shelley-genesis.json";
   ShelleyGenesisHash = "1f3e40405ac64df7beb7713b16674b8f70934ce910e00a179fa257b6ac0b2caa";
   AlonzoGenesisFile = ./vasil-qa + "/alonzo-genesis.json";
-  AlonzoGenesisHash = "77b4d1dde534cf42c17d8f403196ce52a0c9eaf2f9b97adb01e1d744f5e263e8";
+  AlonzoGenesisHash = "fdcb1b56e71318e73aea4042e0ecfdf5ed8bd4ab677d505f5238d47a7672e1ad";
 
   ##### Core protocol parameters #####
 
