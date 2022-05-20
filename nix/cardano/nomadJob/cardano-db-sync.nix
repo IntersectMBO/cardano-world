@@ -8,7 +8,8 @@
   inherit (inputs.bitte-cells) vector _utils;
   inherit (cell) healthChecks constants oci-images;
   # OCI-Image Namer
-  ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+  ociNamer = oci: l.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+  l = lib // builtins;
 in
   {
     jobname ? "db-sync",
@@ -17,7 +18,7 @@ in
     domain,
     nodeClass,
     scaling,
-  }: let
+  } @ args: let
     id = jobname;
     type = "service";
     priority = 50;
@@ -105,9 +106,9 @@ in
               };
               task = {
                 # ----------
-                # Task: Node
+                # Task: Db Sync
                 # ----------
-                node = {
+                db-sync = {
                   env.DATA_DIR = persistanceMount;
                   env.SOCKET_PATH = "/alloc/tmp/node.socket";
                   template =

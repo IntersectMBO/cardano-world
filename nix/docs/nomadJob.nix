@@ -58,6 +58,7 @@ in {
       # Task Groups
       # ----------
       group.public = {
+        count = scaling;
         network = {
           dns = {servers = ["172.17.0.1"];};
           mode = "bridge";

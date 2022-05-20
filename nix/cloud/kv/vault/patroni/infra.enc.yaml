@@ -1,0 +1,24 @@
+patroniApi: ENC[AES256_GCM,data:idwsL3ZUbEk=,iv:XbjHsxxFuC1B0NgRn1NdUH6gIyzB4ILkQnhfpTGlzS0=,tag:8tv7hlwisVx1NSYxxU29JA==,type:str]
+patroniApiPass: ENC[AES256_GCM,data:eKv92JDhNtwxPFr6b5rgEYqkO2BT4slSbqjG0K9Pxsg+C9Ci03ON3qOG5MZnsqOMCMTWPsoB5ESJDF+H5tH1ag==,iv:tFJi5TqmuciMHF6yf5sIZXzetks9vELqUu8jcfUhrp8=,tag:ekua0JvGOiYwuaCGDArzAA==,type:str]
+patroniRepl: ENC[AES256_GCM,data:KpZEQlTaq/GU,iv:hQR7qepZM0FVgS1oABjRkdku3OWE8HhnPnWWcU/YueE=,tag:gWtFTzpws6msVu5MNyVAoQ==,type:str]
+patroniReplPass: ENC[AES256_GCM,data:lgdgEmXdQ9fDIYqJiITt46s+qZloqsv6RY6Z1zpXqw35JeviO4vD/CXllBF29vRIM5h1SswaNm7NLMi8Zi7F3A==,iv:nJr82rzIliOG3r9ZwxeZPFxTjFJvtvXLIMj8+Cmfjao=,tag:jZI4eyEvXdK3o9jnot01tQ==,type:str]
+patroniRewind: ENC[AES256_GCM,data:cBfBeViTnXcQzIg=,iv:CJeVehiqQg4XcjEtmF1gMUy1T+bxUuWDwOQynjK6o/8=,tag:G1t/KgJxZUAAqoCLjexkZQ==,type:str]
+patroniRewindPass: ENC[AES256_GCM,data:8PfY71huHSH34XDhy/a90oY0vaIrPBocy31UR6stHLPL1k5azio+KbqwoAPxc8K2Oh3PVlvAXlfMapHr6MZTFQ==,iv:vjbRtr5tjfNxmTBaXSz10h1frhzV7INePbbDnK7g/Xg=,tag:isQ9zEraCcR4a4MmLQRt7w==,type:str]
+patroniSuper: ENC[AES256_GCM,data:/wzU8TDGVzojwg==,iv:gcCcVKgqHg8ne1WHZjHD2EO3BeR9nowD6EVfuluEJcQ=,tag:G81Baoe34eo8zL8bafnOPQ==,type:str]
+patroniSuperPass: ENC[AES256_GCM,data:GfzSqdEPUCHt//wV0FTZYqACxRCMedOqpeloI1nC0c4fnuiM/G1hM8y2+aA3gzCLdBzUlyANOQm+0wcd02eagQ==,iv:RoJtPCF4S+WBVTLYAj7Y/T/KzgamV+yN0dCSkLtB9Kg=,tag:G2CWLodFoVzk2kI0mMrPJw==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault:
+        - vault_address: https://vault.world.dev.cardano.org
+          engine_path: sops
+          key_name: ops
+          created_at: "2022-05-20T15:31:01Z"
+          enc: vault:v1:x9H5y7GV5HeU5oUOZbnjJbpdzal/Gi7pOI373fNPv2m219ldoZPYpdufTs5AtltjVjAIK7wClLIcTtqb
+    age: []
+    lastmodified: "2022-05-20T15:31:52Z"
+    mac: ENC[AES256_GCM,data:Q5bPd/LCjMPitYf/FPYAtzuqHstQ2udaJVsXOpKFThhLfMuQPqY48jm5PLQGGc5Whsuk/T7saQU/YnOj2MTECWy89LTAeC8ZcIzGZWRCG4KxEyhPMnAb7Qr1KnbQCjlX2oAm93K4ID3ke03+wNNrAABo0cfXMu7vB7LTerqkYsQ=,iv:tTomaLIrOxYPAJ64Ss2/Vn1BCYmm593ya7Unrg6TYcE=,tag:QvvyGcpPlgssc5vzICV4xg==,type:str]
+    pgp: []
+    unencrypted_suffix: _unencrypted
+    version: 3.7.2

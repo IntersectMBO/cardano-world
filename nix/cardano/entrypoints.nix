@@ -353,7 +353,7 @@ in {
       }
 
       function leader_discovery {
-        eval "$(srvaddr PSQL=$MASTER_REPLICA_SRV_DNS)"
+        eval "$(srvaddr PSQL="$MASTER_REPLICA_SRV_DNS")"
         # produces:
         # PSQL_ADDR0=domain:port
         # PSQL_HOST0=domain

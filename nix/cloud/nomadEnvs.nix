@@ -187,14 +187,14 @@ in
       db-sync-0 = let
         jobname = "db-sync-0";
       in
-        merge (cardano.nomadJob.ogmios (
+        merge (cardano.nomadJob.cardano-db-sync (
           constants.envs.vasil-qa
           // {
             datacenters = ["eu-central-1"];
             inherit jobname;
           }
         )) {
-          job.${jobname}.group.ogmios.task = {
+          job.${jobname}.group.db-sync.task = {
             node = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
@@ -208,7 +208,6 @@ in
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/db-sync-0";
-              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
               env.MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
             };
