@@ -45,6 +45,39 @@
     fi
   '';
 
+  legacy-kv-config-instrumentation-db-sync = ''
+    function load_kv_secrets_db_sync {
+
+      [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
+      [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
+      [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
+
+      [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+
+      export  VAULT_CACERT="$WORKLOAD_CACERT"
+      export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+      export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+
+      local cmd=(
+        "curl"
+        "$VAULT_ADDR/v1/$VAULT_KV_PATH"
+        "--header" "X-Vault-Token: $VAULT_TOKEN"
+        "--header" "Content-Type: application/json"
+      )
+
+      local json
+      json=$("''${cmd[@]}" | jq '.data.data')
+
+      echo -n "$json"|jq -e -r '."pgUser"'   >> "$PGPASSFILE" || unset PGPASSFILE
+      echo -n ":   "                         >> "$PGPASSFILE"
+      echo -n "$json"|jq -e -r '."pgPass"'   >> "$PGPASSFILE" || unset PGPASSFILE
+
+      test -z "''${PGPASSFILE:-}"            || chmod 0400 "$PGPASSFILE"
+    }
+  '';
+
   legacy-kv-config-instrumentation = ''
     function ensure_file_location_contract {
       local key="$1"
@@ -305,15 +338,50 @@ in {
 
       ${prelude}
 
+      function watch_leader_discovery {
+        declare -i pid_to_signal=$1
+        while true
+        do
+          sleep 15
+          echo "Service discovery heartbeat - every 15 seconds" > /dev/stderr
+          original_addr="$PSQL_ADDR0"
+          leader_discovery
+          new_addr="$PSQL_ADDR0"
+          # load_kv_secrets_db_sync
+          [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
+        done
+      }
+
+      function leader_discovery {
+        eval "$(srvaddr PSQL=$MASTER_REPLICA_SRV_DNS)"
+        # produces:
+        # PSQL_ADDR0=domain:port
+        # PSQL_HOST0=domain
+        # PSQL_PORT0=port
+
+        export PGPASSFILE=/secrets/pgpass
+
+        echo -n "$PSQL_ADDR0:"   > "$PGPASSFILE" || unset PGPASSFILE
+        echo -n "$DB_NAME:"     >> "$PGPASSFILE" || unset PGPASSFILE
+
+        echo "Retrieving db credentials from vault kv ..." > /dev/stderr
+        load_kv_secrets_db_sync
+      }
+
+      ${legacy-kv-config-instrumentation-db-sync}
+
+      if [ -n "''${VAULT_KV_PATH:-}" ]; then
+        [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+        [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
+        echo "Retrieving db leader from $MASTER_REPLICA_SRV_DNS ..." > /dev/stderr
+        leader_discovery
+      fi
+
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
       [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
       [ -z "''${SOCKET_PATH:-}" ] && echo "SOCKET_PATH env var must be set -- aborting" && exit 1
 
-      # Permission the PGPASSFILE
-      cp "''${PGPASSFILE}" "''${PGPASSFILE}.permissioned"
-      chmod 600 "''${PGPASSFILE}.permissioned"
-      export PGPASSFILE="''${PGPASSFILE}.permissioned"
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
@@ -321,7 +389,26 @@ in {
       args+=("--state-dir" "$DB_DIR/db-sync")
       args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
 
-      exec ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
+
+      if [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
+        echo "Doing legacy leader discovery ..." > /dev/stderr
+
+        # turn on bash's job control
+        set -m
+
+        # Define handler for SIGINT
+        trap "kill" "''${sid[@]}" INT
+
+        # SIGHUP reloads --topology
+        echo Running db-sync in background > /dev/stderr
+        ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
+        DB_SYNC_PID="$!"
+        sid=("$DB_SYNC_PID")
+        echo Running leader discovery loop > /dev/stderr
+        watch_leader_discovery "$DB_SYNC_PID"
+      else
+        exec ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
+      fi
     '';
   };
 

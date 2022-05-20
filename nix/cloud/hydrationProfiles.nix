@@ -2,12 +2,13 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) cells;
+  inherit (inputs) cells bitte-cells;
 in {
   # Bitte Hydrate Module
   # -----------------------------------------------------------------------
   default = {bittelib, ...}: {
     imports = [
+      (bitte-cells.patroni.hydrationProfiles.hydrate-cluster ["infra"])
       (cells.cardano.hydrationProfiles.workload-policies-cardano)
       (cells.cardano.hydrationProfiles.workload-policies-ogmios)
       (cells.cardano.hydrationProfiles.workload-policies-db-sync)
@@ -36,7 +37,10 @@ in {
           options.path = ./dashboards;
         }
       ];
-      nomad.namespaces = {vasil-qa.description = "Cardano Vasil HF QA";};
+      nomad.namespaces = {
+        infra.description = "Shared Services for The Cardano World";
+        vasil-qa.description = "Cardano Vasil HF QA";
+      };
     };
 
     # cluster level (terraform)

@@ -3,7 +3,7 @@
   cell,
 }: let
   inherit (inputs) data-merge;
-  inherit (inputs.bitte-cells) vector;
+  inherit (inputs.bitte-cells) vector patroni;
   inherit (inputs.cells) cardano;
   inherit (cell) constants;
 
@@ -17,6 +17,14 @@
   persistanceMount = "/persist";
 in
   with data-merge; {
+    infra = let
+      WALG_S3_PREFIX = "s3://iog-cardano-bitte/backups/infra/walg";
+    in {
+      database = merge (patroni.nomadJob.default constants.envs.infra) {
+        job.database.group.database.task.patroni.env = {inherit WALG_S3_PREFIX;};
+        job.database.group.database.task.backup-walg.env = {inherit WALG_S3_PREFIX;};
+      };
+    };
     vasil-qa = {
       bft-0 = let
         jobname = "cardano-bft-0";
@@ -172,6 +180,36 @@ in
               env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
               env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
               env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            };
+          };
+        };
+      db-sync-0 = let
+        jobname = "db-sync-0";
+      in
+        merge (cardano.nomadJob.ogmios (
+          constants.envs.vasil-qa
+          // {
+            datacenters = ["eu-central-1"];
+            inherit jobname;
+          }
+        )) {
+          job.${jobname}.group.ogmios.task = {
+            node = {
+              # env.ENVIRONMENT = "testnet";
+              # env.DEBUG_SLEEP = 6000;
+              env.DATA_DIR = persistanceMount + "/db-sync-0";
+              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
+              env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
+              env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            };
+            db-sync = {
+              # env.ENVIRONMENT = "testnet";
+              # env.DEBUG_SLEEP = 6000;
+              env.DATA_DIR = persistanceMount + "/db-sync-0";
+              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
+              env.MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
             };
           };
         };

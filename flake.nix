@@ -64,6 +64,7 @@
     )
     # 2) renderes nomad environments (TODO: `std`ize as actions)
     {
+      infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;
       vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
     };
   # --- Flake Local Nix Configuration ----------------------------
