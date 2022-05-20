@@ -93,7 +93,7 @@
     "setupBackends": ["KatipBK"],
     "setupScribes": [
       {
-        "scFormat": "ScText",
+        "scFormat": "ScJson",
         "scKind": "StdoutSK",
         "scName": "cardano"
       }
