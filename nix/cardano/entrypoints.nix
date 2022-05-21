@@ -29,6 +29,7 @@
       echo "Using the preset environment $ENVIRONMENT ..." > /dev/stderr
 
       NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
+      NODE_TOPOLOGY="''${NODE_TOPOLOGY:-$DATA_DIR/config/$ENVIRONMENT/topology.json}"
 
     # CASE: premissioned long running environment
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
