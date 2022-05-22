@@ -11,7 +11,7 @@
 # Explanation
 
 - [Design Overview]()
-- [Packaging Principles]()
+- [Packaging Principles](explain/packaging-principles.md)
 
 # Reference
 
