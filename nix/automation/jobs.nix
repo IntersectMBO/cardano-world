@@ -2,10 +2,9 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs;
-  inherit (inputs.cells.cardano) packages library nixosProfiles;
+  inherit (inputs) nixpkgs cells;
+  inherit (inputs.cells.cardano) packages oci-images;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
-  inherit (inputs.nixpkgs.lib.strings) fileContents;
   updateProposalTemplate = ''
     # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $PROPOSAL_ARGS
 
@@ -401,4 +400,28 @@ in {
       ${updateProposalTemplate}
     '';
   };
+  release = let
+    ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+    release-notes = nixpkgs.writeText "release-notes" ''
+      # Packages
+
+      | Plattform    | Cache-Link |
+      | ------------ | ---------- |
+      | x86_64-linux | https://cache.iog.io/${cells.x86_64-linux.cardano.packages.cardano-node}
+
+      # OCI-Images
+
+      | Plattform    | `image:tag` |
+      | ------------ | ---- |
+      | x86_64-linux | `${ociNamer cells.x86_64-linux.cardano.oci-images.cardano-node}`
+    '';
+  in
+    writeShellApplication {
+      name = "release";
+      runtimeInputs = [nixpkgs.gh];
+      text = ''
+        # Inputs: $TAG
+        gh release create -d "$TAG" --notes-file ${release-notes}
+      '';
+    };
 }

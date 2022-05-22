@@ -671,14 +671,17 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1653078000,
-        "narHash": "sha256-xW9smw7VIcj6X3eukdqnvodOwBw2TKO5yUAbRfZMzHU=",
-        "path": "/home/blaggacao/src/github.com/input-output-hk/bitte-cells",
-        "type": "path"
+        "lastModified": 1653063938,
+        "narHash": "sha256-6ox9bd4FJxCQFXN7I7CwKd0CHVUfzghihN5E8mXAHNg=",
+        "owner": "input-output-hk",
+        "repo": "bitte-cells",
+        "rev": "1fce34516f9fc574e7875be556c74c568c522d10",
+        "type": "github"
       },
       "original": {
-        "path": "/home/blaggacao/src/github.com/input-output-hk/bitte-cells",
-        "type": "path"
+        "owner": "input-output-hk",
+        "repo": "bitte-cells",
+        "type": "github"
       }
     },
     "bitte_2": {
@@ -14592,11 +14595,11 @@
         "yants": "yants_4"
       },
       "locked": {
-        "lastModified": 1652784712,
-        "narHash": "sha256-ofwGapSWqzUVgIxwwmjlrOVogfjV4yd6WpY8fNfMc2o=",
+        "lastModified": 1653195665,
+        "narHash": "sha256-az3a0WmSrff1WFJto/Dk9B8H3T0IJFfCphM1EJYp7yk=",
         "owner": "divnix",
         "repo": "std",
-        "rev": "3667d2d868352b0bf47c83440da48bee9f2fab47",
+        "rev": "b11a83a202f3d1d425c4c7bd512a5dceea0a8307",
         "type": "github"
       },
       "original": {
