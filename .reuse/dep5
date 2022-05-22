@@ -1,0 +1,25 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Cardano World
+Upstream-Contact: Input Output (Hong Kong) Ltd. <>
+Source: https://github.com/input-output-hk/cardano-world
+
+Files:
+  docs/*
+  nix/*
+  src/*
+  README.md
+Copyright: 2022 Input Output (Hong Kong) Ltd. <>
+License: Apache-2.0
+
+Files:
+  .editorconfig
+  .envrc
+  .gitignore
+  .jira.d/config.yml
+  adrgen.config.yml
+  book.toml
+  flake.lock
+  flake.nix
+  treefmt.toml
+Copyright: 2022 Input Output (Hong Kong) Ltd. <>
+License: CC0-1.0

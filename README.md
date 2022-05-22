@@ -1,52 +1,74 @@
-# Cardano
+<p align="center">
+  <img width='150px' src="https://ucarecdn.com/6a470caf-060b-4c44-982e-f9bde302ed6e/CardanoRGB_LogoStackBlue.png" alt='Cardano Logo' />
+</p>
 
-Cardano is a project that declares cardano environments leveraging the
-[`bitte`][bitte] stack & cloud scheduler, beyond kubernetes.
+<p align="center">
+    Welcome to the Cardano World Repository
+    <br />
+</p>
 
-## Repo Layout Brief
+Cardano is a decentralized third-generation proof-of-stake blockchain platform and home to the ada cryptocurrency.
+It is the first blockchain platform to evolve out of a scientific philosophy and a research-first driven approach.
 
-The application source code _could_ live in [`./src`][app].
+# Cardano World Repository
 
-The application is _parasitically_ operationalized in [`./nix`][ops].
+This repository is a work-in-progress effort to bundle all Cardano
+related development & documentation in a single "portal"-repository.
 
-[`./nix`][ops] provides the following **Cells**:
+The target audience are people who work with Cardano on a daily basis
+or just started exploring.
 
-- Metal (AWS, The Hosts' OS, Datacenter Scheduler, Service Discovery, Secrets Vault, Monitoring, DNS & Ingress Routing)
-- Cloud (Schedulable Jobs & Cluster Hydration Profiles)
-- Repoautomation (Runnable helpers for daily or sporadic tasks)
+## Things you'll find here:
 
-This repository defines the following **Organelles**:
+### Source Code
 
-- **Installables**:
-  - Packages (flake output: `packages`)
-- **Runnables**:
-  - Just Tasks ["repoautomation"] (flake output: `justTasks`)
-- **Functions**:
-  - OCI Images ["docker"] (flake output: `oci-images`)
-  - Bitte Profile (flake output: `bitteProfile`)
-  - Nomad Schedulable Environments (flake output: `nomadEnvs`)
-  - Hydration Profiles (`hydrationProfiles`)
+_How is Cardano implemented? &rarr; [`./src`][src]._
 
-You'll find further information about this nomenclature in the
-[Standard Readme][std-readme].
+A growing number of source projects will be merged soon.
 
-## Development Environments
+### Building & Packaging
 
-You can find all information about entering a fully pre-configured &
-reproducible development environment in [`./devshell`][devshell].
+_Is Cardano built and packaged reproducibly? &rarr; Ofc._ 😎
 
-## Application Documentation
+_Where? &rarr; [`./nix/cardano`][build]._
 
-You can find all information about the application itself in [`./src`][app].
+### Operations
 
-## Operatations
+_How is Cardano operated @ IOG? &rarr; [`./nix/cloud`][cloud]._
 
-You can find all information about the operations of the application [`./nix`][ops].
+_Do you have automation in place? &rarr; Sure. See: [`./nix/automation`][automation]._
 
----
+### Documentation
 
-[app]: ./src
-[bitte]: https://github.com/input-output-hk/bitte
-[devshell]: ./devshell
-[ops]: ./nix
-[std-readme]: https://github.com/divnix/std#readme
+_Where can I find the documentation? &rarr; [`./docs`][docs]._
+
+_No, I mean rendered? &rarr; [The Cardano Book][book]._
+
+The documentation is structured around these axes:
+
+|                  | For Study   | For Work      |
+| ---------------- | ----------- | ------------- |
+| **The Practice** | Tutorials   | How-To Guides |
+| **The Theory**   | Explanation | Reference     |
+
+### Licenses
+
+_What licenses are used? &rarr; [`./.reuse/dep5`][licensing]._
+
+_And the usual copies? &rarr; [`./LICENSES`][licenses]._
+
+## Releases
+
+You may find releases on the [GitHub Release Page][releases] of this repository.
+
+--
+
+[src]: https://github.com/input-output-hk/cardano-world/tree/master/src
+[docs]: https://github.com/input-output-hk/cardano-world/tree/master/docs
+[build]: https://github.com/input-output-hk/cardano-world/tree/master/nix/cardano
+[cloud]: https://github.com/input-output-hk/cardano-world/tree/master/nix/cloud
+[automation]: https://github.com/input-output-hk/cardano-world/tree/master/nix/automation
+[book]: https://book.world.dev.cardano.org
+[releases]: https://github.com/input-output-hk/cardano-world/releases
+[licensing]: https://github.com/input-output-hk/cardano-world/blob/master/.reuse/dep5
+[licenses]: https://github.com/input-output-hk/cardano-world/tree/master/LICENSES
