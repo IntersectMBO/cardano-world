@@ -89,7 +89,7 @@
 
     function load_kv_config {
       export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
-      export DB_SYNC_CONFIG="$DATA_DIR/config/custom/config.json"
+      export DB_SYNC_CONFIG="$DATA_DIR/config/custom/db-sync-config.json"
       export SHELLEY_GENESIS_FILE="shelley-genesis.json"
       export BYRON_GENESIS_FILE="byron-genesis.json"
       export ALONZO_GENESIS_FILE="alonzo-genesis.json"
@@ -125,7 +125,7 @@
       echo "$json"|jq -r '.alonzoGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
       # vasil
 
-      # ensure genisis file contracts
+      # ensure genesis file contracts
       ensure_file_location_contract "ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
       ensure_file_location_contract "ByronGenesisFile" "$BYRON_GENESIS_FILE"
       ensure_file_location_contract "AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
@@ -371,6 +371,7 @@ in {
         load_kv_secrets_db_sync
       }
 
+      set -x
       ${legacy-kv-config-instrumentation-db-sync}
 
       if [ -n "''${VAULT_KV_PATH:-}" ]; then
@@ -387,7 +388,7 @@ in {
 
 
       # Build args array
-      args+=("--config" "$NODE_CONFIG")
+      args+=("--config" "$DB_SYNC_CONFIG")
       args+=("--socket-path" "$SOCKET_PATH")
       args+=("--state-dir" "$DB_DIR/db-sync")
       args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
@@ -422,6 +423,7 @@ in {
     text = ''
 
       ${prelude}
+      DB_SYNC_CONFIG="$DATA_DIR/config/$ENVIRONMENT/db-sync-config.json"
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
