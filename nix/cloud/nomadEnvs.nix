@@ -207,6 +207,7 @@ in
             db-sync = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
+              env.DB_NAME = "vasil_qa_dbsync";
               env.DATA_DIR = persistanceMount + "/db-sync-0";
               env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
