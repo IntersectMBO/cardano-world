@@ -106,15 +106,8 @@
     "NodeConfigFile": "config.json",
     "PrometheusPort": 8080,
     "RequiresNetworkMagic": "RequiresMagic",
-    "defaultBackends": [
-      "KatipBK"
-    ],
-    "defaultScribes": [
-      [
-        "StdoutSK",
-        "stdout"
-      ]
-    ],
+    "defaultBackends": ["KatipBK"],
+    "defaultScribes": [["StdoutSK", "stdout"]],
     "minSeverity": "Info",
     "options": {
       "cfokey": {
@@ -184,10 +177,7 @@
           "subtrace": "NoTrace"
         },
         "benchmark": {
-          "contents": [
-            "GhcRtsStats",
-            "MonotonicClock"
-          ],
+          "contents": ["GhcRtsStats", "MonotonicClock"],
           "subtrace": "ObservableTrace"
         },
         "cardano.epoch-validation.utxo-stats": {
@@ -200,10 +190,7 @@
       "rpLogLimitBytes": 5000000,
       "rpMaxAgeHours": 24
     },
-    "setupBackends": [
-      "AggregationBK",
-      "KatipBK"
-    ],
+    "setupBackends": ["AggregationBK", "KatipBK"],
     "setupScribes": [
       {
         "scFormat": "ScJson",
@@ -219,15 +206,8 @@
     "GenesisHash": "301f1b4b238645a2823c3cb52ff14c6db7e5e54620213f042bc979a0a1b37a73",
     "PrometheusPort": 8080,
     "RequiresNetworkMagic": "RequiresMagic",
-    "defaultBackends": [
-      "KatipBK"
-    ],
-    "defaultScribes": [
-      [
-        "StdoutSK",
-        "stdout"
-      ]
-    ],
+    "defaultBackends": ["KatipBK"],
+    "defaultScribes": [["StdoutSK", "stdout"]],
     "minSeverity": "Info",
     "options": {
       "cfokey": {
@@ -297,10 +277,7 @@
           "subtrace": "NoTrace"
         },
         "benchmark": {
-          "contents": [
-            "GhcRtsStats",
-            "MonotonicClock"
-          ],
+          "contents": ["GhcRtsStats", "MonotonicClock"],
           "subtrace": "ObservableTrace"
         },
         "cardano.epoch-validation.utxo-stats": {
@@ -313,10 +290,7 @@
       "rpLogLimitBytes": 5000000,
       "rpMaxAgeHours": 24
     },
-    "setupBackends": [
-      "AggregationBK",
-      "KatipBK"
-    ],
+    "setupBackends": ["AggregationBK", "KatipBK"],
     "setupScribes": [
       {
         "scFormat": "ScJson",
