@@ -208,6 +208,7 @@ in
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/db-sync-0";
+              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
               env.MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
             };
