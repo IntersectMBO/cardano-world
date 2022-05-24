@@ -89,6 +89,7 @@
 
     function load_kv_config {
       export NODE_CONFIG="$DATA_DIR/config/custom/config.json"
+      export DB_SYNC_CONFIG="$DATA_DIR/config/custom/config.json"
       export SHELLEY_GENESIS_FILE="shelley-genesis.json"
       export BYRON_GENESIS_FILE="byron-genesis.json"
       export ALONZO_GENESIS_FILE="alonzo-genesis.json"
@@ -115,6 +116,7 @@
       json=$("''${cmd[@]}")
 
       echo "$json"|jq '.nodeConfig'  > "$NODE_CONFIG"
+      echo "$json"|jq '.dbSyncConfig'  > "$DB_SYNC_CONFIG"
 
       echo "$json"|jq -r '.byronGenesisBlob'  |base64 -d > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
       echo "$json"|jq -r '.shelleyGenesisBlob'|base64 -d > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
