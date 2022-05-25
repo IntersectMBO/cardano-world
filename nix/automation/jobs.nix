@@ -118,23 +118,28 @@ in {
     name = "gen-custom-node-config";
     runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
     text = ''
-      genesis_dir="$PRJ_ROOT/workbench/custom"
-      mkdir -p "$genesis_dir"
+      # Inputs: $START_TIME, $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR
+      export START_TIME=''${START_TIME:-$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date " now +30 min")}
+      export SLOT_LENGTH=''${SLOT_LENGTH:-1000}
+      export SECURITY_PARAM=''${SECURITY_PARAM:-36}
+      export TEMPLATE_DIR=''${TEMPLATE_DIR:-"$PRJ_ROOT/nix/cardano/environments/testnet-template"}
+      export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
+      mkdir -p "$GENESIS_DIR"
       cardano-cli genesis create-cardano \
-        --genesis-dir "$genesis_dir" \
+        --genesis-dir "$GENESIS_DIR" \
         --gen-genesis-keys 3 \
         --supply 30000000000000000 \
         --testnet-magic 9 \
         --slot-coefficient 0.05 \
-        --byron-template "$PRJ_ROOT"/nix/cardano/environments/testnet-template/byron.json \
-        --shelley-template "$PRJ_ROOT"/nix/cardano/environments/testnet-template/shelley.json \
-        --alonzo-template "$PRJ_ROOT"/nix/cardano/environments/testnet/alonzo-genesis.json \
-        --node-config-template "$PRJ_ROOT"/nix/cardano/environments/testnet-template/config.json \
-        --security-param 36 \
-        --slot-length 1000 \
-        --start-time "$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date " now +30 min")"
+        --byron-template "$TEMPLATE_DIR/byron.json" \
+        --shelley-template "$TEMPLATE_DIR/shelley.json" \
+        --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --node-config-template "$TEMPLATE_DIR/config.json" \
+        --security-param "$SECURITY_PARAM" \
+        --slot-length "$SLOT_LENGTH" \
+        --start-time "$START_TIME"
       # TODO remove when genesis generator outputs non-extended-key format
-      pushd "$genesis_dir/genesis-keys"
+      pushd "$GENESIS_DIR/genesis-keys"
         for i in {0..2}
         do
           mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
@@ -152,10 +157,12 @@ in {
       name = "gen-custom-kv-config";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        genesis_dir="$PRJ_ROOT/workbench/custom"
+        # Inputs: $GENESIS_DIR, $ENV_NAME
+        export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
+        export ENV_NAME=''${ENV_NAME:-"custom-env"}
         mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
-        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
-        pushd "$genesis_dir"
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+        pushd "$GENESIS_DIR"
           jq -n \
             --arg byron "$(base64 -w 0 < byron-genesis.json)" \
             --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
@@ -163,7 +170,7 @@ in {
             --argjson config "$(< node-config.json)" \
             '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
           > config.json
-          cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/vasil-qa.json"
+          cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
           pushd delegate-keys
             for i in {0..2}; do
               jq -n \
@@ -181,10 +188,10 @@ in {
                   "cold.skey": $cold,
                   "cold.counter": $counter
                 }' > "bft-$i.json"
-                cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+                cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
             done
           popd
-          pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+          pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
             for i in {0..2}; do
               sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
             done
@@ -319,9 +326,10 @@ in {
       name = "gen-custom-kv-config-pools";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR
+        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME
+        export ENV_NAME=''${ENV_NAME:-"custom-env"}
         END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
-        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
         pushd "$STAKE_POOL_DIR"
           for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
           do
@@ -337,10 +345,10 @@ in {
                 "opcert.json": $opcert,
                 "cold.skey": $cold,
                 "cold.counter": $counter
-              }' > "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa/sp-$i.json"
+              }' > "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME/sp-$i.json"
           done
         popd
-        pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/vasil-qa"
+        pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
           for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
           do
             sops -e "sp-$i.json" > "sp-$i.enc.json" && rm "sp-$i.json"
