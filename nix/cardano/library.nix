@@ -62,7 +62,7 @@
           {
             localRoots = {
               accessPoints = [];
-              avertise = false;
+              advertise = false;
             };
             valency = 1;
           }
