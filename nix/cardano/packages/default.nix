@@ -53,4 +53,5 @@ in {
   in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
+  carp = import ./carp {inherit inputs;};
 }

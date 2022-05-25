@@ -20,6 +20,14 @@
     cardano-wallet.url = "github:input-output-hk/cardano-wallet";
     cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
     # --------------------------------------------------------------
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
+    naersk.url = "github:nix-community/naersk";
+    naersk.inputs.nixpkgs.follows = "nixpkgs";
+    carp = {
+      url = "github:dcSpark/carp";
+      flake = false;
+    };
   };
   outputs = inputs: let
     nomadEnvs = inputs.self.${system}.cloud.nomadEnvs;
