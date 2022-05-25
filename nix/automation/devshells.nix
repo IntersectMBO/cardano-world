@@ -47,6 +47,7 @@ in {
       capsules.base
       capsules.cloud
       capsules.integrations
+      inputs.cells.cardano.devshellProfiles.default
     ];
   };
   ops = std.lib.mkShell {
