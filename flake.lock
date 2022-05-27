@@ -671,17 +671,14 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1653346854,
-        "narHash": "sha256-ZKl1WMpMz+p2EDwVExAmBoCdTAyJHjfkwhxvW9W74Hk=",
-        "owner": "input-output-hk",
-        "repo": "bitte-cells",
-        "rev": "540241ac646a865e8404046887d76875b77bf47b",
-        "type": "github"
+        "lastModified": 1653595391,
+        "narHash": "sha256-kUIhvvVNEX0G+41WVk6420n4KvtG0lRhN8pHw+DKagQ=",
+        "path": "/home/sam/work/iohk/patroni",
+        "type": "path"
       },
       "original": {
-        "owner": "input-output-hk",
-        "repo": "bitte-cells",
-        "type": "github"
+        "path": "/home/sam/work/iohk/patroni",
+        "type": "path"
       }
     },
     "bitte_2": {
@@ -2677,11 +2674,11 @@
         "utils": "utils_36"
       },
       "locked": {
-        "lastModified": 1653097473,
-        "narHash": "sha256-e3oGTITOdPjg3q5invFVSUWKv2QqpnH5/3KqKiVAkTY=",
+        "lastModified": 1653654580,
+        "narHash": "sha256-EZZ7xMr8V481S1mFNmrozzvB19tT3P+STTq9/J0aLyQ=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "d0b0fa10ac83dc1d0d40aaf294cfded1b455a0a4",
+        "rev": "0f025a0ff14516e1723301161c67972af58f5e9e",
         "type": "github"
       },
       "original": {

@@ -71,11 +71,11 @@
       local json
       json=$("''${cmd[@]}" | jq '.data.data')
 
-      echo -n "$json"|jq -e -r '."pgUser"'   >> "$PGPASSFILE" || unset PGPASSFILE
-      echo -n ":   "                         >> "$PGPASSFILE"
-      echo -n "$json"|jq -e -r '."pgPass"'   >> "$PGPASSFILE" || unset PGPASSFILE
-
+      PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
+      PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
+      echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
       test -z "''${PGPASSFILE:-}"            || chmod 0400 "$PGPASSFILE"
+      set +x
     }
   '';
 
@@ -194,9 +194,6 @@
 
     function srv_discovery {
 
-      [ -z "''${LOCAL_ROOTS_SRV_DNS:-}" ] && echo "LOCAL_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
-      [ -z "''${PUBLIC_ROOTS_SRV_DNS:-}" ] && echo "PUBLIC_ROOTS_SRV_DNS env var must be set -- aborting" && exit 1
-
       export NODE_TOPOLOGY="$DATA_DIR/config/custom/topology.json"
 
       # general values
@@ -266,7 +263,7 @@ in {
 
       # in nomad: producer is always the node with index 0
       producer=0
-      [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && producer=1
+      [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && [ -z "''${EDGE_NODE:-}" ] && producer=1
 
       ${prelude}
 
@@ -296,7 +293,6 @@ in {
         echo "Doing legacy service discovery ..." > /dev/stderr
         srv_discovery
         args+=("--topology" "$NODE_TOPOLOGY")
-        set -x
 
         # turn on bash's job control
         set -m
@@ -330,7 +326,7 @@ in {
   };
 
   cardano-db-sync = writeShellApplication {
-    runtimeInputs = prelude-runtime;
+    runtimeInputs = prelude-runtime ++ [nixpkgs.postgresql_12];
     debugInputs = [
       packages.cardano-db-sync
       packages.cardano-cli
@@ -340,6 +336,8 @@ in {
     text = ''
 
       ${prelude}
+
+      mkdir -m 1777 /tmp
 
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
@@ -356,22 +354,19 @@ in {
       }
 
       function leader_discovery {
-        eval "$(srvaddr PSQL="$MASTER_REPLICA_SRV_DNS")"
+        eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
         # produces:
         # PSQL_ADDR0=domain:port
         # PSQL_HOST0=domain
         # PSQL_PORT0=port
 
         export PGPASSFILE=/secrets/pgpass
-
-        echo -n "$PSQL_ADDR0:"   > "$PGPASSFILE" || unset PGPASSFILE
-        echo -n "$DB_NAME:"     >> "$PGPASSFILE" || unset PGPASSFILE
+        export PSQL_ADDR0
 
         echo "Retrieving db credentials from vault kv ..." > /dev/stderr
         load_kv_secrets_db_sync
       }
 
-      set -x
       ${legacy-kv-config-instrumentation-db-sync}
 
       if [ -n "''${VAULT_KV_PATH:-}" ]; then
@@ -394,7 +389,7 @@ in {
       args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
 
 
-      if [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
+      if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
         echo "Doing legacy leader discovery ..." > /dev/stderr
 
         # turn on bash's job control
@@ -405,13 +400,13 @@ in {
 
         # SIGHUP reloads --topology
         echo Running db-sync in background > /dev/stderr
-        ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
+        ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}" &
         DB_SYNC_PID="$!"
         sid=("$DB_SYNC_PID")
         echo Running leader discovery loop > /dev/stderr
         watch_leader_discovery "$DB_SYNC_PID"
       else
-        exec ${packages.cardano-db-sync}/bin/cardano-db-sync run "''${args[@]}"
+        exec ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}"
       fi
     '';
   };

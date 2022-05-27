@@ -192,6 +192,7 @@ in
           // {
             datacenters = ["eu-central-1"];
             inherit jobname;
+            scaling = 1;
           }
         )) {
           job.${jobname}.group.db-sync.task = {
@@ -200,14 +201,13 @@ in
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/db-sync-0";
               env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-              env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
-              env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
               env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
             };
             db-sync = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DB_NAME = "vasil_qa_dbsync";
+              env.EDGE_NODE = "1";
               env.DATA_DIR = persistanceMount + "/db-sync-0";
               env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
               env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
