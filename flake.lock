@@ -671,14 +671,17 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1653595391,
-        "narHash": "sha256-kUIhvvVNEX0G+41WVk6420n4KvtG0lRhN8pHw+DKagQ=",
-        "path": "/home/sam/work/iohk/patroni",
-        "type": "path"
+        "lastModified": 1653597050,
+        "narHash": "sha256-tjrEP6cdGVK7HTrF2kWqRXOL4CEMa2XWUZNy4ojwGUI=",
+        "owner": "input-output-hk",
+        "repo": "bitte-cells",
+        "rev": "14971752e2fe63da0113389d8c0b52c85b1c47e1",
+        "type": "github"
       },
       "original": {
-        "path": "/home/sam/work/iohk/patroni",
-        "type": "path"
+        "owner": "input-output-hk",
+        "repo": "bitte-cells",
+        "type": "github"
       }
     },
     "bitte_2": {

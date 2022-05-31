@@ -7,8 +7,7 @@
   inputs = {
     # --- Bitte Stack ----------------------------------------------
     bitte.url = "github:input-output-hk/bitte";
-    bitte-cells.url = "path:/home/sam/work/iohk/patroni";
-    # bitte-cells.url = "github:input-output-hk/bitte-cells/patroni";
+    bitte-cells.url = "github:input-output-hk/bitte-cells";
     # --------------------------------------------------------------
     # --- Auxiliaries ----------------------------------------------
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
