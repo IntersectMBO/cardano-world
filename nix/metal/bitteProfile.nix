@@ -82,11 +82,13 @@ in {
                 ++ [
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    [
-                      "vasil-qa-persist-cardano-node-local"
-                      "vasil-qa-persist-db-sync-local"
-                    ]
+                    ["vasil-qa-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["vasil-qa-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
                   )
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
