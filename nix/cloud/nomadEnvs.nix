@@ -21,7 +21,10 @@ in
       WALG_S3_PREFIX = "s3://iog-cardano-bitte/backups/infra/walg";
     in {
       documentation = docs.nomadJob.documentation constants.envs.infra;
-      database = merge (patroni.nomadJob.default constants.envs.infra) {
+      database = merge (patroni.nomadJob.default (constants.envs.infra
+        // {
+          datacenters = ["eu-central-1"];
+        })) {
         job.database.group.database.task.patroni.env = {inherit WALG_S3_PREFIX;};
         job.database.group.database.task.backup-walg.env = {inherit WALG_S3_PREFIX;};
       };

@@ -671,11 +671,11 @@
         "std": "std"
       },
       "locked": {
-        "lastModified": 1653597050,
-        "narHash": "sha256-tjrEP6cdGVK7HTrF2kWqRXOL4CEMa2XWUZNy4ojwGUI=",
+        "lastModified": 1654011775,
+        "narHash": "sha256-P7zOKbi0cBzEvr97Uhwit2N9ht7vQ+NESeMzwSlRzEE=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "14971752e2fe63da0113389d8c0b52c85b1c47e1",
+        "rev": "c4b914fcf8ea84725db5794c1aa26d77dbeb1b71",
         "type": "github"
       },
       "original": {
