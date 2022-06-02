@@ -18,7 +18,7 @@
     cardano-node.url = "github:input-output-hk/cardano-node";
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/vasil-qa-deploy-0";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet";
-    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
+    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios/vasil";
     # --------------------------------------------------------------
   };
   outputs = inputs: let
