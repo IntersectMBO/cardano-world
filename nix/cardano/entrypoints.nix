@@ -5,7 +5,7 @@
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
-  inherit (cell) packages environments library;
+  inherit (cell) packages environments library constants;
 
   prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
 
@@ -315,6 +315,12 @@ in {
 
       # Grap a snapshot
       ${pull-snapshot}
+      if [ -n "''${ENVIRONMENT:-}" ]; then
+        # we are using a standard environment that already has known snapshots
+        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.file_name' < "$snapshots")"
+      fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
         extract_snapshot_tgz_to "$DB_DIR/node"
@@ -431,6 +437,12 @@ in {
 
       # Grap a snapshot
       ${pull-snapshot}
+      if [ -n "''${ENVIRONMENT:-}" ]; then
+        # we are using a standard environment that already has known snapshots
+        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.file_name' < "$snapshots")"
+      fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
         extract_snapshot_tgz_to "$DB_DIR/db-sync"
