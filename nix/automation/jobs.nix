@@ -27,38 +27,38 @@
       --epoch "$EPOCH" \
       "''${PROPOSAL_ARGS[@]}" \
       "''${PROPOSAL_KEY_ARGS[@]}" \
-      --out-file d.proposal
+      --out-file update.proposal
     cardano-cli transaction build \
       --tx-in "$TXIN" \
       --change-address "$CHANGE_ADDRESS" \
-      --update-proposal-file d.proposal \
+      --update-proposal-file update.proposal \
       --testnet-magic "$TESTNET_MAGIC" \
-      --out-file tx-proposal-d.txbody
+      --out-file tx-proposal.txbody
     cardano-cli transaction sign \
-      --tx-body-file tx-proposal-d.txbody \
-      --out-file tx-proposal-d.txsigned \
+      --tx-body-file tx-proposal.txbody \
+      --out-file tx-proposal.txsigned \
       --signing-key-file "$PAYMENT_KEY".skey \
       "''${SIGNING_ARGS[@]}"
     # TODO: remove if we figure out how to make it detect where in epoch we are
-    if ! cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal-d.txsigned
+    if ! cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned
     then
       cardano-cli governance create-update-proposal \
         --epoch $(("$EPOCH" + 1)) \
-        --decentralization-parameter "$D_VALUE" \
-        "''${PROPOSAL_ARGS[@]}" \
-        --out-file d.proposal
+      "''${PROPOSAL_ARGS[@]}" \
+      "''${PROPOSAL_KEY_ARGS[@]}" \
+        --out-file update.proposal
       cardano-cli transaction build \
         --tx-in "$TXIN" \
         --change-address "$CHANGE_ADDRESS" \
-        --update-proposal-file d.proposal \
+        --update-proposal-file update.proposal \
         --testnet-magic "$TESTNET_MAGIC" \
-        --out-file tx-proposal-d.txbody
+        --out-file tx-proposal.txbody
       cardano-cli transaction sign \
-        --tx-body-file tx-proposal-d.txbody \
-        --out-file tx-proposal-d.txsigned \
+        --tx-body-file tx-proposal.txbody \
+        --out-file tx-proposal.txsigned \
         --signing-key-file "$PAYMENT_KEY".skey \
         "''${SIGNING_ARGS[@]}"
-      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal-d.txsigned
+      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned
       fi
   '';
 in {
@@ -397,13 +397,25 @@ in {
     '';
   };
   update-proposal-hard-fork = writeShellApplication {
-    name = "update-proposal-d";
+    name = "update-proposal-hf";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
       PROPOSAL_ARGS=(
         "--protocol-major-version" "$MAJOR_VERSION"
         "--protocol-minor-version" "0"
+      )
+      ${updateProposalTemplate}
+    '';
+  };
+  update-proposal-cost-model = writeShellApplication {
+    name = "update-proposal-hf";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
+      set -x
+      PROPOSAL_ARGS=(
+        "--cost-model-file" "$COST_MODEL"
       )
       ${updateProposalTemplate}
     '';

@@ -9,7 +9,6 @@
     (
       cardano-node.legacyPackages.extend (
         prev: final: {
-          # FIXME: hack to use the materialized version of haskellBuildUtils from cardano-wallet.
           haskellBuildUtils =
             cardano-wallet
             .legacyPackages
@@ -18,20 +17,10 @@
         }
       )
     )
-    .cardanoNodeProject
-    .appendModule {
-      # TODO: upstream materialization:
-      materialized = ./materialized/cardano-node;
-    };
+    .cardanoNodeProject;
 in {
   cardano-node =
-    cardano-node-project.hsPkgs.cardano-node.components.exes.cardano-node
-    // {
-      # dispatch c/o automation/jobs.nix
-      passthru = {
-        inherit (cardano-node-project.plan-nix.passthru) generateMaterialized;
-      };
-    };
+    cardano-node-project.hsPkgs.cardano-node.components.exes.cardano-node;
   cardano-tracer = "TODO";
   cardano-submit-api =
     cardano-node-project
