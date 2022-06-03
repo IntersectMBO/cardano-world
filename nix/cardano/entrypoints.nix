@@ -61,10 +61,13 @@
       SNAPSHOT_DIR="$DATA_DIR/initial-snapshot"
       mkdir -p "$SNAPSHOT_DIR"
 
+      # we are already initialized
+      [ -s "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum" ] && INITIALIZED=true && return
+
       if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
-        if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256"; then
+        if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum"; then
           pushd "$SNAPSHOT_DIR"
-          if sha256sum -c "$SNAPSHOT_FILE_NAME.sha256"; then
+          if sha256sum -c "$SNAPSHOT_FILE_NAME.sha256sum"; then
             echo "Pulled snapshot from $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME."
           else
             echo "Could retrieve snapshot, but could not validate its checksum -- aborting" && exit 1
@@ -79,6 +82,9 @@
     }
     function extract_snapshot_tgz_to {
       local targetDir="$1"
+
+      [ -n "''${INITIALIZED:-}" ] && unset INITIALIZED && return
+
       if tar -C "$targetDir" -zxf "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
         echo "Extracting snapshot to $targetDir complete."
       else
@@ -315,7 +321,7 @@ in {
 
       # Grap a snapshot
       ${pull-snapshot}
-      if [ -n "''${ENVIRONMENT:-}" ]; then
+      if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
         SNAPSHOT_BASE_URL="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.base_url' < "$snapshots")"
@@ -437,7 +443,7 @@ in {
 
       # Grap a snapshot
       ${pull-snapshot}
-      if [ -n "''${ENVIRONMENT:-}" ]; then
+      if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
         SNAPSHOT_BASE_URL="$(jq -e -r --arg ENV "$ENVIRONMENT" '.$ENV.base_url' < "$snapshots")"
