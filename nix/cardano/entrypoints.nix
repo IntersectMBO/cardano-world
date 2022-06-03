@@ -46,6 +46,47 @@
     fi
   '';
 
+  pull-snapshot-deps = [
+    nixpkgs.curl
+    nixpkgs.coreutils
+    nixpkgs.gnutar
+    nixpkgs.gzip
+  ];
+  pull-snapshot = ''
+    function pull_snapshot {
+      [ -z "''${SNAPSHOT_BASE_URL:-}" ] && echo "SNAPSHOT_BASE_URL env var must be set -- aborting" && exit 1
+      [ -z "''${SNAPSHOT_FILE_NAME:-}" ] && echo "SNAPSHOT_FILE_NAME env var must be set -- aborting" && exit 1
+      [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
+
+      SNAPSHOT_DIR="$DATA_DIR/initial-snapshot"
+      mkdir -p "$SNAPSHOT_DIR"
+
+      if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+        if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256"; then
+          pushd "$SNAPSHOT_DIR"
+          if sha256sum -c "$SNAPSHOT_FILE_NAME.sha256"; then
+            echo "Pulled snapshot from $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME."
+          else
+            echo "Could retrieve snapshot, but could not validate its checksum -- aborting" && exit 1
+          fi
+          popd
+        else
+          echo "Could retrieve snapshot, but not its sha256 file -- aborting" && exit 1
+        fi
+      else
+        echo "No snapshot pulled -- aborting" && exit 1
+      fi
+    }
+    function extract_snapshot_tgz_to {
+      local targetDir="$1"
+      if tar -C "$targetDir" -zxf "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+        echo "Extracting snapshot to $targetDir complete."
+      else
+        echo "Extracting snapshot to $targetDir failed -- aborting" && exit 1
+      fi
+    }
+  '';
+
   legacy-kv-config-instrumentation-db-sync = ''
     function load_kv_secrets_db_sync {
 
@@ -257,7 +298,7 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = prelude-runtime;
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
     debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
 
@@ -271,6 +312,13 @@ in {
 
       # the legacy service discovery implementation
       ${legacy-srv-discovery}
+
+      # Grap a snapshot
+      ${pull-snapshot}
+      if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
+        pull_snapshot
+        extract_snapshot_tgz_to "$DB_DIR/node"
+      fi
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
@@ -326,7 +374,7 @@ in {
   };
 
   cardano-db-sync = writeShellApplication {
-    runtimeInputs = prelude-runtime ++ [nixpkgs.postgresql_12];
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps ++ [nixpkgs.postgresql_12];
     debugInputs = [
       packages.cardano-db-sync
       packages.cardano-cli
@@ -381,6 +429,12 @@ in {
       [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
       [ -z "''${SOCKET_PATH:-}" ] && echo "SOCKET_PATH env var must be set -- aborting" && exit 1
 
+      # Grap a snapshot
+      ${pull-snapshot}
+      if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
+        pull_snapshot
+        extract_snapshot_tgz_to "$DB_DIR/db-sync"
+      fi
 
       # Build args array
       args+=("--config" "$DB_SYNC_CONFIG")
