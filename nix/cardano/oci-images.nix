@@ -20,6 +20,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-node}/bin/entrypoint"
     ];
+    config.User = "1000:1000";
   };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
@@ -32,6 +33,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-db-sync}/bin/entrypoint"
     ];
+    config.User = "1000:1000";
   };
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
     name = "registry.ci.iog.io/cardano-wallet";
@@ -44,6 +46,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-wallet}/bin/entrypoint"
     ];
+    config.User = "1000:1000";
   };
   cardano-submit-api = buildDebugImage entrypoints.cardano-submit-api {
     name = "registry.ci.iog.io/cardano-submit-api";
@@ -56,6 +59,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-submit-api}/bin/entrypoint"
     ];
+    config.User = "1000:1000";
   };
   ogmios = buildDebugImage entrypoints.ogmios {
     name = "registry.ci.iog.io/ogmios";
@@ -68,5 +72,6 @@ in {
     config.Cmd = [
       "${entrypoints.ogmios}/bin/entrypoint"
     ];
+    config.User = "1000:1000";
   };
 }
