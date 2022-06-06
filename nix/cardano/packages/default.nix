@@ -37,7 +37,7 @@ in {
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
   ogmios = cardano-ogmios.packages.ogmios;
   cardano-config-html-public = let
-    publicEnvNames = ["mainnet" "testnet" "vasil-qa"];
+    publicEnvNames = ["mainnet" "testnet" "vasil-qa" "vasil-dev"];
     environments = lib.filterAttrs (n: _: builtins.elem n publicEnvNames) cardano.environments;
   in
     cardano.library.generateStaticHTMLConfigs environments;

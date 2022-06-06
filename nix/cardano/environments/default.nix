@@ -174,6 +174,26 @@
       dbSyncConfig = mkDbSyncConfig "vasil-qa" nodeConfig;
       usePeersFromLedgerAfterSlot = 136794;
     };
+    vasil-dev = rec {
+      useByronWallet = false;
+      private = false;
+      relaysNew = "vasil-dev-node.world.dev.cardano.org";
+      explorerUrl = "https://vasil-dev-explorer.world.dev.cardano.org";
+      smashUrl = "https://vasil-dev-smash.world.dev.cardano.org";
+      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      networkConfig = import ./vasil-dev-config.nix;
+      consensusProtocol = networkConfig.Protocol;
+      nodeConfig = defaultLogConfig // networkConfig;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = 30001;
+        }
+      ];
+      submitApiConfig = mkSubmitApiConfig "vasil-dev" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
+      usePeersFromLedgerAfterSlot = 136794;
+    };
     # used for SRE development
     sre = rec {
       useByronWallet = false;

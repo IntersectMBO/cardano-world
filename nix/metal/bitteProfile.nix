@@ -31,7 +31,7 @@ in {
 
     nix = {
       binaryCaches = ["https://cache.iog.io"];
-      binaryCachePublicKeys = ["cache.iog.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
+      binaryCachePublicKeys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
     };
 
     cluster = {
@@ -88,6 +88,16 @@ in {
                   (
                     bittelib.mkNomadHostVolumesConfig
                     ["vasil-qa-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["vasil-dev-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["vasil-dev-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
                   # for scheduling constraints
@@ -200,6 +210,7 @@ in {
                 entryPoints =
                   lib.pipe {
                     vasil-qa = 30000;
+                    vasil-dev = 30001;
                   } [
                     (
                       lib.mapAttrsToList (

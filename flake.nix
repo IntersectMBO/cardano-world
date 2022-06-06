@@ -65,6 +65,7 @@
     {
       infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;
       vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
+      vasil-dev = inputs.bitte.lib.mkNomadJobs "vasil-dev" nomadEnvs;
     };
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

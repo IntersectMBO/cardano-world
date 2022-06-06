@@ -21,5 +21,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    vasil-dev = {
+      namespace = "vasil-dev";
+      domain = "vasil-dev.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }

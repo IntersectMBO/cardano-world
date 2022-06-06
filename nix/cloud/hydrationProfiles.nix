@@ -40,6 +40,7 @@ in {
       nomad.namespaces = {
         infra.description = "Shared Services for The Cardano World";
         vasil-qa.description = "Cardano Vasil HF QA";
+        vasil-dev.description = "Cardano Vasil HF Development Testnet";
       };
     };
 
@@ -50,6 +51,10 @@ in {
       locals.policies = {
         consul.developer = {
           service_prefix."vasil-qa-" = {
+            policy = "write";
+            intentions = "write";
+          };
+          service_prefix."vasil-dev-" = {
             policy = "write";
             intentions = "write";
           };
@@ -72,7 +77,19 @@ in {
               "alloc-lifecycle"
             ];
           };
+          namespace.vasil-dev = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           host_volume."vasil-qa-*".policy = "write";
+          host_volume."vasil-dev-*".policy = "write";
         };
       };
     };
