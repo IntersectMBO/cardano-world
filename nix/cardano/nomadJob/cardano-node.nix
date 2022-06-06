@@ -94,7 +94,7 @@ in
             };
             ephemeral_disk = {
               migrate = true;
-              size = 80000;
+              size = 1000;
               sticky = true;
             };
             network = {
@@ -123,8 +123,8 @@ in
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = 5000;
-                  memory = 8192;
+                  cpu = 1000;
+                  memory = 1024;
                 };
                 volume_mount = {
                   destination = persistanceMount;
