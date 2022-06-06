@@ -25,6 +25,14 @@ charset = unset
 indent_style = unset
 indent_size = unset
 
+[nix/metal/encrypted/*]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+charset = unset
+indent_style = unset
+indent_size = unset
+
 # Ignore diffs/patches
 [*.{diff,patch}]
 end_of_line = unset
