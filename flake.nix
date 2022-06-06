@@ -74,10 +74,10 @@
       url = "github:input-output-hk/cardano-explorer-app/fix-nix-system";
       flake = false;
     };
-    #cardano-rosetta = {
-    #  url = "github:input-output-hk/cardano-rosetta";
-    #  flake = false;
-    #};
+    cardano-rosetta = {
+      url = "github:input-output-hk/cardano-rosetta";
+      flake = false;
+    };
     # --------------------------------------------------------------
     tullia.url = "github:input-output-hk/tullia";
   };
