@@ -198,8 +198,8 @@
 
       # general values
       # TODO: make this part of the kv-config, etc
-      echo '{}' | jq '{
-        useLedgerAfterSlot: 86400
+      echo '{}' | jq --arg LEDGER_SLOT "''${LEDGER_SLOT:-0}" '{
+        useLedgerAfterSlot: $LEDGER_SLOT|tonumber
       }' > ./topology-common.json
 
       # public roots -> SIGHUP
