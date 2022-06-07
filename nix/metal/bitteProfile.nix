@@ -75,7 +75,7 @@ in {
             # Vasil-QA nodes
             (eachRegion {
               instanceType = "t3.2xlarge";
-              desiredCapacity = 3;
+              desiredCapacity = 6;
               volumeSize = 500;
               modules =
                 defaultModules
@@ -109,7 +109,7 @@ in {
           (args: let
             attrs =
               {
-                desiredCapacity = 1;
+                desiredCapacity = 6;
                 instanceType = "t3a.large";
                 associatePublicIP = true;
                 maxInstanceLifetime = 0;
