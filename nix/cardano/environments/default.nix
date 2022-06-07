@@ -192,7 +192,7 @@
       ];
       submitApiConfig = mkSubmitApiConfig "vasil-dev" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
-      usePeersFromLedgerAfterSlot = 136794;
+      usePeersFromLedgerAfterSlot = 60000;
     };
     # used for SRE development
     sre = rec {
