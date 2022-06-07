@@ -5,7 +5,7 @@
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
-  inherit (cell) packages environments library;
+  inherit (cell) packages environments library constants;
 
   prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
 
@@ -46,36 +46,61 @@
     fi
   '';
 
-  legacy-kv-config-instrumentation-db-sync = ''
-    function load_kv_secrets_db_sync {
+  pull-snapshot-deps = [
+    nixpkgs.curl
+    nixpkgs.cacert
+    nixpkgs.coreutils
+    nixpkgs.gnutar
+    nixpkgs.gzip
+  ];
+  pull-snapshot = ''
+    function pull_snapshot {
+      [ -z "''${SNAPSHOT_BASE_URL:-}" ] && echo "SNAPSHOT_BASE_URL env var must be set -- aborting" && exit 1
+      [ -z "''${SNAPSHOT_FILE_NAME:-}" ] && echo "SNAPSHOT_FILE_NAME env var must be set -- aborting" && exit 1
+      [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
 
-      [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
-      [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
-      [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
+      SNAPSHOT_DIR="$DATA_DIR/initial-snapshot"
+      mkdir -p "$SNAPSHOT_DIR"
 
-      [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
-      [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
-      [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+      # we are already initialized
+      [ -s "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum" ] && INITIALIZED=true && return
 
-      export  VAULT_CACERT="$WORKLOAD_CACERT"
-      export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
-      export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+      # shellcheck source=/dev/null
+      source ${nixpkgs.cacert}/nix-support/setup-hook
+      echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME into $SNAPSHOT_DIR  ..." > /dev/stderr
+      if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+        echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum into $SNAPSHOT_DIR ..." > /dev/stderr
+        if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum"; then
+          echo -n "pushd: " > /dev/stderr
+          pushd "$SNAPSHOT_DIR" > /dev/stderr
+          echo "Validating sha256sum for ./$SNAPSHOT_FILE_NAME." > /dev/stderr
+          if sha256sum -c "$SNAPSHOT_FILE_NAME.sha256sum" > /dev/stderr; then
+            echo "Downloading  $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME{,.sha256sum} into $SNAPSHOT_DIR complete." > /dev/stderr
+          else
+            echo "Could retrieve snapshot, but could not validate its checksum -- aborting" && exit 1
+          fi
+          echo -n "popd: " > /dev/stderr
+          popd > /dev/stderr
+        else
+          echo "Could retrieve snapshot, but not its sha256 file -- aborting" && exit 1
+        fi
+      else
+        echo "No snapshot pulled -- aborting" && exit 1
+      fi
+    }
+    function extract_snapshot_tgz_to {
+      local targetDir="$1"
+      local strip="''${2:-0}"
+      mkdir -p "$targetDir"
 
-      local cmd=(
-        "curl"
-        "$VAULT_ADDR/v1/$VAULT_KV_PATH"
-        "--header" "X-Vault-Token: $VAULT_TOKEN"
-        "--header" "Content-Type: application/json"
-      )
+      [ -n "''${INITIALIZED:-}" ] && return
 
-      local json
-      json=$("''${cmd[@]}" | jq '.data.data')
-
-      PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
-      PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
-      echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
-      test -z "''${PGPASSFILE:-}"            || chmod 0400 "$PGPASSFILE"
-      set +x
+      echo "Extracting snapshot to $targetDir ..." > /dev/stderr
+      if tar --strip-components="$strip" -C "$targetDir" -zxf "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+        echo "Extracting snapshot to $targetDir complete." > /dev/stderr
+      else
+        echo "Extracting snapshot to $targetDir failed -- aborting" && exit 1
+      fi
     }
   '';
 
@@ -113,7 +138,7 @@
       )
 
       local json
-      json=$("''${cmd[@]}")
+      json=$("''${cmd[@]}") 2>/dev/null
 
       echo "$json"|jq '.nodeConfig'  > "$NODE_CONFIG"
       echo "$json"|jq '.dbSyncConfig'  > "$DB_SYNC_CONFIG"
@@ -158,7 +183,7 @@
       )
 
       local json
-      json=$("''${cmd[@]}" | jq '.data.data')
+      json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
 
       echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT BYRON_SIGNING_KEY
       # we only want to fetch and set cold key if byron certificacte is passed to the node
@@ -257,7 +282,7 @@
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
-    runtimeInputs = prelude-runtime;
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
     debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
 
@@ -271,6 +296,19 @@ in {
 
       # the legacy service discovery implementation
       ${legacy-srv-discovery}
+
+      # Grap a snapshot
+      ${pull-snapshot}
+      if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
+        # we are using a standard environment that already has known snapshots
+        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+      fi
+      if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
+        pull_snapshot
+        extract_snapshot_tgz_to "$DB_DIR/node" 1
+      fi
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
@@ -326,7 +364,7 @@ in {
   };
 
   cardano-db-sync = writeShellApplication {
-    runtimeInputs = prelude-runtime ++ [nixpkgs.postgresql_12];
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps ++ [nixpkgs.postgresql_12];
     debugInputs = [
       packages.cardano-db-sync
       packages.cardano-cli
@@ -336,6 +374,7 @@ in {
     text = ''
 
       ${prelude}
+      DB_SYNC_CONFIG="$DATA_DIR/config/$ENVIRONMENT/db-sync-config.json"
 
       mkdir -m 1777 /tmp
 
@@ -346,14 +385,15 @@ in {
           sleep 15
           echo "Service discovery heartbeat - every 15 seconds" > /dev/stderr
           original_addr="$PSQL_ADDR0"
-          leader_discovery
+          pgpassfile_discovery
           new_addr="$PSQL_ADDR0"
-          # load_kv_secrets_db_sync
           [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
         done
       }
 
-      function leader_discovery {
+      function pgpassfile_discovery {
+        [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+        [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
         eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
         # produces:
         # PSQL_ADDR0=domain:port
@@ -364,23 +404,66 @@ in {
         export PSQL_ADDR0
 
         echo "Retrieving db credentials from vault kv ..." > /dev/stderr
-        load_kv_secrets_db_sync
+        [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
+        [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
+        [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
+
+        [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
+        [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
+        [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+
+        export  VAULT_CACERT="$WORKLOAD_CACERT"
+        export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+        export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+
+        local cmd=(
+          "curl"
+          "$VAULT_ADDR/v1/$VAULT_KV_PATH"
+          "--header" "X-Vault-Token: $VAULT_TOKEN"
+          "--header" "Content-Type: application/json"
+        )
+
+        local json
+        json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
+
+        PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
+        PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
+        echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
+        test -z "''${PGPASSFILE:-}"            || chmod 0400 "$PGPASSFILE"
       }
 
-      ${legacy-kv-config-instrumentation-db-sync}
-
       if [ -n "''${VAULT_KV_PATH:-}" ]; then
-        [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
-        [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
         echo "Retrieving db leader from $MASTER_REPLICA_SRV_DNS ..." > /dev/stderr
-        leader_discovery
+        pgpassfile_discovery
       fi
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
-
-      [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
       [ -z "''${SOCKET_PATH:-}" ] && echo "SOCKET_PATH env var must be set -- aborting" && exit 1
 
+      # Grap a snapshot
+      ${pull-snapshot}
+      if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
+        # we are using a standard environment that already has known snapshots
+        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+      fi
+      if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
+        [ -z "''${PGPASSFILE-}" ] && echo "PGPASSFILE env var must be set (either manually or via vault kv discovery) -- aborting" && exit 1
+        pull_snapshot
+        extract_snapshot_tgz_to "$DB_DIR/db-sync"
+        if [ -z "''${INITIALIZED:-}" ]; then
+          echo Loading snapshot into database ... > /dev/stderr
+          DBNAME="$(cut -d ":" -f 3 "''${PGPASSFILE}")"
+          DBUSER="$(cut -d ":" -f 4 "''${PGPASSFILE}")"
+          DBHOST="$(cut -d ":" -f 1 "''${PGPASSFILE}")"
+          sqlfiles="$DB_DIR/db-sync/*.sql"
+          for sqlfile in $sqlfiles; do
+            psql -U "''${DBUSER}" -h "''${DBHOST}" "''${DBNAME}" -f "$sqlfile"
+            rm "$sqlfile"
+          done
+        fi
+      fi
 
       # Build args array
       args+=("--config" "$DB_SYNC_CONFIG")
@@ -390,8 +473,6 @@ in {
 
 
       if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
-        echo "Doing legacy leader discovery ..." > /dev/stderr
-
         # turn on bash's job control
         set -m
 
@@ -406,6 +487,7 @@ in {
         echo Running leader discovery loop > /dev/stderr
         watch_leader_discovery "$DB_SYNC_PID"
       else
+        [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
         exec ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}"
       fi
     '';
@@ -418,7 +500,6 @@ in {
     text = ''
 
       ${prelude}
-      DB_SYNC_CONFIG="$DATA_DIR/config/$ENVIRONMENT/db-sync-config.json"
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
