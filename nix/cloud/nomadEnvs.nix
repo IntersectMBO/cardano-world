@@ -258,12 +258,12 @@ in
             # env.DEBUG_SLEEP = 6000;
             env = {
               inherit LEDGER_SLOT;
-                DATA_DIR = persistanceMount + "/bft-1";
-                CONSUL_KV_PATH = "config/cardano/vasil-dev";
-                VAULT_KV_PATH = "kv/data/cardano/vasil-dev/bft-1";
-                LOCAL_ROOTS_SRV_DNS = "_vasil-dev-${jobname}-node._tcp.service.consul";
-                PUBLIC_ROOTS_SRV_DNS = "_vasil-dev-node._tcp.service.consul";
-              };
+              DATA_DIR = persistanceMount + "/bft-1";
+              CONSUL_KV_PATH = "config/cardano/vasil-dev";
+              VAULT_KV_PATH = "kv/data/cardano/vasil-dev/bft-1";
+              LOCAL_ROOTS_SRV_DNS = "_vasil-dev-${jobname}-node._tcp.service.consul";
+              PUBLIC_ROOTS_SRV_DNS = "_vasil-dev-node._tcp.service.consul";
+            };
           };
         };
       bft-2 = let
