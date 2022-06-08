@@ -2192,16 +2192,16 @@
         "utils": "utils_24"
       },
       "locked": {
-        "lastModified": 1653381629,
-        "narHash": "sha256-xyc7ZRmKEcWm/VvLllC5FQ4QeIliLRbgw9Qo3hafOHk=",
+        "lastModified": 1654621040,
+        "narHash": "sha256-hZXl6+xonhjDwLnIPUflmMstWHZqiYOHw8kMyE6281E=",
         "owner": "input-output-hk",
         "repo": "cardano-db-sync",
-        "rev": "05088fcf2e9a370858be2a89fec8b5e528a8ed9c",
+        "rev": "21d83644a3904df39696d94a508727bb42741c67",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "vasil-qa-deploy-0",
+        "ref": "13.0.0-rc2",
         "repo": "cardano-db-sync",
         "type": "github"
       }
