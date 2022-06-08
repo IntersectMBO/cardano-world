@@ -508,19 +508,15 @@ in {
       args+=("--port" "8090")
       args+=("--node-socket" "$SOCKET_PATH")
       args+=("--database" "$DB_DIR/wallet")
-      # FIXME: consume the node config directly
-      args+=("$(
+      {
         [ "''${ENVIRONMENT}" == "mainnet" ] &&
-          echo "--mainnet" ||
-          echo "--testnet-magic $(
-          jq '.networkMagic' "$(
-            file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
-            folder="$(dirname "$NODE_CONFIG")"
-            [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
-          )"
-        )"
-      )")
-
+        args+=("--mainnet") ||
+        args+=("--testnet" "$(
+          file="$(jq -r '.ByronGenesisFile' "$NODE_CONFIG" )"
+          folder="$(dirname "$NODE_CONFIG")"
+          [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+        )")
+      }
       # Wallet will not export prometheus metrics without also enabling EKG
       export CARDANO_WALLET_EKG_HOST=127.0.0.1
       export CARDANO_WALLET_EKG_PORT=8083

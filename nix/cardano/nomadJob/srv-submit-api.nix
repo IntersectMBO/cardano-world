@@ -12,6 +12,6 @@
       type = "tcp";
     }
   ];
-  name = "${namespace}-submit";
-  port = "submit";
+  name = "${namespace}-submit-api";
+  port = "submit-api";
 }
