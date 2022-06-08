@@ -51,15 +51,20 @@
     # 1) bitte instrumentation (TODO: `std`ize bitte)
     (
       let
-      in
-        inputs.bitte.lib.mkBitteStack {
+        bitte = inputs.bitte.lib.mkBitteStack {
           inherit inputs;
           inherit (inputs) self;
           domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfiles.default;
           deploySshKey = "./secrets/ssh-cardano";
-        }
+        };
+      in
+        # if the bitte input is silenced (replaced by divnix/blank)
+        # then don't generate flake level attrNames from mkBitteStack (it fails)
+        if inputs.bitte ? lib
+        then bitte
+        else {}
     )
     # 2) renderes nomad environments (TODO: `std`ize as actions)
     {
