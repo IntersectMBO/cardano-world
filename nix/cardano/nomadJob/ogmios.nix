@@ -20,6 +20,7 @@ in
     id = jobname;
     type = "service";
     priority = 50;
+    persistanceMount = "/persist";
     vaultPkiPath = "pki/issue/ogmios";
     consulRolePath = "consul/creds/ogmios";
   in
@@ -105,6 +106,7 @@ in
                 # Task: Ogmios
                 # ----------
                 ogmios = {
+                  env.DATA_DIR = persistanceMount;
                   env.SOCKET_PATH = "/alloc/tmp/node.socket"; # figure out how to pass this from the cardano group
 
                   template =
