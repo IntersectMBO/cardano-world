@@ -413,7 +413,6 @@ in {
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
-      set -x
       PROPOSAL_ARGS=(
         "--cost-model-file" "$COST_MODEL"
       )
