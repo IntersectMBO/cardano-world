@@ -791,11 +791,11 @@
         "std": "std_2"
       },
       "locked": {
-        "lastModified": 1654569393,
-        "narHash": "sha256-PE90pVGLH75xUSQdJUBLWAJLEwtvqSdHI8F0tMGlbJU=",
+        "lastModified": 1654822591,
+        "narHash": "sha256-mMsH+QBntee0p2pa41fLPc9/F6ibPnb5isKWj9lceWE=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "391f89aa97e3c36dc11c2ddd7cb6c9188917bce4",
+        "rev": "79e345211e14145e25115912411a33bca328e642",
         "type": "github"
       },
       "original": {
@@ -13074,11 +13074,11 @@
     },
     "nixpkgs_43": {
       "locked": {
-        "lastModified": 1654360807,
-        "narHash": "sha256-wYG86PUkPZ1P/oHsCpepTkb/U26poaEPPp1XFjRsgdA=",
+        "lastModified": 1654622265,
+        "narHash": "sha256-AltUA8bPbXeRgzcDhQEURVHqQhTByxk6Xtgf+CYmEFk=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "d9794b04bffb468b886c553557489977ae5f4c65",
+        "rev": "11e805f9935f6ab4b049351ac14f2d1aa93cf1d3",
         "type": "github"
       },
       "original": {

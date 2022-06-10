@@ -54,7 +54,7 @@ in
         update.healthy_deadline = "5m0s";
         update.max_parallel = 1;
         update.min_healthy_time = "10s";
-        update.progress_deadline = "10m0s";
+        update.progress_deadline = "60m0s";
         update.stagger = "30s";
         # ----------
         # Migrate
