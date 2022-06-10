@@ -46,13 +46,16 @@ in {
           (attrs // {region = "eu-west-1";})
           (attrs // {region = "us-east-2";})
         ];
+        euCentral = attrs: [
+          (attrs // {region = "eu-central-1";})
+        ];
       in
         lib.listToAttrs
         (
           lib.forEach
           (
             # Infra Nodes
-            (eachRegion {
+            (euCentral {
               instanceType = "t3.2xlarge";
               desiredCapacity = 3;
               volumeSize = 500;
