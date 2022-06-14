@@ -7,7 +7,6 @@
     url = "github:edolstra/flake-compat";
     flake = false;
   };
-
   inputs = {
     std = {
       url = "github:divnix/std";
@@ -78,6 +77,10 @@
       url = "github:input-output-hk/cardano-rosetta";
       flake = false;
     };
+    #cardano-rosetta = {
+    #  url = "github:input-output-hk/cardano-rosetta";
+    #  flake = false;
+    #};
     # --------------------------------------------------------------
     tullia.url = "github:input-output-hk/tullia";
   };

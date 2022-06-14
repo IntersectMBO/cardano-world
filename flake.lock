@@ -937,6 +937,22 @@
         "type": "github"
       }
     },
+    "cardano-rosetta": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1660919475,
+        "narHash": "sha256-zyHJoJaXR2Q97NVP2hOe4dAzQtOPPMAKbQ8maggCBYs=",
+        "owner": "input-output-hk",
+        "repo": "cardano-rosetta",
+        "rev": "8e7c9a2ffc3f9b91e79f5b9429e326077d5b910f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "cardano-rosetta",
+        "type": "github"
+      }
+    },
     "cardano-shell": {
       "flake": false,
       "locked": {
@@ -5853,6 +5869,7 @@
         "cardano-explorer-app": "cardano-explorer-app",
         "cardano-graphql": "cardano-graphql",
         "cardano-node": "cardano-node",
+        "cardano-rosetta": "cardano-rosetta",
         "cardano-wallet": "cardano-wallet",
         "data-merge": "data-merge_3",
         "flake-compat": "flake-compat_6",

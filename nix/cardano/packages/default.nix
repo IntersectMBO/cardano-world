@@ -119,6 +119,7 @@ in
   inherit (ogmiosProject.hsPkgs.ogmios.components.exes) ogmios;
   cardano-graphql = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.cardano-graphql;
   graphql-engine = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.graphql-engine;
+  hasura-cli = (import (cardano-graphql + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.hasura-cli;
   cardano-explorer-app =
     let
       # TODO fix the ugliness to make this work
@@ -137,4 +138,5 @@ in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
   inherit nix-inclusive; # TODO REMOVE
+
 }
