@@ -494,8 +494,8 @@ in {
   };
 
   cardano-wallet = writeShellApplication {
-    runtimeInputs = prelude-runtime;
-    debugInputs = [packages.cardano-wallet packages.cardano-cli];
+    runtimeInputs = prelude-runtime ++ [packages.cardano-cli];
+    debugInputs = [packages.cardano-wallet];
     name = "entrypoint";
     text = ''
 
@@ -503,24 +503,42 @@ in {
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
+      flags=()
+      [ "''${ENVIRONMENT}" == "mainnet" ] && flags+=("--mainnet")
+      [ "''${ENVIRONMENT}" != "mainnet" ] && flags+=(
+        "--testnet-magic" "$(
+          jq -r '.networkMagic' "$(
+            file="$(jq -r '.ShelleyGenesisFile' "$NODE_CONFIG" )"
+            folder="$(dirname "$NODE_CONFIG")"
+            [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+          )"
+        )"
+      )
+
+
+      while ! CARDANO_NODE_SOCKET_PATH="$SOCKET_PATH" cardano-cli query tip "''${flags[@]}"
+      do
+        sleep 30
+        echo Waiting for cardano socket to go live ... >&2
+      done
+
       # Build args array
       args+=("--listen-address" "0.0.0.0")
       args+=("--port" "8090")
       args+=("--node-socket" "$SOCKET_PATH")
       args+=("--database" "$DB_DIR/wallet")
-      # FIXME: consume the node config directly
-      args+=("$(
-        [ "''${ENVIRONMENT}" == "mainnet" ] &&
-          echo "--mainnet" ||
-          echo "--testnet-magic $(
-          jq '.networkMagic' "$(
-            file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
+      {
+        if [ "''${ENVIRONMENT}" == "mainnet" ]
+        then
+          args+=("--mainnet")
+        else
+          args+=("--testnet" "$(
+            file="$(jq -r '.ByronGenesisFile' "$NODE_CONFIG" )"
             folder="$(dirname "$NODE_CONFIG")"
             [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
-          )"
-        )"
-      )")
-
+          )")
+        fi
+      }
       # Wallet will not export prometheus metrics without also enabling EKG
       export CARDANO_WALLET_EKG_HOST=127.0.0.1
       export CARDANO_WALLET_EKG_PORT=8083
