@@ -1,13 +1,13 @@
 creation_rules:
   # Dev
-  - path_regex: cardano/vasil-qa/*
+  - path_regex: cardano/shelley-qa/*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
   - path_regex: cardano/vasil-dev/*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
   # Ops
   - path_regex: patroni/infra*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
-  - path_regex: db-sync/vasil-qa*
+  - path_regex: db-sync/shelley-qa*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: db-sync/vasil-dev*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"

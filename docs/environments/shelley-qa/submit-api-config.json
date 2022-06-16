@@ -1,8 +1,7 @@
 {
   "EnableLogMetrics": false,
   "EnableLogging": true,
-  "NetworkName": "vasil-qa",
-  "NodeConfigFile": "config.json",
+  "GenesisHash": "9325495d3ac7554d4bfaf2392cc3c74676d5add873d6ef8862d7562e660940bf",
   "PrometheusPort": 8080,
   "RequiresNetworkMagic": "RequiresMagic",
   "defaultBackends": [

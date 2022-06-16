@@ -12,7 +12,7 @@
 
   # Components per environment
   # -----------------------------------------------------------------------
-  vasil-qa = mkComponents constants.envs.vasil-qa;
+  shelley-qa = mkComponents constants.envs.shelley-qa;
   vasil-dev = mkComponents constants.envs.vasil-dev;
   # TODO: pull this from nomadJob?
   persistanceMount = "/persist";
@@ -30,12 +30,12 @@ in
         job.database.group.database.task.backup-walg.env = {inherit WALG_S3_PREFIX;};
       };
     };
-    vasil-qa = {
+    shelley-qa = {
       bft-0 = let
         jobname = "cardano-bft-0";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-qa
+          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["eu-central-1"];
               inherit jobname;
@@ -45,17 +45,17 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/bft-0";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/bft-0";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-0";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       bft-1 = let
         jobname = "cardano-bft-1";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-qa
+          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["eu-west-1"];
               inherit jobname;
@@ -65,17 +65,17 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/bft-1";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/bft-1";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-1";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       bft-2 = let
         jobname = "cardano-bft-2";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-qa
+          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["us-east-2"];
               inherit jobname;
@@ -85,10 +85,10 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/bft-2";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/bft-2";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-2";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       sp-1 = let
@@ -96,7 +96,7 @@ in
       in
         merge (
           cardano.nomadJob.cardano-node (
-            constants.envs.vasil-qa
+            constants.envs.shelley-qa
             // {
               datacenters = ["eu-west-1"];
               inherit jobname;
@@ -107,10 +107,10 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/sp-1";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-1";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-1";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       sp-2 = let
@@ -118,7 +118,7 @@ in
       in
         merge (
           cardano.nomadJob.cardano-node (
-            constants.envs.vasil-qa
+            constants.envs.shelley-qa
             // {
               datacenters = ["us-east-2"];
               inherit jobname;
@@ -129,10 +129,10 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/sp-2";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-2";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-2";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       sp-3 = let
@@ -140,7 +140,7 @@ in
       in
         merge (
           cardano.nomadJob.cardano-node (
-            constants.envs.vasil-qa
+            constants.envs.shelley-qa
             // {
               datacenters = ["eu-central-1"];
               inherit jobname;
@@ -151,17 +151,17 @@ in
             # env.ENVIRONMENT = "testnet";
             # env.DEBUG_SLEEP = 6000;
             env.DATA_DIR = persistanceMount + "/sp-3";
-            env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-            env.VAULT_KV_PATH = "kv/data/cardano/vasil-qa/sp-3";
-            env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-            env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+            env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-3";
+            env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+            env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
           };
         };
       ogmios-0 = let
         jobname = "ogmios-0";
       in
         merge (cardano.nomadJob.ogmios (
-          constants.envs.vasil-qa
+          constants.envs.shelley-qa
           // {
             datacenters = ["eu-central-1"];
             inherit jobname;
@@ -172,16 +172,16 @@ in
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/ogmios-0";
-              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
               env.EDGE_NODE = "1";
-              env.LOCAL_ROOTS_SRV_DNS = "_vasil-qa-${jobname}-node._tcp.service.consul";
-              env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+              env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+              env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
             };
             ogmios = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/ogmios-0";
-              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
+              env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
             };
           };
         };
@@ -189,7 +189,7 @@ in
         jobname = "db-sync-0";
       in
         merge (cardano.nomadJob.cardano-db-sync (
-          constants.envs.vasil-qa
+          constants.envs.shelley-qa
           // {
             datacenters = ["eu-central-1"];
             inherit jobname;
@@ -201,17 +201,17 @@ in
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env.DATA_DIR = persistanceMount + "/db-sync-0";
-              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-              env.PUBLIC_ROOTS_SRV_DNS = "_vasil-qa-node._tcp.service.consul";
+              env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+              env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
               env.EDGE_NODE = "1";
             };
             db-sync = {
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
-              env.DB_NAME = "vasil_qa_dbsync";
+              env.DB_NAME = "shelley_qa_dbsync";
               env.DATA_DIR = persistanceMount + "/db-sync-0";
-              env.CONSUL_KV_PATH = "config/cardano/vasil-qa";
-              env.VAULT_KV_PATH = "kv/data/db-sync/vasil-qa";
+              env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+              env.VAULT_KV_PATH = "kv/data/db-sync/shelley-qa";
               env.MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
             };
           };
@@ -422,7 +422,7 @@ in
               # env.ENVIRONMENT = "testnet";
               # env.DEBUG_SLEEP = 6000;
               env = {
-                DB_NAME = "vasil_qa_dbsync";
+                DB_NAME = "vasil_dev_dbsync";
                 DATA_DIR = persistanceMount + "/db-sync-0";
                 CONSUL_KV_PATH = "config/cardano/vasil-dev";
                 VAULT_KV_PATH = "kv/data/db-sync/vasil-dev";

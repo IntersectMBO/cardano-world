@@ -3392,20 +3392,19 @@
         "nixpkgs": [
           "cardano-wallet",
           "haskellNix",
-          "nixpkgs-unstable"
+          "nixpkgs-2111"
         ]
       },
       "locked": {
-        "lastModified": 1655374805,
-        "narHash": "sha256-v0l8rnhcTz0k4jTxvN68QblUFn25FZ2+LCT6AtWGIzc=",
+        "lastModified": 1655386309,
+        "narHash": "sha256-27kyn81JuwBD40yTFTcZb7Qk0AKARVopDsI5d0uf48s=",
         "owner": "input-output-hk",
         "repo": "cardano-wallet",
-        "rev": "b5859ff2060b68787721d735fdf14bd83110380a",
+        "rev": "fe9bef73d17771b53ea33859c39842408a7f5810",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "anviking/ADP-1744/node-1.35",
         "repo": "cardano-wallet",
         "type": "github"
       }
@@ -4692,15 +4691,16 @@
     "flake-compat_20": {
       "flake": false,
       "locked": {
-        "lastModified": 1635892615,
-        "narHash": "sha256-harGbMZr4hzat2BWBU+Y5OYXlu+fVz7E4WeQzHi5o8A=",
+        "lastModified": 1647532380,
+        "narHash": "sha256-wswAxyO8AJTH7d5oU8VK82yBCpqwA+p6kLgpb1f1PAY=",
         "owner": "input-output-hk",
         "repo": "flake-compat",
-        "rev": "eca47d3377946315596da653862d341ee5341318",
+        "rev": "7da118186435255a30b5ffeabba9629c344c0bec",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "fixes",
         "repo": "flake-compat",
         "type": "github"
       }

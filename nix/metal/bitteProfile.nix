@@ -85,12 +85,12 @@ in {
                 ++ [
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    ["vasil-qa-persist-cardano-node-local"]
+                    ["shelley-qa-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    ["vasil-qa-persist-db-sync-local"]
+                    ["shelley-qa-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
                   (
@@ -205,14 +205,14 @@ in {
           modules = [
             (bitte + /profiles/routing.nix)
             {
-              services.oauth2_proxy.email.domains = ["iohk.io" "atixlabs.com"];
+              services.oauth2_proxy.email.domains = ["iohk.io"];
               services.traefik.acmeDnsCertMgr = false;
               services.traefik.useVaultBackend = true;
               services.traefik.useDockerRegistry = false;
               services.traefik.staticConfigOptions = {
                 entryPoints =
                   lib.pipe {
-                    vasil-qa = 30000;
+                    shelley-qa = 30000;
                     vasil-dev = 30001;
                   } [
                     (

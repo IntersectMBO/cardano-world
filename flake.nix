@@ -17,7 +17,7 @@
     # TODO: remove when moved to monorepo
     cardano-node.url = "github:input-output-hk/cardano-node/1.35.0-rc3";
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.0-rc3";
-    cardano-wallet.url = "github:input-output-hk/cardano-wallet/anviking/ADP-1744/node-1.35";
+    cardano-wallet.url = "github:input-output-hk/cardano-wallet/";
     cardano-ogmios.url = "github:input-output-hk/cardano-ogmios/vasil";
     cardano-graphql = {
       url = "github:input-output-hk/cardano-graphql";

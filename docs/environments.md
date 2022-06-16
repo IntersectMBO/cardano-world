@@ -18,6 +18,22 @@ The official Cardano Environment configuration files:
 - [Shelley Genesis](environments/testnet/shelley-genesis.json)
 - [Alonzo Genesis](environments/testnet/alonzo-genesis.json)
 
+## Staging (Internal Only)
+
+- [Node Config](environments/staging/config.json)
+- [Node Topology](environments/staging/topology.json)
+- [Byron Genesis](environments/staging/byron-genesis.json)
+- [Shelley Genesis](environments/staging/shelley-genesis.json)
+- [Alonzo Genesis](environments/staging/alonzo-genesis.json)
+
+## Shelley-QA (Internal Only)
+
+- [Node Config](environments/shelley-qa/config.json)
+- [Node Topology](environments/shelley-qa/topology.json)
+- [Byron Genesis](environments/shelley-qa/byron-genesis.json)
+- [Shelley Genesis](environments/shelley-qa/shelley-genesis.json)
+- [Alonzo Genesis](environments/shelley-qa/alonzo-genesis.json)
+
 ## Vasil-Dev
 
 - [Node Config](environments/vasil-dev/config.json)
@@ -28,10 +44,3 @@ The official Cardano Environment configuration files:
 - [Shelley Genesis](environments/vasil-dev/shelley-genesis.json)
 - [Alonzo Genesis](environments/vasil-dev/alonzo-genesis.json)
 
-## Vasil-QA (Slated for decommission)
-
-- [Node Config](environments/vasil-qa/config.json)
-- [Node Topology](environments/vasil-qa/topology.json)
-- [Byron Genesis](environments/vasil-qa/byron-genesis.json)
-- [Shelley Genesis](environments/vasil-qa/shelley-genesis.json)
-- [Alonzo Genesis](environments/vasil-qa/alonzo-genesis.json)

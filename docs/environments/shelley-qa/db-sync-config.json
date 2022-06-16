@@ -1,7 +1,8 @@
 {
   "EnableLogMetrics": false,
   "EnableLogging": true,
-  "GenesisHash": "301f1b4b238645a2823c3cb52ff14c6db7e5e54620213f042bc979a0a1b37a73",
+  "NetworkName": "shelley_qa",
+  "NodeConfigFile": "config.json",
   "PrometheusPort": 8080,
   "RequiresNetworkMagic": "RequiresMagic",
   "defaultBackends": [

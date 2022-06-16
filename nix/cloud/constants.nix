@@ -15,9 +15,9 @@ in {
       nodeClass = "infra";
       scaling = 3;
     };
-    vasil-qa = {
-      namespace = "vasil-qa";
-      domain = "vasil-qa.${baseDomain}";
+    shelley-qa = {
+      namespace = "shelley-qa";
+      domain = "shelley-qa.${baseDomain}";
       nodeClass = "qa";
       scaling = 3;
     };

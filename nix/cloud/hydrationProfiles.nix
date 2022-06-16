@@ -39,7 +39,7 @@ in {
       ];
       nomad.namespaces = {
         infra.description = "Shared Services for The Cardano World";
-        vasil-qa.description = "Cardano Vasil HF QA";
+        shelley-qa.description = "Cardano Shelley Internal QA";
         vasil-dev.description = "Cardano Vasil HF Development Testnet";
       };
     };
@@ -50,7 +50,7 @@ in {
       # ... operator role policies
       locals.policies = {
         consul.developer = {
-          service_prefix."vasil-qa-" = {
+          service_prefix."shelley-qa-" = {
             policy = "write";
             intentions = "write";
           };
@@ -66,7 +66,7 @@ in {
         };
 
         nomad.developer = {
-          namespace.vasil-qa = {
+          namespace.shelley-qa = {
             policy = "write";
             capabilities = [
               "submit-job"
@@ -88,7 +88,7 @@ in {
               "alloc-lifecycle"
             ];
           };
-          host_volume."vasil-qa-*".policy = "write";
+          host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
         };
       };

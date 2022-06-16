@@ -142,26 +142,12 @@
     shelley_qa = rec {
       useByronWallet = false;
       private = false;
-      relaysNew = "relays-new.shelley-qa.dev.cardano.org";
+      relaysOld = "relays-old.shelley-qa.dev.cardano.org";
+      relaysNew = "shelley-qa-node.world.dev.cardano.org";
       explorerUrl = "https://explorer.shelley-qa.dev.cardano.org";
       smashUrl = "https://smash.shelley-qa.dev.cardano.org";
       metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
       networkConfig = import ./shelley_qa-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgePort = 3001;
-      submitApiConfig = mkSubmitApiConfig "shelley_qa" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "shelley_qa" nodeConfig;
-      usePeersFromLedgerAfterSlot = 23574838;
-    };
-    vasil-qa = rec {
-      useByronWallet = false;
-      private = false;
-      relaysNew = "vasil-qa-node.world.dev.cardano.org";
-      explorerUrl = "https://vasil-qa-explorer.world.dev.cardano.org";
-      smashUrl = "https://vasil-qa-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./vasil-qa-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
       edgeNodes = [
@@ -169,10 +155,14 @@
           addr = relaysNew;
           port = 30000;
         }
+        {
+          addr = relaysOld;
+          port = 3001;
+        }
       ];
-      submitApiConfig = mkSubmitApiConfig "vasil-qa" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "vasil-qa" nodeConfig;
-      usePeersFromLedgerAfterSlot = 136794;
+      submitApiConfig = mkSubmitApiConfig "shelley_qa" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "shelley_qa" nodeConfig;
+      usePeersFromLedgerAfterSlot = 23574838;
     };
     vasil-dev = rec {
       useByronWallet = false;
