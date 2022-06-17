@@ -21,4 +21,5 @@
   ];
   name = "${namespace}-wallet";
   port = "8090";
+  tags = ["\${NOMAD_ALLOC_ID}"];
 }

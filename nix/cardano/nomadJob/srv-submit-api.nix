@@ -14,4 +14,5 @@
   ];
   name = "${namespace}-submit";
   port = "submit";
+  tags = ["\${NOMAD_ALLOC_ID}"];
 }

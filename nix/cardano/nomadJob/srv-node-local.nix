@@ -14,4 +14,5 @@
   ];
   name = "${namespace}-${jobname}-node";
   port = "node";
+  tags = ["\${NOMAD_ALLOC_ID}"];
 }
