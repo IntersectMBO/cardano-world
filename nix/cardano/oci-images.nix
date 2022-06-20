@@ -86,4 +86,28 @@ in {
     ];
     config.User = "1000:1000";
   };
+  cardano-graphql = buildDebugImage entrypoints.cardano-graphql {
+    name = "registry.ci.iog.io/cardano-graphql";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = [packages.cardano-graphql];})
+    ];
+    contents = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.cardano-graphql}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
+  graphql-engine = buildDebugImage entrypoints.graphql-engine {
+    name = "registry.ci.iog.io/graphql-engine";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = [packages.graphql-engine];})
+    ];
+    contents = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.graphql-engine}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
 }

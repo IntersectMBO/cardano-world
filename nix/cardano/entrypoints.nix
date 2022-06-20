@@ -506,6 +506,12 @@ in {
       ${prelude}
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
+      LISTEN_ADDRESS=''${LISTEN_ADDRESS:127.0.0.1}
+      PORT=''${PORT:-8090}
+      CARDANO_WALLET_EKG_HOST=''${CARDANO_WALLET_EKG_HOST:-127.0.0.1}
+      CARDANO_WALLET_EKG_PORT=''${CARDANO_WALLET_EKG_PORT:-8083}
+      CARDANO_WALLET_PROMETHEUS_HOST=''${CARDANO_WALLET_PROMETHEUS_HOST:-127.0.0.1}
+      CARDANO_WALLET_PROMETHEUS_PORT=''${CARDANO_WALLET_PROMETHEUS_PORT:-8082}
 
       flags=()
       [ "''${ENVIRONMENT}" == "mainnet" ] && flags+=("--mainnet")
@@ -527,8 +533,8 @@ in {
       done
 
       # Build args array
-      args+=("--listen-address" "0.0.0.0")
-      args+=("--port" "8090")
+      args+=("--listen-address" "$LISTEN_ADDRESS")
+      args+=("--port" "$PORT")
       args+=("--node-socket" "$SOCKET_PATH")
       args+=("--database" "$DB_DIR/wallet")
       {
@@ -544,11 +550,6 @@ in {
         fi
       }
       # Wallet will not export prometheus metrics without also enabling EKG
-      export CARDANO_WALLET_EKG_HOST=127.0.0.1
-      export CARDANO_WALLET_EKG_PORT=8083
-      export CARDANO_WALLET_PROMETHEUS_HOST=127.0.0.1
-      export CARDANO_WALLET_PROMETHEUS_PORT=8082
-
       exec ${packages.cardano-wallet}/bin/cardano-wallet serve "''${args[@]}"
     '';
   };
@@ -560,10 +561,12 @@ in {
     text = ''
 
       ${prelude}
+      LISTEN_ADDRESS=''${LISTEN_ADDRESS:127.0.0.1}
+      PORT=''${PORT:-8070}
 
       # Build args array
-      args+=("--listen-address" "0.0.0.0")
-      args+=("--port" "8070")
+      args+=("--listen-address" "$LISTEN_ADDRESS")
+      args+=("--port" "$PORT")
       args+=("--config" "$NODE_CONFIG")
 
       exec ${packages.cardano-submit-api}/bin/cardano-submit-api "''${args[@]}"
@@ -571,16 +574,17 @@ in {
   };
 
   ogmios = writeShellApplication {
-    runtimeInputs = prelude-runtime;
-    debugInputs = [packages.ogmios];
+    runtimeInputs = prelude-runtime ++ [packages.ogmios];
     name = "entrypoint";
     text = ''
 
       ${prelude}
+      HOST=''${HOST:127.0.0.1}
+      PORT=''${PORT:-1337}
 
       # Build args array
-      args+=("--host" "0.0.0.0")
-      args+=("--port" "1337")
+      args+=("--host" "$HOST")
+      args+=("--port" "$PORT")
       args+=("--node-socket" "$SOCKET_PATH")
       args+=("--node-config" "$NODE_CONFIG")
 
@@ -596,6 +600,91 @@ in {
       # shellcheck source=/dev/null
       source ${nixpkgs.cacert}/nix-support/setup-hook
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
+    '';
+  };
+
+  cardano-graphql = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    name = "entrypoint";
+    text = ''
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+      # PSQL_ADDR0=domain:port
+      # PSQL_HOST0=domain
+      # PSQL_PORT0=port
+
+      export DB_HOST=''${DB_HOST:-PSQL_HOST0}
+      export DB_PORT=''${DB_PORT:-PSQL_PORT0}
+      [ -z "''${DB_USER_FILE:-}" ] && echo "DB_USER_FILE env var must be set -- aborting" && exit 1
+      [ -z "''${DB_PASS_FILE:-}" ] && echo "DB_PASS_FILE env var must be set -- aborting" && exit 1
+      [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
+
+      [ -z "''${HASURA_URI:-}" ] && echo "HASURA_URI env var must be set -- aborting" && exit 1
+      [ -z "''${OGMIOS_HOST:-}" ] && echo "OGMIOS_HOST env var must be set -- aborting" && exit 1
+      [ -z "''${OGMIOS_PORT:-}" ] && echo "OGMIOS_PORT env var must be set -- aborting" && exit 1
+      [ -z "''${API_PORT:-}" ] && echo "API_PORT env var must be set -- aborting" && exit 1
+
+      # keep db config variables consistent with db-sync
+      export POSTGRES_DB=$DB_NAME
+      export POSTGRES_HOST=$DB_HOST
+      export POSTGRES_PORT=$DB_PORT
+      export POSTGRES_PASSWORD_FILE=$DB_PASS_FILE
+      export POSTGRES_USER_FILE=$DB_USER_FILE
+
+      ${prelude}
+
+      expor HASURA_CLI_PATH="${packages.hasura-cli}/bin/hasura"
+      export CARDANO_NODE_CONFIG_PATH="$NODE_CONFIG"
+
+      # Env Vars with defaults that can be overridden
+      HASURA_GRAPHQL_ENABLE_TELEMETRY=''${HASURA_GRAPHQL_ENABLE_TELEMETRY:-false}
+      LOGGER_MIN_SEVERITY=''${LOGGER_MIN_SEVERITY:-INFO}
+      PROMETHEUS_METRICS=''${PROMETHEUS_METRICS:-true}
+      TRACING=''${TRACING:-true}
+      ALLOW_INTROSPECTION=''${ALLOW_INTROSPECTION:-false}
+      CACHE_ENABLED=''${CACHE_ENABLED:-true}
+
+      # Other Optional env vars
+      # ALLOWED_ORIGINS
+      # LISTEN_ADDRESS
+      # METADATA_SERVER_URI
+      # POLLING_INTERVAL_ADA_SUPPLY
+      # ASSET_METADATA_UPDATE_INTERVAL
+      # QUERY_DEPTH_LIMIT
+      # ALLOW_LIST_PATH
+      # MAX_QUERY_COMPLEXITY
+
+      exec ${packages.cardano-graphql}/bin/cardano-graphql
+    '';
+  };
+
+  graphql-engine = writeShellApplication {
+    runtimeInputs = [];
+    name = "entrypoint";
+    text = ''
+
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+      # PSQL_ADDR0=domain:port
+      # PSQL_HOST0=domain
+      # PSQL_PORT0=port
+
+      # keep db config variables consistent with db-sync
+      export DB_HOST=''${DB_HOST:-PSQL_HOST0}
+      export DB_PORT=''${DB_PORT:-PSQL_PORT0}
+      [ -z "''${DB_USER_FILE:-}" ] && echo "DB_USER_FILE env var must be set -- aborting" && exit 1
+      [ -z "''${DB_PASS_FILE:-}" ] && echo "DB_PASS_FILE env var must be set -- aborting" && exit 1
+      [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
+      [ -z "''${HASURA_PORT:-}" ] && echo "HASURA_PORT env var must be set -- aborting" && exit 1
+
+      args=()
+      args+=("-u" "$(cat DB_USER_FILE)")
+      args+=("--password" "$(cat DB_PASS_FILE)")
+      args+=("--host" "$DB_HOST")
+      args+=("-d" "$DB_NAME")
+      args+=("--port" "$DB_PORT")
+      args+=("--server-port" "$HASURA_PORT")
+      args+=("--enable-telemetry=false" "--disable-cors")
+
+      exec ${packages.graphql-engine}/bin/graphql-engine  "''${args[@]}"
     '';
   };
 }
