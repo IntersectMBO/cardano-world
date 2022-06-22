@@ -374,7 +374,7 @@ in {
     text = ''
 
       ${prelude}
-      DB_SYNC_CONFIG="$DATA_DIR/config/$ENVIRONMENT/db-sync-config.json"
+      DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
 
       mkdir -m 1777 /tmp
 
