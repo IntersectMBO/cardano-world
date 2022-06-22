@@ -37,6 +37,7 @@ in {
     cluster = {
       s3CachePubKey = lib.fileContents ./encrypted/nix-public-key-file;
       flakePath = "${inputs.self}";
+      vbkBackend = "local";
 
       autoscalingGroups = let
         defaultModules = [(bitte + "/profiles/client.nix")];
