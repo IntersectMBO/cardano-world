@@ -43,4 +43,3 @@ The official Cardano Environment configuration files:
 - [Byron Genesis](environments/vasil-dev/byron-genesis.json)
 - [Shelley Genesis](environments/vasil-dev/shelley-genesis.json)
 - [Alonzo Genesis](environments/vasil-dev/alonzo-genesis.json)
-
