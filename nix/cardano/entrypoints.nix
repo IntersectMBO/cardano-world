@@ -565,4 +565,16 @@ in {
       exec ${packages.ogmios}/bin/ogmios "''${args[@]}"
     '';
   };
+
+  oura = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [packages.oura];
+    name = "entrypoint";
+    text = ''
+
+      ${prelude}
+
+      exec ${packages.oura}/bin/oura daemon "''${args[@]}"
+    '';
+  };
 }

@@ -32,6 +32,7 @@
     #  flake = false;
     #};
     # --------------------------------------------------------------
+    oura.url = "github:pacman99/oura/nix-flake";
   };
   outputs = inputs: let
     nomadEnvs = inputs.self.${system}.cloud.nomadEnvs;
