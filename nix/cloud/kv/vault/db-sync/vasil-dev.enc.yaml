@@ -1,0 +1,18 @@
+pgUser: ENC[AES256_GCM,data:3SmU+fc5wWf9PXTYRtRMYA==,iv:PAoCk5iyMUP/d9SWc5DktH3yzaqkaBUf0sHvfNA9yQI=,tag:zRBvqGv5EDNbP+TPs2D7Lg==,type:str]
+pgPass: ENC[AES256_GCM,data:zOrtsFJUHH/khHvXyyQ4jsWDtSmI+bMdicGod4MsBU9FRxlxnCqdFFG6IY1yxJ9fJU6n7mIDZrfJlc9yEgbJCw==,iv:eXrIaiAwld6JIlkHvfhOFj5bC4oTkwgsBjVglxHyQ3I=,tag:p/ziftCY0YWDk14TYgbCGQ==,type:str]
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault:
+        - vault_address: https://vault.world.dev.cardano.org
+          engine_path: sops
+          key_name: ops
+          created_at: "2022-06-22T19:11:40Z"
+          enc: vault:v1:yBSsy6+w/gcWi3AGRCvwoJD5fEdSrWJwUAknyZtO0xE9ASMCpEst3vhvyes/2cl5T03/h8pFBduZzRab
+    age: []
+    lastmodified: "2022-06-22T19:11:56Z"
+    mac: ENC[AES256_GCM,data:gbYFmsVFuJx8xzBKIIxox6msZNwmbtfD/2CQ2f4PNBuSe4t7NQ9TLoKeKtQBYlAb7dxQrtmps/Y2gDt6fFveKVDn3NnpHEYVWfWAGeXDJ5O4Cx0TUjj9hlCt2VsrrUNx8Um5vPx+QLXaREAYj9cVHcK78ekT83NaBx3PVQd7jEk=,iv:brb2k/lvHw2DknNju6uR9Lww9FPXXXcxr/lgIlfrSKE=,tag:dDBfvEdnbHEOS8Zd548Jmw==,type:str]
+    pgp: []
+    unencrypted_suffix: _unencrypted
+    version: 3.7.2
