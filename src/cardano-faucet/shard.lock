@@ -1,0 +1,10 @@
+version: 1.0
+shards:
+  db:
+    github: crystal-lang/crystal-db
+    version: 0.7.0
+
+  sqlite3:
+    github: crystal-lang/crystal-sqlite3
+    version: 0.14.0
+

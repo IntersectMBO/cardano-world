@@ -53,5 +53,6 @@ in {
   in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
+  cardano-faucet = nixpkgs.callPackage "${inputs.self}/src/cardano-faucet" {};
   inherit nix-inclusive;
 }
