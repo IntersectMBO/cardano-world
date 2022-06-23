@@ -567,14 +567,21 @@ in {
   };
 
   oura = writeShellApplication {
-    runtimeInputs = prelude-runtime;
+    # runtimeInputs = prelude-runtime;
     debugInputs = [packages.oura];
     name = "entrypoint";
     text = ''
-
-      ${prelude}
-
       exec ${packages.oura}/bin/oura daemon "''${args[@]}"
     '';
   };
+
+  scrolls = writeShellApplication {
+    # runtimeInputs = prelude-runtime;
+    debugInputs = [packages.scrolls];
+    name = "entrypoint";
+    text = ''
+      exec ${packages.scrolls}/bin/scrolls daemon "''${args[@]}"
+    '';
+  };
+
 }

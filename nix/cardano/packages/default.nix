@@ -49,6 +49,7 @@ in {
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
   ogmios = cardano-ogmios.packages.ogmios;
   oura = oura.packages.oura;
+  scrolls = scrolls.packages.scrolls;
 
   cardano-config-html-public = let
     publicEnvNames = ["mainnet" "testnet" "shelley_qa" "vasil-dev"];
