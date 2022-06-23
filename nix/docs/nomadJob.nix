@@ -71,10 +71,10 @@ in {
             tags = [
               "ingress"
               "traefik.enable=true"
-              "traefik.http.routers.manual-sre.rule=Host(`book.world.dev.cardano.org`) && PathPrefix(`/`)"
-              "traefik.http.routers.manual-sre.entrypoints=https"
-              "traefik.http.routers.manual-sre.tls=true"
-              "traefik.http.routers.manual-sre.tls.certresolver=acme"
+              "traefik.http.routers.public-documentation.rule=Host(`book.world.dev.cardano.org`) && PathPrefix(`/`)"
+              "traefik.http.routers.public-documentation.entrypoints=https"
+              "traefik.http.routers.public-documentation.tls=true"
+              "traefik.http.routers.public-documentation.tls.certresolver=acme"
             ];
             check = [
               {
