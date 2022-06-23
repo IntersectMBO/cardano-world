@@ -33,6 +33,7 @@
     #};
     # --------------------------------------------------------------
     oura.url = "github:pacman99/oura/nix-flake";
+    scrolls.url = "github:pacman99/scrolls/nix-flake";
   };
   outputs = inputs: let
     nomadEnvs = inputs.self.${system}.cloud.nomadEnvs;

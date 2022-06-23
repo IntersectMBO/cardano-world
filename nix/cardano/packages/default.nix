@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node cardano-ogmios cardano-graphql cardano-explorer-app nix-inclusive oura;
+  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node cardano-ogmios cardano-graphql cardano-explorer-app nix-inclusive oura scrolls;
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
 
