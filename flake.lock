@@ -16060,11 +16060,11 @@
         "yants": "yants_7"
       },
       "locked": {
-        "lastModified": 1654120451,
-        "narHash": "sha256-Ekql8CEqCDnmTsnNgyUPITPASB9cbh6a/Lc+zn3jwaM=",
+        "lastModified": 1655841593,
+        "narHash": "sha256-2hzkbvhndv53NSpH7snpn/M1zOYx4k7rwz3Pm4w/UJw=",
         "owner": "divnix",
         "repo": "std",
-        "rev": "c21de1fb5bed0ff333bf1251ccb46bca16ff5b7a",
+        "rev": "3be03536b3a6767b5542fa14339fc34f5ea22ee7",
         "type": "github"
       },
       "original": {

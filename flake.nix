@@ -51,7 +51,7 @@
         (inputs.std.functions "hydrationProfiles")
         (inputs.std.functions "library")
         (inputs.std.functions "nomadJob")
-        (inputs.std.functions "oci-images")
+        (inputs.std.containers "oci-images")
         (inputs.std.installables "packages")
         (inputs.std.runnables "entrypoints")
         (inputs.std.runnables "healthChecks")
