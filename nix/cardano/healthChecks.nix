@@ -8,19 +8,14 @@
   inherit (cell) environments library packages;
 in {
   cardano-wallet-network-sync = writeShellApplication {
-    runtimeInputs = [srvaddr nixpkgs.jq nixpkgs.coreutils nixpkgs.curl];
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils nixpkgs.curl];
     name = "healthcheck";
     text = ''
-      #!/bin/bash
+      [ -z "''${NOMAD_PORT_wallet:-}" ] && echo "NOMAD_PORT_wallet env var must be set -- aborting" && exit 1
 
-      [ -z "''${WALLET_SRV_FQDN:-}" ] && echo "WALLET_SRV_FQDN env var must be set -- aborting" && exit 1
-      [ -z "''${CARDANO_WALLET_ID:-}" ] && echo "CARDANO_WALLET_ID env var must be set -- aborting" && exit 1
-
-      mapfile -t wallet_urls <<<"$(srvaddr "''${WALLET_SRV_FQDN}")"
-
-      STATUS="$(curl -sf "''${wallet_urls[0]}/v2/wallets/$CARDANO_WALLET_ID" || :)"
-      jq <<<"$STATUS" || :
-      jq -e '.state.status == "ready"' <<<"$STATUS" || exit 1
+      STATUS="$(curl -sf "localhost:$NOMAD_PORT_wallet/v2/network/information" || :)"
+      jq <<< "$STATUS" || :
+      jq -e '.sync_progress.status == "ready"' <<< "$STATUS" || exit 1
     '';
   };
   cardano-submit-api-network-sync = writeShellApplication {
