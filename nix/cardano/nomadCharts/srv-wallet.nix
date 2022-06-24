@@ -20,6 +20,6 @@
     }
   ];
   name = "${namespace}-wallet";
-  port = "8090";
+  port = "wallet";
   tags = ["\${NOMAD_ALLOC_ID}"];
 }
