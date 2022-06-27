@@ -2900,16 +2900,16 @@
         "utils": "utils_42"
       },
       "locked": {
-        "lastModified": 1655824990,
-        "narHash": "sha256-tFYWvqjlc0kkVqzw3zfnXvYBp4HBptD5Q1NjCeQLVTw=",
+        "lastModified": 1656166930,
+        "narHash": "sha256-R7YGQ6UMG16ed9sGguDWq2cUgFnADeRdx8O2s2HqWRk=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "43393ac88faa99986ecaa0be409e8b6353f5e9fe",
+        "rev": "9f1d7dc163ee66410d912e48509d6a2300cfa68a",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "1.35.0-rc4",
+        "ref": "1.35.0",
         "repo": "cardano-node",
         "type": "github"
       }
