@@ -7,58 +7,63 @@ let
   inherit (nixpkgs) lib;
   inherit (nixpkgs.stdenv) hostPlatform;
   inherit (cells.automation.jobs) mkHydraRequiredJob;
-  inherit (cell.packages) project;
+  inherit (cell.packages) project nodeProject ogmiosProject;
+  mergedProject = lib.recursiveUpdate (lib.recursiveUpdate ogmiosProject nodeProject) project;
+  internal = {
+    roots = {
+      nodeProject = nodeProject.roots;
+      project = project.roots;
+      ogmiosProject = ogmiosProject.roots;
+    };
+    plan-nix = {
+      nodeProject = nodeProject.plan-nix;
+      project = project.plan-nix;
+      ogmiosProject = ogmiosProject.plan-nix;
+    };
+  };
   jobs = {
     linux = lib.optionalAttrs hostPlatform.isLinux {
       x86 = lib.optionalAttrs hostPlatform.isx86_64 {
         native = {
-          inherit (project) checks exes benchmarks;
-          profiled = lib.genAttrs [ "cardano-node" "tx-generator" "locli" ] (n:
-            project.exes.${n}.passthru.profiled
+          inherit (mergedProject) exes checks benchmarks;
+          profiled = lib.genAttrs [ "cardano-node" "tx-generator" "locli" "cardano-new-faucet" ] (n:
+            mergedProject.exes.${n}.passthru.profiled
           );
           asserted = lib.genAttrs [ "cardano-node" ] (n:
-            project.exes.${n}.passthru.asserted
+            nodeProject.exes.${n}.passthru.asserted
           );
-          internal = {
-            roots.project = project.roots;
-            plan-nix.project = project.plan-nix;
-          };
+          inherit internal;
         };
         musl =
-          let muslProject = project.projectCross.musl64;
+          let
+            muslProject = nodeProject.projectCross.musl64;
           in
           {
             cardano-node-linux = muslProject.release;
-            internal.roots.project = muslProject.roots;
+            internal.roots.nodeProject = muslProject.roots;
           };
         windows =
-          let windowsProject = project.projectCross.mingwW64;
+          let windowsProject = nodeProject.projectCross.mingwW64;
           in
           {
-            inherit (windowsProject) checks exes benchmarks;
+            inherit (windowsProject) checks benchmarks;
             cardano-node-win64 = windowsProject.release;
-            internal.roots.project = windowsProject.roots;
+            internal.roots.nodeProject = windowsProject.roots;
           };
       };
       arm = lib.optionalAttrs hostPlatform.isAarch64 {
-        inherit (project) exes;
-        internal.roots.project = project.roots;
+        inherit (mergedProject) exes;
+        inherit internal;
       };
     };
     macos = lib.optionalAttrs hostPlatform.isMacOS {
       x86 = lib.optionalAttrs hostPlatform.isx86_64 {
-        inherit (project) checks exes benchmarks;
-        internal = {
-          roots.project = project.roots;
-          plan-nix.project = project.plan-nix;
-        };
+        inherit (mergedProject) exes checks benchmarks;
+        inherit internal;
       };
       arm = lib.optionalAttrs hostPlatform.isAarch64 {
-        inherit (project) checks exes benchmarks;
-        internal = {
-          roots.project = project.roots;
-          plan-nix.project = project.plan-nix;
-        };
+        inherit (mergedProject) exes checks benchmarks;
+        inherit internal;
       };
     };
   };
