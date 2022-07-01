@@ -572,7 +572,23 @@ in {
     name = "entrypoint";
     text = ''
       ${prelude}
-      exec ${packages.oura}/bin/oura daemon;
+
+      OURA_CONFIG="$DATA_DIR/config/$ENVIRONMENT/oura-config.json"
+
+      NETWORK_MAGIC=$(jq '.networkMagic' "$(
+        file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
+        folder="$(dirname "$NODE_CONFIG")"
+        [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+      )")
+
+      SOURCE_CONFIG=$( jq -n \
+        --arg sp "$SOCKET_PATH" \
+        --arg nm "$NETWORK_MAGIC" \
+        '{source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
+
+      echo "[$json,$SOURCE_CONFIG]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
+
+      exec ${packages.oura}/bin/oura daemon --config "$OURA_CONFIG";
     '';
   };
 
@@ -581,7 +597,7 @@ in {
     debugInputs = [packages.scrolls];
     name = "entrypoint";
     text = ''
-      exec ${packages.scrolls}/bin/scrolls daemon
+      exec ${packages.scrolls}/bin/scrolls daemon -c $CONFIG_FILE
     '';
   };
 

@@ -59,6 +59,23 @@
     };
   };
 
+  # Oura
+  workload-policies-oura = {
+    tf.hydrate-cluster.configuration.locals.policies = {
+      consul.oura = {
+        # oura also needs to read the cardano config
+        key_prefix."config/cardano" = {
+          policy = "read";
+          intentions = "deny";
+        };
+        session_prefix."" = {
+          policy = "write";
+          intentions = "deny";
+        };
+      };
+    };
+  };
+
   # Db Sync
   workload-policies-db-sync = {
     tf.hydrate-cluster.configuration.locals.policies = {

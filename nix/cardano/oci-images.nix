@@ -85,7 +85,7 @@ in {
     config.Cmd = [
       "${entrypoints.oura}/bin/entrypoint"
     ];
-    config.User = "nobody:nogroup";
+    config.User = "1000:1000";
   };
   scrolls = buildDebugImage entrypoints.scrolls {
     name = "registry.ci.iog.io/scrolls";

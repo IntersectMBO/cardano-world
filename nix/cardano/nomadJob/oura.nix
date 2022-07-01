@@ -21,7 +21,7 @@ in
     type = "service";
     priority = 50;
     persistanceMount = "/persist";
-    vaultPkiPath = "pki/issue/oura";
+    # vaultPkiPath = "pki/issue/oura";
     consulRolePath = "consul/creds/oura";
   in
     with data-merge; {
@@ -93,9 +93,9 @@ in
             merge node
             {
               count = scaling;
-              # service = append [
-              #   (import ./srv-oura.nix {inherit namespace healthChecks;})
-              # ];
+              service = append [
+                (import ./srv-oura.nix {inherit namespace healthChecks;})
+              ];
               network = {
                 dns = {servers = update [0] ["172.17.0.1"];};
                 mode = "bridge";
@@ -107,14 +107,16 @@ in
                 # ----------
                 oura = {
                   env.DATA_DIR = persistanceMount;
-                  env.SOCKET_PATH = "/alloc/tmp/node.socket"; # figure out how to pass this from the cardano group
+                  inherit (node.task.node.env) SOCKET_PATH;
 
+                  /** Oura doesn't need any secrets yet
                   template =
                     _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
                     ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
                   env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                   env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                   env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
+                  **/
                   config.image = ociNamer oci-images.oura;
                   user = "0:0";
                   driver = "docker";
