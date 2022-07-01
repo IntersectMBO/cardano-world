@@ -17,13 +17,13 @@
   db-sync-snapshots = {
     # https://updates-cardano-testnet.s3.amazonaws.com/cardano-db-sync/index.html#13/
     testnet = {
-      base_url = "https://updates-cardano-testnet.s3.amazonaws.com/cardano-db-sync/12";
-      file_name = "db-sync-snapshot-schema-12-block-3590461-x86_64.tgz";
+      base_url = "https://updates-cardano-testnet.s3.amazonaws.com/cardano-db-sync/13";
+      file_name = "db-sync-snapshot-schema-13-block-3673999-x86_64.tgz";
     };
     # https://update-cardano-mainnet.iohk.io/cardano-db-sync/index.html#13/
     mainnet = {
-      base_url = "https://update-cardano-mainnet.iohk.io/cardano-db-sync/12";
-      file_name = "db-sync-snapshot-schema-12-block-7313329-x86_64.tgz";
+      base_url = "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13";
+      file_name = "db-sync-snapshot-schema-13-block-7442499-x86_64.tgz";
     };
   };
 }
