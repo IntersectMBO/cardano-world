@@ -279,6 +279,21 @@
         | jq -s 'add' > "$NODE_TOPOLOGY"
     }
   '';
+
+  txpipe-config = ''
+    NETWORK_MAGIC=$(jq '.networkMagic' "$(
+      file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
+      folder="$(dirname "$NODE_CONFIG")"
+      [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+    )")
+
+    SOURCE_CONFIG=$( jq -n \
+      --arg sp "$SOCKET_PATH" \
+      --arg nm "$NETWORK_MAGIC" \
+      '{metrics: {}, source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
+
+  '';
+
 in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
@@ -565,4 +580,37 @@ in {
       exec ${packages.ogmios}/bin/ogmios "''${args[@]}"
     '';
   };
+
+  oura = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [packages.oura];
+    name = "entrypoint";
+    text = ''
+      ${prelude}
+
+      ${txpipe-config}
+
+      OURA_CONFIG="$DATA_DIR/config/$ENVIRONMENT/oura-config.json"
+      echo "[$json,$TXPIPE_CONFIG]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
+
+      exec ${packages.oura}/bin/oura daemon --config "$OURA_CONFIG"
+    '';
+  };
+
+  scrolls = writeShellApplication {
+    # runtimeInputs = prelude-runtime;
+    debugInputs = [packages.scrolls];
+    name = "entrypoint";
+    text = ''
+      ${prelude}
+
+      ${txpipe-config}
+
+      SCROLLS_CONFIG="$DATA_DIR/config/$ENVIRONMENT/scrolls-config.json"
+      echo "[$json,$TXPIPE_CONFIG]" | jq '.[0].scrollsConfig + .[1]'  > "$SCROLLS_CONFIG"
+
+      exec ${packages.scrolls}/bin/scrolls daemon -c "$SCROLLS_CONFIG"
+    '';
+  };
+
 }

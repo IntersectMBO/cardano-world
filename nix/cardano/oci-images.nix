@@ -74,4 +74,32 @@ in {
     ];
     config.User = "1000:1000";
   };
+  oura = buildDebugImage entrypoints.oura {
+    name = "registry.ci.iog.io/oura";
+    maxLayers = 25;
+    layers = [
+      # (n2c.buildLayer {deps = entrypoints.oura.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.oura];})
+    ];
+    contents = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.oura}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
+  scrolls = buildDebugImage entrypoints.scrolls {
+    name = "registry.ci.iog.io/scrolls";
+    maxLayers = 25;
+    layers = [
+      # (n2c.buildLayer {deps = entrypoints.scrolls.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.scrolls];})
+    ];
+    contents = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.scrolls}/bin/entrypoint"
+    ];
+    config.User = "nobody:nogroup";
+  };
+
+
 }

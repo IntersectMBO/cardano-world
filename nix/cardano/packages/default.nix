@@ -2,9 +2,10 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node cardano-ogmios cardano-graphql cardano-explorer-app nix-inclusive;
+  inherit (inputs) nixpkgs cardano-wallet cardano-db-sync cardano-node cardano-ogmios cardano-graphql cardano-explorer-app nix-inclusive oura scrolls;
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
+
   cardano-node-project =
     (
       cardano-node.legacyPackages.extend (
@@ -47,6 +48,9 @@ in {
   #cardano-rosetta-server = (import (cardano-rosetta + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.cardano-rosetta-server;
   bech32 = cardano-node-project.hsPkgs.bech32.components.exes.bech32;
   ogmios = cardano-ogmios.packages.ogmios;
+  oura = oura.packages.oura;
+  scrolls = scrolls.packages.scrolls;
+
   cardano-config-html-public = let
     publicEnvNames = ["mainnet" "testnet" "shelley_qa" "vasil-dev"];
     environments = lib.filterAttrs (n: _: builtins.elem n publicEnvNames) cardano.environments;
