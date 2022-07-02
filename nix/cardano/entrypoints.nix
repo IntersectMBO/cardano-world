@@ -280,7 +280,7 @@
     }
   '';
 
-  txpipe-source-config = ''
+  txpipe-config = ''
     NETWORK_MAGIC=$(jq '.networkMagic' "$(
       file="$(jq '.ShelleyGenesisFile' "$NODE_CONFIG" )"
       folder="$(dirname "$NODE_CONFIG")"
@@ -290,7 +290,7 @@
     SOURCE_CONFIG=$( jq -n \
       --arg sp "$SOCKET_PATH" \
       --arg nm "$NETWORK_MAGIC" \
-      '{source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
+      '{metrics: {}, source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
 
   '';
 
@@ -588,10 +588,10 @@ in {
     text = ''
       ${prelude}
 
-      ${txpipe-source-config}
+      ${txpipe-config}
 
       OURA_CONFIG="$DATA_DIR/config/$ENVIRONMENT/oura-config.json"
-      echo "[$json,$SOURCE_CONFIG]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
+      echo "[$json,$TXPIPE_CONFIG]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
 
       exec ${packages.oura}/bin/oura daemon --config "$OURA_CONFIG"
     '';
@@ -604,10 +604,10 @@ in {
     text = ''
       ${prelude}
 
-      ${txpipe-source-config}
+      ${txpipe-config}
 
       SCROLLS_CONFIG="$DATA_DIR/config/$ENVIRONMENT/scrolls-config.json"
-      echo "[$json,$SOURCE_CONFIG]" | jq '.[0].scrollsConfig + .[1]'  > "$SCROLLS_CONFIG"
+      echo "[$json,$TXPIPE_CONFIG]" | jq '.[0].scrollsConfig + .[1]'  > "$SCROLLS_CONFIG"
 
       exec ${packages.scrolls}/bin/scrolls daemon -c "$SCROLLS_CONFIG"
     '';

@@ -84,7 +84,7 @@ in
             inherit namespace;
             endpoints = [
               # prometheus metrics for oura
-              "http://127.0.0.1:1586/metrics"
+              "http://127.0.0.1:9186/metrics"
               # prometheus metrics for cardano-node
               # "http://127.0.0.1:12798/metrics"
             ];
@@ -99,7 +99,10 @@ in
               network = {
                 dns = {servers = update [0] ["172.17.0.1"];};
                 mode = "bridge";
-                port.oura = {to = 1586;};
+                port.oura = {
+                  # port from https://github.com/txpipe/oura/blob/main/book/src/advanced/pipeline_metrics.md
+                  to = 9186;
+                };
               };
               task = {
                 # ----------
@@ -124,11 +127,13 @@ in
                   kill_timeout = "30s";
                   resources.cpu = 2000;
                   resources.memory = 4096;
+                  /**
                   vault = {
                     change_mode = "noop";
                     env = true;
                     policies = ["oura"];
                   };
+                  */
                 };
               };
             }

@@ -21,7 +21,7 @@ in
     type = "service";
     priority = 50;
     persistanceMount = "/persist";
-    vaultPkiPath = "pki/issue/scrolls";
+    # vaultPkiPath = "pki/issue/scrolls";
     consulRolePath = "consul/creds/scrolls";
   in
     with data-merge; {
@@ -107,14 +107,16 @@ in
                 # ----------
                 oura = {
                   env.DATA_DIR = persistanceMount;
-                  env.SOCKET_PATH = "/alloc/tmp/node.socket"; # figure out how to pass this from the cardano group
+                  inherit (node.task.node.env) SOCKET_PATH;
 
+                  /**
                   template =
                     _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
                     ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
                   env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                   env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                   env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
+                  */
                   config.image = ociNamer oci-images.oura;
                   user = "0:0";
                   driver = "docker";
@@ -122,11 +124,13 @@ in
                   kill_timeout = "30s";
                   resources.cpu = 2000;
                   resources.memory = 4096;
+                  /**
                   vault = {
                     change_mode = "noop";
                     env = true;
                     policies = ["oura"];
                   };
+                  */
                 };
               };
             }
