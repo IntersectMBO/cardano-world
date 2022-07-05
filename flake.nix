@@ -1,24 +1,60 @@
 {
   description = "Cardano World";
-  inputs.std.url = "github:divnix/std";
-  inputs.n2c.url = "github:nlewo/nix2container";
-  inputs.data-merge.url = "github:divnix/data-merge";
+
   inputs.nix-inclusive.url = "github:input-output-hk/nix-inclusive";
   inputs = {
+    std = {
+      url = "github:divnix/std";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    n2c.url = "github:nlewo/nix2container";
+    haskell-nix = {
+      url = "github:input-output-hk/haskell.nix";
+      inputs.hackage.follows = "hackage";
+    };
+    hackage = {
+      url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
+    iohk-nix = {
+      url = "github:input-output-hk/iohk-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    data-merge.url = "github:divnix/data-merge";
+    byron-chain = {
+      url = "github:input-output-hk/cardano-mainnet-mirror";
+      flake = false;
+    };
     # --- Bitte Stack ----------------------------------------------
     bitte.url = "github:input-output-hk/bitte";
-    bitte-cells.url = "github:input-output-hk/bitte-cells";
+    bitte-cells = {
+      url = "github:input-output-hk/bitte-cells";
+      inputs = {
+        std.follows = "std";
+        nixpkgs.follows = "nixpkgs";
+        n2c.follows = "n2c";
+        data-merge.follows = "data-merge";
+        cardano-iohk-nix.follows = "iohk-nix";
+        cardano-node.follows = "cardano-node";
+        cardano-db-sync.follows = "cardano-db-sync";
+        cardano-wallet.follows = "cardano-wallet";
+      };
+    };
     # --------------------------------------------------------------
     # --- Auxiliaries ----------------------------------------------
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs-haskell.follows = "haskell-nix/nixpkgs-unstable";
     capsules.url = "github:input-output-hk/devshell-capsules";
     # --------------------------------------------------------------
     # --- Bride Heads ----------------------------------------------
-    # TODO: remove when moved to monorepo
-    cardano-node.url = "github:input-output-hk/cardano-node/1.35.0";
-    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.0-rc3";
-    cardano-wallet.url = "github:input-output-hk/cardano-wallet/";
-    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios/vasil";
+    # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
+    cardano-node = {
+      url = "github:input-output-hk/cardano-node/1.35.0";
+      flake = false;
+    };
+    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.0";
+    cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
+    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
     cardano-graphql = {
       url = "github:input-output-hk/cardano-graphql";
       flake = false;
@@ -34,6 +70,7 @@
     # --------------------------------------------------------------
   };
   outputs = inputs: let
+    inherit (inputs.nixpkgs) lib;
     nomadEnvs = inputs.self.${system}.cloud.nomadEnvs;
     system = "x86_64-linux";
   in
@@ -53,6 +90,8 @@
         (inputs.std.functions "nomadJob")
         (inputs.std.containers "oci-images")
         (inputs.std.installables "packages")
+        (inputs.std.functions "hydraJobs")
+        (inputs.std.functions "prepare-mono-repo")
         (inputs.std.runnables "entrypoints")
         (inputs.std.runnables "healthChecks")
         # automation
@@ -84,7 +123,22 @@
       infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;
       vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
       vasil-dev = inputs.bitte.lib.mkNomadJobs "vasil-dev" nomadEnvs;
-    };
+    }
+    # 3) hydra jobs
+    (let
+      jobs = lib.filterAttrsRecursive (n: _: n != "recurseForDerivations") (
+        lib.mapAttrs (n: lib.mapAttrs (_: cell: cell.hydraJobs or {})) {
+        # systems with hydra builders:
+        inherit (inputs.self) x86_64-linux x86_64-darwin;
+      });
+      requiredJobs = lib.filterAttrsRecursive (n: v: n == "required" || !(lib.isDerivation v)) jobs;
+      required = inputs.self.x86_64-linux.automation.jobs.mkHydraRequiredJob [] requiredJobs;
+     in {
+       hydraJobs = jobs // {
+         inherit required;
+       };
+     }
+    );
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
     extra-substituters = [
