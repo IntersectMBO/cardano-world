@@ -50,15 +50,17 @@ in
         # ----------
         # Update
         # ----------
-        update.health_check = "task_states";
+        # https://www.nomadproject.io/docs/job-specification/update
+        update.health_check = "checks";
         update.healthy_deadline = "5m0s";
         update.max_parallel = 1;
         update.min_healthy_time = "10s";
-        update.progress_deadline = "60m0s";
+        update.progress_deadline = "20m0s";
         update.stagger = "30s";
         # ----------
         # Migrate
         # ----------
+        # https://www.nomadproject.io/docs/job-specification/migrate
         migrate.health_check = "checks";
         migrate.healthy_deadline = "8m20s";
         migrate.max_parallel = 1;
