@@ -46,7 +46,7 @@ let
 
 in
 {
-  inherit project;
+  inherit project; # TODO REMOVE
   inherit (project.exes) cardano-node cardano-cli cardano-submit-api cardano-tracer;
   inherit (project.hsPkgs.bech32.components.exes) bech32;
   inherit (project.hsPkgs.network-mux.components.exes) cardano-ping;
@@ -73,5 +73,5 @@ in
     in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
-  inherit nix-inclusive;
+  inherit nix-inclusive; # TODO REMOVE
 }
