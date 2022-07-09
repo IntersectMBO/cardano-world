@@ -138,7 +138,11 @@
          inherit required;
        };
      }
-    );
+    )
+    # 4) oci-images re-export due to image tag changes stemming from bitte-cells follows
+    {
+      vector.oci-images = inputs.std.harvest inputs.bitte-cells ["vector" "oci-images"];
+    };
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
     extra-substituters = [
