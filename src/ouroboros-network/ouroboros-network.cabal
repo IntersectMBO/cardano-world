@@ -32,8 +32,7 @@ flag asserts
 Flag ipv6
   Description: Enable IPv6 test cases
   Manual: True
-  -- Default to False since travis lacks IPv6 support
-  Default: False
+  Default: True
 
 flag cddl
   Description: Enable CDDL based tests of the CBOR encoding

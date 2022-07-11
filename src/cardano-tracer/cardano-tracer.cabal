@@ -179,7 +179,7 @@ library demo-forwarder-lib
                        , trace-dispatcher
                        , trace-forward
 
-executable demo-forwarder
+executable cardano-tracer-demo-forwarder
   import:              base, project-config
 
   hs-source-dirs:      demo/ssh
@@ -208,7 +208,7 @@ library demo-acceptor-lib
                        , text
                        , trace-forward
 
-executable demo-acceptor
+executable cardano-tracer-demo-acceptor
   import:              base, project-config
 
   hs-source-dirs:      demo

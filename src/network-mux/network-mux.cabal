@@ -21,8 +21,7 @@ flag asserts
 Flag ipv6
   Description: Enable IPv6 test cases
   Manual: True
-  -- Default to False since travis lacks IPv6 support
-  Default: False
+  Default: True
 
 Flag tracetcpinfo
   Description: Enable costly Linux only tracing of the kernel's tcpinfo
