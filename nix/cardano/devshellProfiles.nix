@@ -116,7 +116,7 @@ rec {
         category = "nix-build";
       }
       {
-        package = inputs.cells.automation.jobs.merge-mono-repo;
+        package = inputs.cells.cardano.prepare-mono-repo.merge-mono-repo;
         category = "nix-build";
       }
     ];

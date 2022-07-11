@@ -76,36 +76,13 @@ in {
         cd ..
       done
 
-      nix-prefetch-git --deepClone --leave-dotGit --quiet https://github.com/input-output-hk/cardano-node ${cardano-node.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-node.sha256
-      nix-prefetch-git --deepClone --leave-dotGit --quiet https://github.com/input-output-hk/ouroboros-network ${project.pkg-set.config.packages.ouroboros-network.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ouroboros-network.sha256
-      nix-prefetch-git --deepClone --leave-dotGit --quiet https://github.com/input-output-hk/cardano-ledger ${project.pkg-set.config.packages.cardano-ledger-core.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-ledger.sha256
-      nix-prefetch-git --deepClone --leave-dotGit --quiet https://github.com/input-output-hk/ekg-forward ${project.pkg-set.config.packages.ekg-forward.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ekg-forward.sha256
-      nix build .#${nixpkgs.system}.cardano.prepare-mono-repo.mono-repo
+      nix-prefetch-git --quiet https://github.com/input-output-hk/cardano-node ${cardano-node.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-node.sha256
+      nix-prefetch-git --quiet https://github.com/input-output-hk/ouroboros-network ${project.pkg-set.config.packages.ouroboros-network.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ouroboros-network.sha256
+      nix-prefetch-git --quiet https://github.com/input-output-hk/cardano-ledger ${project.pkg-set.config.packages.cardano-ledger-core.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-ledger.sha256
+      nix-prefetch-git --quiet https://github.com/input-output-hk/ekg-forward ${project.pkg-set.config.packages.ekg-forward.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ekg-forward.sha256
+      direnv reload
     '';
-    runtimeInputs = with nixpkgs; [ inputs.haskell-nix.inputs.nixpkgs-2105.legacyPackages.${nixpkgs.system}.nix-prefetch-git git jq];
-  };
-  merge-mono-repo = writeShellApplication {
-    description = "Create/Replace the mono-repo branch of current git repo";
-    name = "merge-mono-repo";
-    text = ''
-      # go to project root directory:
-      while [[ $PWD != / && ! -e ".git" ]]; do
-        cd ..
-      done
-      nix build .#${nixpkgs.system}.cardano.prepare-mono-repo.mono-repo
-      git branch -D mono-repo || true
-      git checkout -b mono-repo
-      git remote add nix-mono-repo ./result || true
-      git fetch nix-mono-repo
-      git merge nix-mono-repo/fetchgit --allow-unrelated-histories --no-ff \
-        -m "Merge cardano-node, ouroborous, ledger and ekg-forward into mono-repo"
-      git apply -3 nix/cardano/prepare-mono-repo/remove-prepare-mono-repo.diff
-      rm -r nix/cardano/prepare-mono-repo
-      nix flake lock --update-input mono-repo
-      nix flake lock --update-input cardano-node
-      git commit -a -m "Adapt nix build after merge into mono repo"
-    '';
-    runtimeInputs = with nixpkgs; [ nix git ];
+    runtimeInputs = with nixpkgs; [ nix-prefetch-git git jq];
   };
   update-cabal-source-repo-checksums = writeShellApplication {
     name = "update-cabal-source-repo-checksums";
