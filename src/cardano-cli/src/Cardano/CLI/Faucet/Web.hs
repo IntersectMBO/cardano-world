@@ -94,7 +94,7 @@ server :: IsShelleyBasedEra era =>
   -> Server RootDir
 server era sbe faucetState = handleSendMoney era sbe faucetState :<|> handleMetrics faucetState
 
-getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe (Lovelace, Int)
+getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe (Lovelace, NominalDiffTime)
 getRateLimits Recaptcha FaucetConfigFile{fcfRecaptchaLimits} = Just fcfRecaptchaLimits
 getRateLimits (ApiKey key) FaucetConfigFile{fcfApiKeys} = HM.lookup key fcfApiKeys
 
@@ -118,7 +118,7 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
     recordUsage = do
       insertUsage fsRateLimitState apikey (Left addr) now
       insertUsage fsRateLimitState apikey (Right remoteip) now
-    checkRateLimitsInternal :: Int -> STM Bool
+    checkRateLimitsInternal :: NominalDiffTime -> STM Bool
     checkRateLimitsInternal interval = do
       mainMap <- readTMVar fsRateLimitState
       let
@@ -140,9 +140,7 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
           pure True
         Just lastUsed -> do
           let
-            difftime :: NominalDiffTime
-            difftime = secondsToNominalDiffTime (fromIntegral interval)
-            after = addUTCTime difftime lastUsed
+            after = addUTCTime interval lastUsed
           pure $ if now > after then True else False
       if allow then recordUsage else pure ()
       pure allow

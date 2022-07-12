@@ -16,7 +16,7 @@ import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value(Object, String), (.:?))
 import Data.HashMap.Strict
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, NominalDiffTime)
 import Network.Socket (SockAddr)
 import Ouroboros.Consensus.Cardano.Block (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Type (AcquireFailure)
@@ -98,8 +98,8 @@ instance FromJSON NetworkId where
 
 data FaucetConfigFile = FaucetConfigFile
   { fcfSkeyPath :: FilePath
-  , fcfApiKeys :: HashMap Text (Lovelace, Int)
-  , fcfRecaptchaLimits :: (Lovelace, Int)
+  , fcfApiKeys :: HashMap Text (Lovelace, NominalDiffTime)
+  , fcfRecaptchaLimits :: (Lovelace, NominalDiffTime)
   , fcfNetwork :: NetworkId
   } deriving (Generic, Show)
 
