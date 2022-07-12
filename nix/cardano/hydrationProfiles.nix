@@ -89,6 +89,31 @@
     };
   };
 
+  # Faucet
+  workload-policies-faucet = {
+    tf.hydrate-cluster.configuration.locals.policies = {
+      consul.cardano-faucet = {
+        # faucet also needs to read the cardano config
+        key_prefix."config/cardano" = {
+          policy = "read";
+          intentions = "deny";
+        };
+      };
+      vault.cardano-faucet = {
+        path."kv/data/faucet/*".capabilities = ["read" "list"];
+        path."kv/metadata/faucet/*".capabilities = ["read" "list"];
+        path."consul/creds/cardano-faucet".capabilities = ["read"];
+      };
+    };
+    # FIXME: consolidate policy reconciliation loop with TF
+    # PROBLEM: requires bootstrapper reconciliation loop
+    # clients need the capability to impersonate the `db-sync` role
+    services.vault.policies.client = {
+      path."consul/creds/cardano-faucet".capabilities = ["read"];
+      path."auth/token/roles/cardano-faucet".capabilities = ["read"];
+    };
+  };
+
   # Wallet
   workload-policies-wallet = {
     tf.hydrate-cluster.configuration.locals.policies = {

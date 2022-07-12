@@ -220,4 +220,34 @@ in {
         };
       };
     };
+  faucet = let
+    jobname = "faucet";
+  in
+    data-merge.merge (cardano.nomadCharts.cardano-faucet (
+      constants.envs.vasil-dev
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+        scaling = 1;
+      }
+    )) {
+      job.${jobname}.group.cardano-faucet.task = {
+        node = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DATA_DIR = persistanceMount + "/faucet";
+            CONSUL_KV_PATH = "config/cardano/vasil-dev";
+            PUBLIC_ROOTS_SRV_DNS = "_vasil-dev-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
+        };
+        faucet = {
+          env = {
+            CONFIG_FILE = "/secrets/faucet-config.json";
+            PORT = 8090;
+          };
+        };
+      };
+    };
 }

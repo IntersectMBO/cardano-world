@@ -12,6 +12,7 @@ in {
       (cells.cardano.hydrationProfiles.workload-policies-cardano)
       (cells.cardano.hydrationProfiles.workload-policies-ogmios)
       (cells.cardano.hydrationProfiles.workload-policies-db-sync)
+      (cells.cardano.hydrationProfiles.workload-policies-faucet)
       (cells.cardano.hydrationProfiles.workload-policies-wallet)
       (cells.cardano.hydrationProfiles.workload-policies-submit-api)
     ];
@@ -57,7 +58,6 @@ in {
             policy = "write";
             intentions = "write";
           };
-
         };
 
         nomad.admin = {
@@ -111,43 +111,47 @@ in {
       resource =
         inputs.bitte-cells._utils.library.mkMonitoring
         # Alerts
-          {
-            inherit (cell.alerts)
-              node
-              ;
-            # Upstream alerts
-              inherit (inputs.bitte-cells.bitte.alerts)
-                bitte-consul
-                bitte-deadmanssnitch
-                bitte-loki
-                bitte-system
-                bitte-vault
-                bitte-vm-health
-                bitte-vm-standalone
-                bitte-vmagent
-              ;
-          }
-          # Dashboards
-          {
-            inherit (cell.dashboards)
-              application-metrics
-              p2p
-              performance
-              ;
-            inherit (inputs.bitte-cells.bitte.dashboards)
-              bitte-consul
-              bitte-log
-              bitte-loki
-              bitte-nomad
-              bitte-system
-              bitte-traefik
-              bitte-vault
-              bitte-vmagent
-              bitte-vmalert
-              bitte-vm
-              bitte-vulnix
-              ;
-          };
+        {
+          inherit
+            (cell.alerts)
+            node
+            ;
+          # Upstream alerts
+          inherit
+            (inputs.bitte-cells.bitte.alerts)
+            bitte-consul
+            bitte-deadmanssnitch
+            bitte-loki
+            bitte-system
+            bitte-vault
+            bitte-vm-health
+            bitte-vm-standalone
+            bitte-vmagent
+            ;
+        }
+        # Dashboards
+        {
+          inherit
+            (cell.dashboards)
+            application-metrics
+            p2p
+            performance
+            ;
+          inherit
+            (inputs.bitte-cells.bitte.dashboards)
+            bitte-consul
+            bitte-log
+            bitte-loki
+            bitte-nomad
+            bitte-system
+            bitte-traefik
+            bitte-vault
+            bitte-vmagent
+            bitte-vmalert
+            bitte-vm
+            bitte-vulnix
+            ;
+        };
     };
 
     # application state (terraform)
