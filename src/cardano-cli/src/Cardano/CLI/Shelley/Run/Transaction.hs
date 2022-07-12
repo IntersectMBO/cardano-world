@@ -9,17 +9,16 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Cardano.CLI.Shelley.Run.Transaction
-  ( ShelleyTxCmdError(..)
-  , renderShelleyTxCmdError
+  ( renderShelleyTxCmdError
   , runTransactionCmd
-  , readWitnessSigningData
   , SomeWitness(..)
-  , toTxOutValueInAnyEra
-  , toTxOutInAnyEra
   , TxFeature(..)
-  , partitionSomeWitnesses
-  , categoriseSomeWitness
   , mkShelleyBootstrapWitnesses
+  , partitionSomeWitnesses
+  , toTxOutInAnyEra
+  , categoriseSomeWitness
+  , ShelleyTxCmdError(..)
+  , readWitnessSigningData
   ) where
 
 import           Cardano.Prelude hiding (All, Any)
@@ -38,213 +37,11 @@ import           Data.Type.Equality (TestEquality (..))
 import           Control.Monad.Trans.Except.Extra (firstExceptT, handleIOExceptT, handleLeftT,
                    hoistEither, hoistMaybe, left, newExceptT)
 
-import Cardano.CLI.Shelley.Output
-    ( renderScriptCosts, PlutusScriptCostError )
+import           Cardano.CLI.Shelley.Output
 
-import Cardano.Api
-    ( SigningKey(PaymentSigningKey, PaymentExtendedSigningKey),
-      Error(displayError),
-      Tx,
-      Hash,
-      QueryInMode(QueryInEra, QueryEraHistory, QuerySystemStart),
-      TxValidationErrorInMode(TxValidationEraMismatch,
-                              TxValidationErrorInMode),
-      TxInMode(TxInMode),
-      LocalNodeConnectInfo(LocalNodeConnectInfo,
-                           localConsensusModeParams, localNodeNetworkId, localNodeSocketPath),
-      NetworkId(Mainnet),
-      SlotNo,
-      FromSomeType(FromSomeType),
-      HasTypeProxy(AsType),
-      AsType(AsTxMetadata, AsCertificate, AsUpdateProposal, AsScriptData,
-             AsByronKey, AsGenesisKey, AsGenesisExtendedKey,
-             AsGenesisDelegateKey, AsGenesisDelegateExtendedKey,
-             AsGenesisUTxOKey, AsStakeKey, AsStakeExtendedKey, AsStakePoolKey,
-             AsKeyWitness, AsTxBody, AsTx, AsByronEra, AsShelleyEra,
-             AsAllegraEra, AsMaryEra, AsAlonzoEra, AsBabbageEra, AsPaymentKey,
-             AsSigningKey, AsPaymentExtendedKey),
-      FileError(FileIOError, FileError),
-      SerialiseAsCBOR(deserialiseFromCBOR),
-      CardanoEraStyle(ShelleyBasedEra, LegacyByronEra),
-      InAnyShelleyBasedEra(..),
-      IsShelleyBasedEra,
-      InAnyCardanoEra(..),
-      AnyCardanoEra(..),
-      CardanoEra(..),
-      BabbageEra,
-      AlonzoEra,
-      MaryEra,
-      AllegraEra,
-      ShelleyEra,
-      ByronEra,
-      anyCardanoEra,
-      JsonDecodeError,
-      readFileTextEnvelope,
-      readFileTextEnvelopeAnyOf,
-      writeFileTextEnvelope,
-      HasTextEnvelope,
-      TextEnvelopeError(..),
-      cardanoEraStyle,
-      serialiseToRawBytesHex,
-      serialiseToRawBytesHexText,
-      castVerificationKey,
-      Key(getVerificationKey, verificationKeyHash),
-      GenesisDelegateExtendedKey,
-      GenesisDelegateKey,
-      GenesisExtendedKey,
-      GenesisKey,
-      GenesisUTxOKey,
-      PaymentExtendedKey,
-      PaymentKey,
-      StakeExtendedKey,
-      StakeKey,
-      ByronKey,
-      TxMetadataJsonError,
-      TxMetadataJsonSchema,
-      TxMetadataRangeError,
-      TxMetadata,
-      validateTxMetadata,
-      metadataFromJson,
-      ScriptDataJsonError,
-      ScriptDataJsonSchema(ScriptDataJsonDetailedSchema),
-      ScriptDataRangeError,
-      ScriptData,
-      hashScriptData,
-      validateScriptData,
-      scriptDataFromJson,
-      ConsensusModeIsMultiEra(CardanoModeIsMultiEra),
-      AnyConsensusMode(..),
-      ConsensusMode(CardanoMode),
-      AnyConsensusModeParams(..),
-      renderMode,
-      toEraInMode,
-      ScriptWitnessInCtx(ScriptWitnessForStakeAddr,
-                         ScriptWitnessForSpending),
-      KeyWitnessInCtx(KeyWitnessForStakeAddr, KeyWitnessForSpending),
-      Witness(..),
-      ScriptDatum(..),
-      ScriptRedeemer,
-      ScriptWitness(..),
-      WitCtxStake,
-      WitCtxMint,
-      WitCtxTxIn,
-      ScriptInEra(..),
-      ScriptInAnyLang(..),
-      Script(SimpleScript, PlutusScript),
-      AnyScriptLanguage(..),
-      toScriptInEra,
-      scriptWitnessScript,
-      hashScript,
-      Value,
-      AssetId(AssetId),
-      PolicyId,
-      Lovelace(..),
-      scriptPolicyId,
-      valueToList,
-      selectLovelace,
-      valueToLovelace,
-      StakeCredential,
-      StakeAddress,
-      AddressTypeInEra(ShelleyAddressInEra, ByronAddressInAnyEra),
-      AddressInEra(..),
-      AddressAny(..),
-      Address,
-      ByronAddr,
-      anyAddressInEra,
-      isKeyAddress,
-      Certificate(StakeAddressDelegationCertificate,
-                  StakeAddressDeregistrationCertificate),
-      TxBodyError,
-      TxBody,
-      TxBodyContent(TxBodyContent),
-      TxMintValue(..),
-      TxUpdateProposal(..),
-      TxCertificates(..),
-      TxWithdrawals(..),
-      TxExtraKeyWitnesses(..),
-      TxAuxScripts(..),
-      TxMetadataInEra(..),
-      TxValidityLowerBound(..),
-      TxValidityUpperBound(..),
-      TxFee(..),
-      TxOutDatum(..),
-      TxTotalCollateral(..),
-      TxReturnCollateral(..),
-      TxOutValue(..),
-      TxInsReference(..),
-      TxInsCollateral(..),
-      BuildTxWith(BuildTxWith),
-      BuildTx,
-      ScriptDataSupportedInEra,
-      TxOut(..),
-      CtxTx,
-      TxScriptValidity(..),
-      ScriptValidity,
-      txScriptValiditySupportedInCardanoEra,
-      collateralSupportedInEra,
-      multiAssetSupportedInEra,
-      txFeesExplicitInEra,
-      validityUpperBoundSupportedInEra,
-      validityNoUpperBoundSupportedInEra,
-      validityLowerBoundSupportedInEra,
-      txMetadataSupportedInEra,
-      auxScriptsSupportedInEra,
-      extraKeyWitnessesSupportedInEra,
-      scriptDataSupportedInEra,
-      withdrawalsSupportedInEra,
-      certificatesSupportedInEra,
-      updateProposalSupportedInEra,
-      totalAndReturnCollateralSupportedInEra,
-      getTxId,
-      makeTransactionBody,
-      collectTxBodyScriptWitnesses,
-      ShelleyWitnessSigningKey(..),
-      KeyWitness,
-      getTxBody,
-      makeSignedTransaction,
-      makeShelleyBootstrapWitness,
-      makeShelleyKeyWitness,
-      FromSomeTypeCDDL(FromCDDLTx, FromCDDLWitness),
-      TextEnvelopeCddlError,
-      writeTxFileTextEnvelopeCddl,
-      writeTxWitnessFileTextEnvelopeCddl,
-      readFileTextEnvelopeCddlAnyOf,
-      UTxO(UTxO),
-      QueryUTxOFilter(QueryUTxOByTxIn),
-      QueryInShelleyBasedEra(QueryStakePools, QueryUTxO,
-                             QueryProtocolParameters),
-      QueryInEra(QueryInShelleyBasedEra),
-      consensusModeOnly,
-      submitTxToNodeLocal,
-      MinimumUTxOError,
-      BalancedTxBody(BalancedTxBody),
-      TxBodyErrorAutoBalance,
-      TransactionValidityError,
-      estimateTransactionFee,
-      evaluateTransactionExecutionUnits,
-      makeTransactionBodyAutoBalance,
-      calculateMinimumUTxO,
-      executeLocalStateQueryExpr,
-      queryExpr,
-      TxIn,
-      renderTxIn )
-import Cardano.Api.Byron
-    ( WitnessNetworkIdOrByronAddress(WitnessByronAddress,
-                                     WitnessNetworkId) )
-import Cardano.Api.Shelley
-    ( ProtocolParameters(protocolParamPrices, protocolParamTxFeeFixed,
-                         protocolParamTxFeePerByte),
-      StakePoolKey,
-      ReferenceTxInsScriptsInlineDatumsSupportedInEra,
-      ReferenceScript(..),
-      refInsScriptsAndInlineDatsSupportedInEra,
-      ProtocolParametersError,
-      fromShelleyPParams,
-      checkProtocolParameters,
-      ShelleySigningKey(..),
-      getTxBodyAndWitnesses,
-      toShelleySigningKey,
-      ShelleyGenesis(sgProtocolParams) )
+import           Cardano.Api
+import           Cardano.Api.Byron hiding (SomeByronSigningKey (..))
+import           Cardano.Api.Shelley
 import           Ouroboros.Consensus.Shelley.Eras (StandardAllegra, StandardCrypto, StandardMary,
                    StandardShelley)
 
@@ -258,46 +55,13 @@ import           Cardano.Ledger.ShelleyMA.TxBody ()
 import           Cardano.CLI.Environment (EnvSocketError, readEnvSocketPath, renderEnvSocketError)
 import           Cardano.CLI.Run.Friendly (friendlyTxBS, friendlyTxBodyBS)
 import           Cardano.CLI.Shelley.Key (InputDecodeError, readSigningKeyFileAnyOf)
-import Cardano.CLI.Shelley.Parsers
-    ( ProtocolParamsFile(..),
-      OutputFile(..),
-      TxByronWitnessCount(..),
-      TxShelleyWitnessCount(..),
-      TxOutCount(..),
-      TxInCount(..),
-      TxFile(..),
-      WitnessSigningData(..),
-      InputTxBodyOrTxFile(..),
-      ProtocolParamsSourceSpec(..),
-      MetadataFile(..),
-      TransactionCmd(..),
-      WitnessFile(..) )
+import           Cardano.CLI.Shelley.Parsers
 import           Cardano.CLI.Shelley.Run.Genesis (ShelleyGenesisCmdError (..),
                    readShelleyGenesisWithDefault)
 import           Cardano.CLI.Shelley.Run.Query (ShelleyQueryCmdLocalStateQueryError (..),
                    renderLocalStateQueryError)
-import Cardano.CLI.Shelley.Script
-    ( readFileScriptInAnyLang, ScriptDecodeError )
-import Cardano.CLI.Types
-    ( ScriptRedeemerOrFile,
-      CddlTx(..),
-      GenesisFile(GenesisFile),
-      ScriptDatumOrFile(..),
-      ReferenceScriptAnyEra(..),
-      TxOutDatumAnyEra(..),
-      SocketPath(SocketPath),
-      ScriptDataOrFile(..),
-      TxBodyFile(..),
-      OutputSerialisation(..),
-      UpdateProposalFile(UpdateProposalFile),
-      ScriptFile(ScriptFile),
-      CertificateFile(CertificateFile),
-      TxOutChangeAddress(..),
-      TxOutAnyEra(..),
-      RequiredSigner(..),
-      ScriptWitnessFiles(..),
-      TxBuildOutputOptions(..),
-      SigningKeyFile(SigningKeyFile) )
+import           Cardano.CLI.Shelley.Script
+import           Cardano.CLI.Types
 import           Ouroboros.Consensus.Byron.Ledger (ByronBlock)
 import           Ouroboros.Consensus.Cardano.Block (EraMismatch (..))
 import           Ouroboros.Consensus.Ledger.SupportsMempool (ApplyTxErr)

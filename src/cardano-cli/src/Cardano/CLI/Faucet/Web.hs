@@ -6,29 +6,56 @@
 
 module Cardano.CLI.Faucet.Web where
 
-import Servant
-import Cardano.Prelude
 import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId)
-import Data.ByteString.Lazy     qualified as LBS
-import Cardano.CLI.Faucet.Types
-import Data.Text qualified as T
 import Cardano.CLI.Faucet.Misc
-import Data.Aeson (encode)
-import Cardano.CLI.Faucet.Utils
 import Cardano.CLI.Faucet.TxUtils
-import Cardano.CLI.Types
-import Control.Concurrent.STM (writeTQueue)
-import Data.String
+import Cardano.CLI.Faucet.Types
+import Cardano.CLI.Faucet.Utils
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
+import Cardano.CLI.Types
+import Cardano.Prelude
+import Control.Concurrent.STM (writeTQueue)
+import Data.Aeson (encode, ToJSON(toJSON), object)
+import Data.ByteString.Lazy     qualified as LBS
+import Data.String
+import Data.Text qualified as T
+import Servant
+import Servant.Client
+import Network.HTTP.Client (newManager, defaultManagerSettings)
 
 -- https://faucet.cardano-testnet.iohkdev.io/send-money/addr_test1vr3g684kyarnug89c7p7gqxr5y8t45g7q4ge4u8hghndvugn6yn5s?apiKey=&g-recaptcha-response=03AGdBq24qppnXuY6fIcCG2Hrpqxfp0V9Xd3oDqElSikr38sAuPMmpO4dKke9O0NzhtFnv_-cXVSs8h4loNDBDeM3rIb5UDHmoCsIylCHXmOovfDIOWM7417-9nW_8XegF7murR2CpVGDp8js7L33ygKqbPUus8AQncJ26AikCDiDNOe7_u6pHb20pR_a8a2cjfcRu6Ptrq8uTWxk2QiinvSctAZbnyTRscupJNDVvoJ1l52LNXOFNTFowRuyaRu1K9mLAJvbwy5n1il_05UGWRNvK3raCUA1DKhf0l9yOCfEvoNJNp10rTG5JFWeYaIiI3-ismQITIsR3u4akYy1PPjmNyF12vfcjlgbvXdGOcodyiZvKulnp2XNSQVIu-OHiwERumU5IISD9VRzY804Z1tKkRB7_PxpUvE7SOAKdOqmkvZLMn8ob1Fz8I562qiV8oezkVkSqTfqQbK2Vsqn3dYDd-IY0pjUhnw
 -- http[s]://$FQDN:$PORT/send-money/$ADDRESS
 
 type SendMoney = "send-money" :> Capture "destination_address" Text :> Post '[OctetStream] LBS.ByteString
+-- type MyApi = "books" :> QueryParam' Optional "authors" Text :> Get '[JSON] [Book]
 type RootDir = SendMoney
+
+data SiteVerifyRequest = SiteVerifyRequest
+
+instance ToJSON SiteVerifyRequest where
+  toJSON SiteVerifyRequest = object []
+
+type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[JSON] SiteVerifyRequest :> Post '[OctetStream] LBS.ByteString
 
 userAPI :: Proxy RootDir
 userAPI = Proxy
+
+recaptchaApi :: Proxy SiteVerify
+recaptchaApi = Proxy
+
+siteVerify :: SiteVerifyRequest -> ClientM LBS.ByteString
+siteVerify = client recaptchaApi
+
+doSiteVerify :: ClientM LBS.ByteString
+doSiteVerify = do
+  res <- siteVerify $ SiteVerifyRequest
+  pure res
+
+run :: IO ()
+run = do
+  manager' <- newManager defaultManagerSettings
+  res <- runClientM (doSiteVerify) (mkClientEnv manager' (BaseUrl Http "localhost" 8081 ""))
+  print res
 
 server :: IsShelleyBasedEra era =>
   CardanoEra era
