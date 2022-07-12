@@ -1,19 +1,26 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Cardano.CLI.Faucet.Types where
 
-import Cardano.Api (AnyCardanoEra, TxBodyErrorAutoBalance, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, AnyConsensusMode, TxId, FileError)
+import Cardano.Api (AnyCardanoEra, TxBodyErrorAutoBalance, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, AnyConsensusMode, TxId, FileError, Lovelace, AddressAny)
 import Cardano.CLI.Environment (EnvSocketError)
+import Cardano.CLI.Shelley.Key
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey)
 import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, TxFeature, SomeWitness, renderShelleyTxCmdError)
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
-import Data.Aeson (ToJSON(..), object, (.=))
+import Control.Monad.Trans.Except.Extra (left)
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict)
+import Data.HashMap.Strict
+import Data.Time.Clock (UTCTime)
+import Network.Socket (SockAddr)
 import Ouroboros.Consensus.Cardano.Block (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Type (AcquireFailure)
+import Prelude (String, error)
 import Text.Parsec
-import Cardano.CLI.Shelley.Key
 
 data FaucetError = FaucetErrorInvalidAddress Text ParseError
   | FaucetErrorUtxoNotFound
@@ -26,6 +33,10 @@ data FaucetError = FaucetErrorInvalidAddress Text ParseError
   | FaucetErrorAcquireFailure AcquireFailure
   | FaucetErrorConsensusModeMismatchTxBalance AnyConsensusMode AnyCardanoEra
   | FaucetErrorLoadingKey (FileError InputDecodeError)
+  | FaucetErrorParsingConfig String
+  | FaucetErrorRateLimit
+
+data ApiKey = Recaptcha | ApiKey Text deriving (Ord, Eq)
 
 data IsCardanoEra era => FaucetState era = FaucetState
   { utxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
@@ -33,6 +44,8 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , queue :: TQueue (TxInMode CardanoMode, ByteString)
   , skey :: SomeWitness
   , vkey :: SomeAddressVerificationKey
+  , fsConfig :: FaucetConfigFile
+  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny SockAddr) UTCTime))
   }
 
 data SendMoneyReply = SendMoneyReply
@@ -54,3 +67,33 @@ renderFaucetError (FaucetErrorAutoBalance err) = show err
 renderFaucetError (FaucetErrorFeatureMismatch a b) = show a <> " " <> show b
 renderFaucetError (FaucetErrorAcquireFailure err) = show err
 renderFaucetError (FaucetErrorConsensusModeMismatchTxBalance a b) = show a <> " " <> show b
+renderFaucetError (FaucetErrorLoadingKey err) = show err
+renderFaucetError (FaucetErrorParsingConfig err) = show err
+renderFaucetError (FaucetErrorRateLimit) = "rate limit error"
+
+-- TODO, find a better way to do this
+jsonOptions :: Options
+jsonOptions = defaultOptions { fieldLabelModifier = (camelTo2 '_') . stripPrefix }
+  where
+    stripPrefix :: String -> String
+    stripPrefix (_:_:_:baseName) = baseName
+    stripPrefix bad = error $ "bad fieldname: " ++ bad
+
+data FaucetConfigFile = FaucetConfigFile
+  { fcfSkeyPath :: FilePath
+  , fcfApiKeys :: HashMap Text (Lovelace, Int)
+  , fcfRecaptchaLimits :: (Lovelace, Int)
+  } deriving (Generic, Show)
+
+instance ToJSON FaucetConfigFile where
+  toJSON = genericToJSON jsonOptions
+
+instance FromJSON FaucetConfigFile where
+  parseJSON = genericParseJSON jsonOptions
+
+parseConfig :: FilePath -> ExceptT FaucetError IO FaucetConfigFile
+parseConfig path = do
+  eResult <- liftIO $ eitherDecodeFileStrict path
+  case eResult of
+    Left err -> left $ FaucetErrorParsingConfig err
+    Right res -> pure res

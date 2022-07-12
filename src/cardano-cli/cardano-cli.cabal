@@ -129,8 +129,12 @@ library
                       , containers
                       , cryptonite
                       , directory
+                      , cardano-ledger-shelley
                       , filepath
                       , formatting
+                      , http-api-data
+                      , http-client
+                      , http-client-tls
                       , iproute
                       , network
                       , optparse-applicative-fork
@@ -142,11 +146,9 @@ library
                       , ouroboros-network
                       , parsec
                       , prettyprinter
-                      , cardano-ledger-shelley
-                      , set-algebra
-                      , servant-server
                       , servant-client
-                      , http-client
+                      , servant-server
+                      , set-algebra
                       , split
                       , stm
                       , strict-containers
@@ -154,6 +156,7 @@ library
                       , time
                       , transformers
                       , transformers-except
+                      , unordered-containers
                       , utf8-string
                       , vector
                       , warp

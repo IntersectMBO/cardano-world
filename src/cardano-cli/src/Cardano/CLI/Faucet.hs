@@ -17,8 +17,7 @@ module Cardano.CLI.Faucet (main) where
 import Cardano.Api (TxInMode, CardanoMode, AddressAny(AddressByron, AddressShelley), CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), NetworkId(Testnet), NetworkMagic(NetworkMagic), toEraInMode, ConsensusMode(CardanoMode), makeByronAddress, castVerificationKey, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey, AsType(AsSigningKey, AsPaymentKey), FromSomeType(FromSomeType), PaymentKey, getVerificationKey)
 import Cardano.Api.Byron ()
 import Cardano.Api.Shelley ()
-import Cardano.CLI.Environment (readEnvSocketPath, renderEnvSocketError)
-import Cardano.CLI.Shelley.Commands
+import Cardano.CLI.Environment (readEnvSocketPath)
 import Cardano.CLI.Shelley.Key
 import Cardano.CLI.Shelley.Run.Address
 import Cardano.CLI.Shelley.Run.Transaction
@@ -27,10 +26,9 @@ import Cardano.Prelude
 import Cardano.CLI.Faucet.Misc
 import Cardano.CLI.Faucet.Types
 import Cardano.CLI.Faucet.Web
-import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue)
+import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO)
 import Control.Monad.Trans.Except.Exit (orDie)
 import Data.Set qualified as Set
-import Data.String
 import Data.Text qualified as T
 import Network.Wai.Handler.Warp
 import Ouroboros.Consensus.HardFork.Combinator.AcrossEras (EraMismatch)
@@ -100,9 +98,9 @@ testnet = Testnet $ NetworkMagic 1097911063
 --    witness = makeShelleyKeyWitness body keys'
 
 
-loadvkey :: String -> IO SomeAddressVerificationKey
-loadvkey filepath = do
-  orDie (T.pack . Prelude.show) $ (readAddressVerificationKeyTextOrFile . VktofVerificationKeyFile . VerificationKeyFile) filepath
+--loadvkey :: String -> IO SomeAddressVerificationKey
+--loadvkey filepath = do
+--  orDie (T.pack . Prelude.show) $ (readAddressVerificationKeyTextOrFile . VktofVerificationKeyFile . VerificationKeyFile) filepath
 
 vkeyToAddr :: NetworkId -> SomeAddressVerificationKey -> ExceptT ShelleyAddressCmdError IO AddressAny
 vkeyToAddr nw (AByronVerificationKey vk) = return (AddressByron (makeByronAddress nw vk))
@@ -138,11 +136,12 @@ main = do
     net = testnet
   dryRun <- maybe False (== "1") <$> lookupEnv "DRY_RUN"
   eResult <- runExceptT $ do
-    pay_skey <- foo "/home/clever/iohk/cardano-node/pay.skey"
+    config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
+    pay_skey <- foo $ fcfSkeyPath config
     let pay_vkey = getVerificationKey pay_skey
-    print "vkeys"
+    putStrLn @Text "vkeys"
     print pay_vkey
-    print "skey"
+    putStrLn @Text "skey"
     print pay_skey
     SocketPath sockPath <- withExceptT FaucetErrorSocketNotFound readEnvSocketPath
     let
@@ -173,6 +172,7 @@ main = do
         aquireConnection $ do
           runQueryThen (QueryCurrentEra CardanoModeIsMultiEra) $ \(AnyCardanoEra era3) -> do
             tmvar <- newEmptyTMVarIO
+            rateLimitTmvar <- newTMVarIO mempty
             let
               faucetState = FaucetState
                 { utxoTMVar = tmvar
@@ -180,6 +180,8 @@ main = do
                 , queue = txQueue
                 , skey = APaymentSigningKey pay_skey
                 , vkey = APaymentVerificationKey pay_vkey
+                , fsConfig = config
+                , fsRateLimitState = rateLimitTmvar
                 }
             addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr (network faucetState) (vkey faucetState)
             print addressAny
@@ -258,12 +260,12 @@ main = do
 --          return (AddressInEra (ShelleyAddressInEra era') sAddr)
 
 
-bar :: IO SomeWitness
-bar = do
-  let
-    foo :: WitnessSigningData
-    foo = KeyWitnessSigningData (SigningKeyFile "/home/clever/iohk/cardano-node/pay.skey") Nothing
-  orDie (T.pack . Prelude.show) $ readWitnessSigningData foo
+--bar :: IO SomeWitness
+--bar = do
+--  let
+--    foo :: WitnessSigningData
+--    foo = KeyWitnessSigningData (SigningKeyFile "/home/clever/iohk/cardano-node/pay.skey") Nothing
+--  orDie (T.pack . Prelude.show) $ readWitnessSigningData foo
 
 foo :: FilePath -> ExceptT FaucetError IO (SigningKey PaymentKey)
 foo skey_path = do
