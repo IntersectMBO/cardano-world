@@ -14,7 +14,7 @@
 
 module Cardano.CLI.Faucet (main) where
 
-import Cardano.Api (TxInMode, CardanoMode, AddressAny(AddressByron, AddressShelley), CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), NetworkId(Testnet), NetworkMagic(NetworkMagic), toEraInMode, ConsensusMode(CardanoMode), makeByronAddress, castVerificationKey, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey, AsType(AsSigningKey, AsPaymentKey), FromSomeType(FromSomeType), PaymentKey, getVerificationKey)
+import Cardano.Api (TxInMode, CardanoMode, AddressAny(AddressByron, AddressShelley), CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), NetworkId, toEraInMode, ConsensusMode(CardanoMode), makeByronAddress, castVerificationKey, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey, AsType(AsSigningKey, AsPaymentKey), FromSomeType(FromSomeType), PaymentKey, getVerificationKey, Lovelace)
 import Cardano.Api.Byron ()
 import Cardano.Api.Shelley ()
 import Cardano.CLI.Environment (readEnvSocketPath)
@@ -29,7 +29,9 @@ import Cardano.CLI.Faucet.Web
 import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO)
 import Control.Monad.Trans.Except.Exit (orDie)
 import Data.Set qualified as Set
+import Data.HashMap.Strict qualified as HM
 import Data.Text qualified as T
+import Data.List.Utils (uniq)
 import Network.Wai.Handler.Warp
 import Ouroboros.Consensus.HardFork.Combinator.AcrossEras (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Client qualified as Net.Query
@@ -39,10 +41,6 @@ import Prelude qualified
 import Servant
 import System.Environment (lookupEnv)
 import Control.Monad.Trans.Except.Extra (left)
-
-testnet :: NetworkId
-testnet = Testnet $ NetworkMagic 1097911063
-
 
         --value = valueFromList [(AdaAssetId, 1000001815)]
         --outvalue :: ExceptT ShelleyTxCmdError IO (TxOutValue ShelleyEra)
@@ -125,6 +123,12 @@ startApiServer era sbe faucetState = do
     settings = setTimeout 600 $ setPort 1234 $ defaultSettings
   runSettings settings (app era sbe faucetState)
 
+findAllSizes :: FaucetConfigFile -> [Lovelace]
+findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values ++ [v]
+  where
+    v = fst fcfRecaptchaLimits
+    values = map fst $ HM.elems fcfApiKeys
+
 main :: IO ()
 main = do
   txQueue <- newTQueueIO
@@ -132,13 +136,14 @@ main = do
   --pay_vkey <- loadvkey "/home/clever/iohk/cardano-node/pay.vkey"
   -- note:
   -- getVerificationKey :: Key keyrole => SigningKey keyrole -> VerificationKey keyrole
-  let
-    net = testnet
   dryRun <- maybe False (== "1") <$> lookupEnv "DRY_RUN"
   eResult <- runExceptT $ do
     config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
+    print config
     pay_skey <- foo $ fcfSkeyPath config
-    let pay_vkey = getVerificationKey pay_skey
+    let
+      pay_vkey = getVerificationKey pay_skey
+      net = fcfNetwork config
     putStrLn @Text "vkeys"
     print pay_vkey
     putStrLn @Text "skey"
@@ -182,6 +187,7 @@ main = do
                 , vkey = APaymentVerificationKey pay_vkey
                 , fsConfig = config
                 , fsRateLimitState = rateLimitTmvar
+                , fsBucketSizes = findAllSizes config
                 }
             addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr (network faucetState) (vkey faucetState)
             print addressAny

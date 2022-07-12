@@ -102,36 +102,37 @@ library
 
   build-depends:        aeson             >= 1.5.6.0
                       , aeson-pretty      >= 0.8.5
+                      , MissingH
                       , ansi-terminal
                       , attoparsec
+                      , base16-bytestring >= 1.0
                       , bech32            >= 1.1.0
                       , binary
                       , bytestring
-                      , base16-bytestring >= 1.0
                       , canonical-json
                       , cardano-api
                       , cardano-binary
-                      , cardano-git-rev
                       , cardano-crypto
                       , cardano-crypto-class
                       , cardano-crypto-wrapper
                       , cardano-data
+                      , cardano-git-rev
                       , cardano-ledger-alonzo
                       , cardano-ledger-byron
                       , cardano-ledger-core
+                      , cardano-ledger-shelley
                       , cardano-ledger-shelley-ma
                       , cardano-prelude
                       , cardano-protocol-tpraos
                       , cardano-slotting
-                      , vector-map
-                      , contra-tracer
                       , cborg >= 0.2.4 && < 0.3
                       , containers
+                      , contra-tracer
                       , cryptonite
                       , directory
-                      , cardano-ledger-shelley
                       , filepath
                       , formatting
+                      , vector-map
                       , http-api-data
                       , http-client
                       , http-client-tls

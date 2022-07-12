@@ -2,10 +2,11 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Cardano.CLI.Faucet.Types where
 
-import Cardano.Api (AnyCardanoEra, TxBodyErrorAutoBalance, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, AnyConsensusMode, TxId, FileError, Lovelace, AddressAny)
+import Cardano.Api (AnyCardanoEra, TxBodyErrorAutoBalance, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, AnyConsensusMode, TxId, FileError, Lovelace, AddressAny, NetworkId(Testnet, Mainnet), NetworkMagic(NetworkMagic))
 import Cardano.CLI.Environment (EnvSocketError)
 import Cardano.CLI.Shelley.Key
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey)
@@ -13,13 +14,13 @@ import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, TxFeature, SomeWi
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict)
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value(Object, String), (.:?))
 import Data.HashMap.Strict
 import Data.Time.Clock (UTCTime)
 import Network.Socket (SockAddr)
 import Ouroboros.Consensus.Cardano.Block (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Type (AcquireFailure)
-import Prelude (String, error)
+import Prelude (String, error, fail)
 import Text.Parsec
 
 data FaucetError = FaucetErrorInvalidAddress Text ParseError
@@ -46,6 +47,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , vkey :: SomeAddressVerificationKey
   , fsConfig :: FaucetConfigFile
   , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny SockAddr) UTCTime))
+  , fsBucketSizes :: [Lovelace]
   }
 
 data SendMoneyReply = SendMoneyReply
@@ -79,10 +81,26 @@ jsonOptions = defaultOptions { fieldLabelModifier = (camelTo2 '_') . stripPrefix
     stripPrefix (_:_:_:baseName) = baseName
     stripPrefix bad = error $ "bad fieldname: " ++ bad
 
+-- copied from tx-generator, should probably not be orphaned?
+instance ToJSON NetworkId where
+  toJSON Mainnet = "Mainnet"
+  toJSON (Testnet (NetworkMagic t)) = object ["Testnet" .= t]
+
+instance FromJSON NetworkId where
+  parseJSON j = case j of
+    (String "Mainnet") -> return Mainnet
+    (Object v) -> v .:? "Testnet" >>= \case
+      Nothing -> failed
+      Just w -> return $ Testnet $ NetworkMagic w
+    _invalid -> failed
+    where
+      failed = fail $ "Parsing of NetworkId failed: " <> show j
+
 data FaucetConfigFile = FaucetConfigFile
   { fcfSkeyPath :: FilePath
   , fcfApiKeys :: HashMap Text (Lovelace, Int)
   , fcfRecaptchaLimits :: (Lovelace, Int)
+  , fcfNetwork :: NetworkId
   } deriving (Generic, Show)
 
 instance ToJSON FaucetConfigFile where

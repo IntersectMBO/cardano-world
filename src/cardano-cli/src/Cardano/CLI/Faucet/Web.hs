@@ -2,10 +2,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
+module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..), test) where
 
 import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace, IsCardanoEra)
 import Cardano.CLI.Faucet.Misc
@@ -36,7 +37,8 @@ import Network.Socket (SockAddr)
 
 type SendMoney = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> RemoteHost :> Post '[OctetStream] LBS.ByteString
 -- type MyApi = "books" :> QueryParam' Optional "authors" Text :> Get '[JSON] [Book]
-type RootDir = SendMoney
+type Metrics = "metrics" :> Get '[OctetStream] LBS.ByteString
+type RootDir = SendMoney :<|> Metrics
 
 data SiteVerifyRequest = SiteVerifyRequest
   { svrSecret :: Text
@@ -90,7 +92,7 @@ server :: IsShelleyBasedEra era =>
   -> ShelleyBasedEra era
   -> FaucetState era
   -> Server RootDir
-server era sbe faucetState = handleSendMoney era sbe faucetState
+server era sbe faucetState = handleSendMoney era sbe faucetState :<|> handleMetrics faucetState
 
 getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe (Lovelace, Int)
 getRateLimits Recaptcha FaucetConfigFile{fcfRecaptchaLimits} = Just fcfRecaptchaLimits
@@ -132,13 +134,18 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
         compareTimes (Just a) (Just b) = Just (if a > b then a else b)
         lastUsage :: Maybe UTCTime
         lastUsage = Cardano.Prelude.foldl' compareTimes Nothing lastUsages
-      case lastUsage of
+      allow <- case lastUsage of
         Nothing -> do
           -- this addr has never been used on this api key
-          recordUsage
           pure True
-        Just when -> do
-          pure ()
+        Just lastUsed -> do
+          let
+            difftime :: NominalDiffTime
+            difftime = secondsToNominalDiffTime (fromIntegral interval)
+            after = addUTCTime difftime lastUsed
+          pure $ if now > after then True else False
+      if allow then recordUsage else pure ()
+      pure allow
   case mRateLimits of
     Nothing -> do
       -- api key not found in config
@@ -151,6 +158,36 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
 
 checkRecaptcha :: Monad m => m Bool
 checkRecaptcha = pure False
+
+data MetricValue = MetricValueInt Int | MetricValueFloat Float
+
+valToString :: MetricValue -> Text
+valToString (MetricValueInt i) = show i
+valToString (MetricValueFloat f) = show f
+
+data Metric = Metric (Map Text MetricValue) Text MetricValue
+
+attributesToString :: Map Text MetricValue -> Text
+attributesToString map' = if (Map.null map') then "" else wrapped
+  where
+    wrapped = "{" <> joinedAttrs <> "}"
+    joinedAttrs = T.intercalate "," $ Map.elems $ Map.mapWithKey (\key val -> key <> "=\"" <> valToString val <> "\"") map'
+
+toMetric :: Metric -> Text
+toMetric (Metric attribs key val) = key <> (attributesToString attribs) <> " " <> valToString val
+-- promhttp_metric_handler_requests_total{code="200"} 13433
+
+test :: IO ()
+test = do
+  putStrLn @Text "foo"
+  let
+    a = Metric mempty "key" (MetricValueInt 42)
+    b = Metric (Map.fromList [("key",MetricValueInt 42)]) "key" (MetricValueInt 42)
+  putStrLn $ Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric $ [ a,b]
+
+handleMetrics :: FaucetState era -> Servant.Handler LBS.ByteString
+handleMetrics _s = do
+  pure "foo"
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
