@@ -15,6 +15,19 @@ import Data.Map.Strict qualified as Map
 import Control.Monad.Trans.Except.Extra (left)
 import Cardano.CLI.Shelley.Run.Transaction
 
+data FaucetValue = Ada Lovelace deriving (Show, Eq, Ord)
+data UtxoStats = UtxoStats (Map FaucetValue Integer) deriving Show
+
+computeUtxoStats :: Map TxIn (TxOut CtxUTxO era) -> UtxoStats
+computeUtxoStats utxo = do
+  let
+    convertValue :: TxOut ctx era -> [FaucetValue]
+    -- TODO, also report tokens in this list/type
+    convertValue (TxOut _ value _ _) = [ Ada . getValue $ value ]
+    folder :: UtxoStats -> FaucetValue -> UtxoStats
+    folder (UtxoStats m) v = UtxoStats $ Map.insert v ((fromMaybe 0 $ Map.lookup v m) + 1) m
+  foldl' folder (UtxoStats mempty) $ concat $ map convertValue $ Map.elems utxo
+
 takeOneUtxo :: TMVar (Map TxIn (TxOut ctx era)) -> Lovelace -> STM (Maybe (TxIn, TxOut ctx era))
 takeOneUtxo utxoTMVar lovelace = do
   utxo <- takeTMVar utxoTMVar

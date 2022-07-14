@@ -26,6 +26,7 @@ import Cardano.Prelude
 import Cardano.CLI.Faucet.Misc
 import Cardano.CLI.Faucet.Types
 import Cardano.CLI.Faucet.Web
+import Cardano.CLI.Faucet.Utils
 import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO)
 import Control.Monad.Trans.Except.Exit (orDie)
 import Data.Set qualified as Set
@@ -189,6 +190,8 @@ main = do
                 , fsRateLimitState = rateLimitTmvar
                 , fsBucketSizes = findAllSizes config
                 }
+            putStrLn @Text "lovelace values for api keys"
+            print $ fsBucketSizes faucetState
             addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr (network faucetState) (vkey faucetState)
             print addressAny
             putStrLn @Text "new era"
@@ -204,6 +207,8 @@ main = do
                       --reducedUtxo :: Map TxIn (Lovelace, TxOut CtxUTxO era)
                       --reducedUtxo = Map.map reduceTxo $ unUTxO result
                     --atomically $ putTMVar utxoTMVar $ unUTxO result
+                    let stats = computeUtxoStats (unUTxO result)
+                    print stats
                     atomically $ putTMVar (utxoTMVar faucetState) (unUTxO result)
                     putStrLn @Text "utxo set initialized"
                     void . forever $ threadDelay 43200 {- day in seconds -}

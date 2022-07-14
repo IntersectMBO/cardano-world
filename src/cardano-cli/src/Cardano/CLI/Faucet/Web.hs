@@ -6,9 +6,9 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..), test) where
+module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace, IsCardanoEra)
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace(Lovelace), IsCardanoEra)
 import Cardano.CLI.Faucet.Misc
 import Cardano.CLI.Faucet.TxUtils
 import Cardano.CLI.Faucet.Types
@@ -20,8 +20,8 @@ import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVa
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (encode, FromJSON(parseJSON), genericParseJSON)
 import Data.ByteString.Lazy     qualified as LBS
-import Data.HashMap.Strict as HM
-import Data.Map.Strict as Map
+import Data.HashMap.Strict qualified as HM
+import Data.Map.Strict qualified as Map
 import Data.String
 import Data.Text qualified as T
 import Data.Time.Clock
@@ -37,7 +37,7 @@ import Network.Socket (SockAddr)
 
 type SendMoney = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> RemoteHost :> Post '[OctetStream] LBS.ByteString
 -- type MyApi = "books" :> QueryParam' Optional "authors" Text :> Get '[JSON] [Book]
-type Metrics = "metrics" :> Get '[OctetStream] LBS.ByteString
+type Metrics = "metrics" :> Get '[PlainText] Text
 type RootDir = SendMoney :<|> Metrics
 
 data SiteVerifyRequest = SiteVerifyRequest
@@ -157,13 +157,13 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
 checkRecaptcha :: Monad m => m Bool
 checkRecaptcha = pure False
 
-data MetricValue = MetricValueInt Int | MetricValueFloat Float
+data MetricValue = MetricValueInt Integer | MetricValueFloat Float deriving Show
 
 valToString :: MetricValue -> Text
 valToString (MetricValueInt i) = show i
 valToString (MetricValueFloat f) = show f
 
-data Metric = Metric (Map Text MetricValue) Text MetricValue
+data Metric = Metric (Map Text MetricValue) Text MetricValue deriving Show
 
 attributesToString :: Map Text MetricValue -> Text
 attributesToString map' = if (Map.null map') then "" else wrapped
@@ -173,19 +173,21 @@ attributesToString map' = if (Map.null map') then "" else wrapped
 
 toMetric :: Metric -> Text
 toMetric (Metric attribs key val) = key <> (attributesToString attribs) <> " " <> valToString val
--- promhttp_metric_handler_requests_total{code="200"} 13433
 
-test :: IO ()
-test = do
-  putStrLn @Text "foo"
-  let
-    a = Metric mempty "key" (MetricValueInt 42)
-    b = Metric (Map.fromList [("key",MetricValueInt 42)]) "key" (MetricValueInt 42)
-  putStrLn $ Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric $ [ a,b]
-
-handleMetrics :: FaucetState era -> Servant.Handler LBS.ByteString
-handleMetrics _s = do
-  pure "foo"
+handleMetrics :: IsCardanoEra era => FaucetState era -> Servant.Handler Text
+handleMetrics FaucetState{utxoTMVar,fsBucketSizes} = do
+  liftIO $ do
+    utxo <- atomically $ readTMVar utxoTMVar
+    let
+      (UtxoStats stats) = computeUtxoStats utxo
+      isRequiredSize :: Lovelace -> [(Text, MetricValue)]
+      isRequiredSize v = if (elem v fsBucketSizes) then [("is_valid",MetricValueInt 1)] else []
+      toStats :: (FaucetValue, Integer) -> Metric
+      toStats ((Ada l@(Lovelace v)), count) = Metric (Map.fromList $ [("lovelace",MetricValueInt v)] <> (isRequiredSize l)) "bucket_size" (MetricValueInt count)
+      metrics :: [Metric]
+      metrics = map toStats $ Map.toList stats
+      result = Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric metrics
+    pure result
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
