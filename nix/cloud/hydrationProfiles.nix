@@ -31,12 +31,6 @@ in {
       s3Bucket = "iog-cardano-bitte";
     };
     services = {
-      grafana.provision.dashboards = [
-        {
-          name = "provisioned-cardano";
-          options.path = ./dashboards;
-        }
-      ];
       nomad.namespaces = {
         infra.description = "Shared Services for The Cardano World";
         shelley-qa.description = "Cardano Shelley Internal QA";
@@ -92,6 +86,46 @@ in {
           host_volume."vasil-dev-*".policy = "write";
         };
       };
+    };
+    # Observability State
+    # --------------
+    tf.hydrate-monitoring.configuration = {
+      resource =
+        inputs.bitte-cells._utils.library.mkMonitoring
+        # Alerts
+          {
+            inherit (cell.alerts)
+              ;
+            # Upstream alerts
+              inherit (inputs.bitte-cells.bitte.alerts)
+                bitte-consul
+                bitte-deadmanssnitch
+                bitte-loki
+                bitte-system
+                bitte-vault
+                bitte-vm-health
+                bitte-vm-standalone
+                bitte-vmagent
+              ;
+          }
+          # Dashboards
+          {
+            inherit (cell.dashboards)
+              ;
+            inherit (inputs.bitte-cells.bitte.dashboards)
+              bitte-consul
+              bitte-log
+              bitte-loki
+              bitte-nomad
+              bitte-system
+              bitte-traefik
+              bitte-vault
+              bitte-vmagent
+              bitte-vmalert
+              bitte-vm
+              bitte-vulnix
+              ;
+          };
     };
 
     # application state (terraform)

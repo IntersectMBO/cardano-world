@@ -39,6 +39,7 @@
       aws_autoscaling_groups =
         bitte'.clusters.cardano._proto.config.cluster.awsAutoScalingGroups;
     };
+    packages = [ inputs.grafonnix.packages.converter ];
   };
 in {
   dev = std.lib.mkShell {
