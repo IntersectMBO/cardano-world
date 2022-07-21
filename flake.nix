@@ -68,6 +68,7 @@
     #  flake = false;
     #};
     # --------------------------------------------------------------
+    tullia.url = "github:input-output-hk/tullia";
   };
   outputs = inputs: let
     inherit (inputs.nixpkgs) lib;
@@ -96,7 +97,10 @@
         (inputs.std.runnables "healthChecks")
         # automation
         (inputs.std.runnables "jobs")
-        (inputs.std.functions "pipelines")
+
+        # Tullia
+        (inputs.tullia.tasks "pipelines")
+        (inputs.std.functions "actions")
       ];
     }
     # Soil (layers) ...
@@ -142,7 +146,12 @@
     # 4) oci-images re-export due to image tag changes stemming from bitte-cells follows
     {
       vector.oci-images = inputs.std.harvest inputs.bitte-cells ["vector" "oci-images"];
-    };
+    }
+    # 5) tullia tasks and cicero actions
+    (inputs.tullia.fromStd {
+      actions = inputs.std.harvest inputs.self ["cloud" "actions"];
+      tasks = inputs.std.harvest inputs.self ["automation" "pipelines"];
+    });
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
     extra-substituters = [
