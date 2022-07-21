@@ -6494,11 +6494,11 @@
         "yants": "yants_5"
       },
       "locked": {
-        "lastModified": 1656991367,
-        "narHash": "sha256-LiDOUBDYsR1cnPxdBgyENJYLwwZyovxvkGg/aUX7NXg=",
+        "lastModified": 1658366290,
+        "narHash": "sha256-YkOyAxqc7BCu395ydskL1cfl9bLxoNn/gc8d4ENeV3A=",
         "owner": "divnix",
         "repo": "std",
-        "rev": "72e384ce8e22f04b63d3c5d9b02ba4a6704f96c5",
+        "rev": "e8ac3ef7c623fd883fb433dc095db67e9a25772d",
         "type": "github"
       },
       "original": {
