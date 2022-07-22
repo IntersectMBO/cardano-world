@@ -15,25 +15,24 @@ import Data.Map.Strict qualified as Map
 import Control.Monad.Trans.Except.Extra (left)
 import Cardano.CLI.Shelley.Run.Transaction
 
-data FaucetValue = Ada Lovelace deriving (Show, Eq, Ord)
-data UtxoStats = UtxoStats (Map FaucetValue Integer) deriving Show
 
 computeUtxoStats :: Map TxIn (TxOut CtxUTxO era) -> UtxoStats
 computeUtxoStats utxo = do
   let
     convertValue :: TxOut ctx era -> [FaucetValue]
     -- TODO, also report tokens in this list/type
-    convertValue (TxOut _ value _ _) = [ Ada . getValue $ value ]
+    convertValue (TxOut _ value _ _) = [ getValue value ]
     folder :: UtxoStats -> FaucetValue -> UtxoStats
     folder (UtxoStats m) v = UtxoStats $ Map.insert v ((fromMaybe 0 $ Map.lookup v m) + 1) m
   foldl' folder (UtxoStats mempty) $ concat $ map convertValue $ Map.elems utxo
 
-takeOneUtxo :: TMVar (Map TxIn (TxOut ctx era)) -> Lovelace -> STM (Maybe (TxIn, TxOut ctx era))
-takeOneUtxo utxoTMVar lovelace = do
+takeOneUtxo :: TMVar (Map TxIn (TxOut ctx era)) -> FaucetValue -> STM (Maybe (TxIn, TxOut ctx era))
+takeOneUtxo utxoTMVar value = do
   utxo <- takeTMVar utxoTMVar
   let
-    unwrap (TxOut _ value _ _) = getValue value
-    utxoOfRightSize = Map.filter (\out -> unwrap out == lovelace) utxo
+    unwrap :: TxOut ctx1 era1 -> FaucetValue
+    unwrap (TxOut _ val _ _) = getValue val
+    utxoOfRightSize = Map.filter (\out -> unwrap out == value) utxo
     mTxin = head $ Map.toList $ Map.take 1 utxoOfRightSize
   case mTxin of
     Just (txin, txout) -> do
@@ -45,17 +44,17 @@ takeOneUtxo utxoTMVar lovelace = do
       putTMVar utxoTMVar utxo
       pure Nothing
 
-findUtxoOfSize :: TMVar (Map TxIn (TxOut CtxUTxO era)) -> Lovelace -> ExceptT FaucetError IO (TxIn, TxOut CtxUTxO era)
-findUtxoOfSize utxoTMVar lovelace = do
-  mTxinout <- liftIO $ atomically $ takeOneUtxo utxoTMVar lovelace
+findUtxoOfSize :: TMVar (Map TxIn (TxOut CtxUTxO era)) -> FaucetValue -> ExceptT FaucetWebError IO (TxIn, TxOut CtxUTxO era)
+findUtxoOfSize utxoTMVar value = do
+  mTxinout <- liftIO $ atomically $ takeOneUtxo utxoTMVar value
   case mTxinout of
     Just txinout -> pure txinout
-    Nothing -> left $ FaucetErrorUtxoNotFound
+    Nothing -> left $ FaucetWebErrorUtxoNotFound
 
 validateTxFee ::
      CardanoEra era
   -> Maybe Lovelace
-  -> ExceptT FaucetError IO (TxFee era)
+  -> ExceptT FaucetWebError IO (TxFee era)
 validateTxFee era mfee = case (txFeesExplicitInEra era, mfee) of
   (Left  implicit, Nothing)  -> return (TxFeeImplicit implicit)
   (Right explicit, Just fee) -> return (TxFeeExplicit explicit fee)
@@ -65,19 +64,19 @@ validateTxFee era mfee = case (txFeesExplicitInEra era, mfee) of
 txFeatureMismatch ::
      CardanoEra era
   -> TxFeature
-  -> ExceptT FaucetError IO a
-txFeatureMismatch era feature = left (FaucetErrorFeatureMismatch (anyCardanoEra era) feature)
+  -> ExceptT FaucetWebError IO a
+txFeatureMismatch era feature = left (FaucetWebErrorFeatureMismatch (anyCardanoEra era) (show feature))
 
 noBoundsIfSupported ::
      CardanoEra era
-  -> ExceptT FaucetError IO (TxValidityLowerBound era, TxValidityUpperBound era)
+  -> ExceptT FaucetWebError IO (TxValidityLowerBound era, TxValidityUpperBound era)
 noBoundsIfSupported era = (,)
   <$> pure TxValidityNoLowerBound
   <*> noUpperBoundIfSupported era
 
 noUpperBoundIfSupported ::
      CardanoEra era
-  -> ExceptT FaucetError IO (TxValidityUpperBound era)
+  -> ExceptT FaucetWebError IO (TxValidityUpperBound era)
 noUpperBoundIfSupported era = case validityNoUpperBoundSupportedInEra era of
   Nothing -> txFeatureMismatch era TxFeatureValidityNoUpperBound
   Just supported -> return (TxValidityNoUpperBound supported)

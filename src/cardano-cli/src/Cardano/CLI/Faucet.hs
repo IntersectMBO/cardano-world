@@ -14,7 +14,7 @@
 
 module Cardano.CLI.Faucet (main) where
 
-import Cardano.Api (TxInMode, CardanoMode, AddressAny(AddressByron, AddressShelley), CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), NetworkId, toEraInMode, ConsensusMode(CardanoMode), makeByronAddress, castVerificationKey, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey, AsType(AsSigningKey, AsPaymentKey), FromSomeType(FromSomeType), PaymentKey, getVerificationKey, Lovelace)
+import Cardano.Api (TxInMode, CardanoMode, AddressAny(AddressByron, AddressShelley), CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), NetworkId, toEraInMode, ConsensusMode(CardanoMode), makeByronAddress, castVerificationKey, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey, AsType(AsSigningKey, AsPaymentKey), FromSomeType(FromSomeType), PaymentKey, getVerificationKey, Lovelace, TxOut(TxOut))
 import Cardano.Api.Byron ()
 import Cardano.Api.Shelley ()
 import Cardano.CLI.Environment (readEnvSocketPath)
@@ -127,8 +127,9 @@ startApiServer era sbe faucetState = do
 findAllSizes :: FaucetConfigFile -> [Lovelace]
 findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values ++ [v]
   where
-    v = fst fcfRecaptchaLimits
-    values = map fst $ HM.elems fcfApiKeys
+    v = akvLovelace fcfRecaptchaLimits
+    values :: [Lovelace]
+    values = map akvLovelace $ HM.elems fcfApiKeys
 
 main :: IO ()
 main = do
@@ -206,7 +207,11 @@ main = do
                       --reduceTxo out@(TxOut _ value _ _) = (getValue value, out)
                       --reducedUtxo :: Map TxIn (Lovelace, TxOut CtxUTxO era)
                       --reducedUtxo = Map.map reduceTxo $ unUTxO result
+                      prt :: TxOut ctx era -> IO ()
+                      prt (TxOut _ val _ _) = do
+                        print $ getValue val
                     --atomically $ putTMVar utxoTMVar $ unUTxO result
+                    mapM_ prt (unUTxO result)
                     let stats = computeUtxoStats (unUTxO result)
                     print stats
                     atomically $ putTMVar (utxoTMVar faucetState) (unUTxO result)

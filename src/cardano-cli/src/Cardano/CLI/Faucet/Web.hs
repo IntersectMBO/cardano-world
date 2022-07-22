@@ -8,7 +8,7 @@
 
 module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace(Lovelace), IsCardanoEra)
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace(Lovelace), IsCardanoEra, AssetId, Quantity)
 import Cardano.CLI.Faucet.Misc
 import Cardano.CLI.Faucet.TxUtils
 import Cardano.CLI.Faucet.Types
@@ -18,66 +18,42 @@ import Cardano.CLI.Types
 import Cardano.Prelude
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (encode, FromJSON(parseJSON), genericParseJSON)
-import Data.ByteString.Lazy     qualified as LBS
 import Data.HashMap.Strict qualified as HM
 import Data.Map.Strict qualified as Map
-import Data.String
 import Data.Text qualified as T
 import Data.Time.Clock
 import Servant
 import Servant.Client
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
-import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 import Prelude ()
 import Network.Socket (SockAddr)
+import Cardano.CLI.Shelley.Run.Transaction
 
 -- https://faucet.cardano-testnet.iohkdev.io/send-money/addr_test1vr3g684kyarnug89c7p7gqxr5y8t45g7q4ge4u8hghndvugn6yn5s?apiKey=&g-recaptcha-response=03AGdBq24qppnXuY6fIcCG2Hrpqxfp0V9Xd3oDqElSikr38sAuPMmpO4dKke9O0NzhtFnv_-cXVSs8h4loNDBDeM3rIb5UDHmoCsIylCHXmOovfDIOWM7417-9nW_8XegF7murR2CpVGDp8js7L33ygKqbPUus8AQncJ26AikCDiDNOe7_u6pHb20pR_a8a2cjfcRu6Ptrq8uTWxk2QiinvSctAZbnyTRscupJNDVvoJ1l52LNXOFNTFowRuyaRu1K9mLAJvbwy5n1il_05UGWRNvK3raCUA1DKhf0l9yOCfEvoNJNp10rTG5JFWeYaIiI3-ismQITIsR3u4akYy1PPjmNyF12vfcjlgbvXdGOcodyiZvKulnp2XNSQVIu-OHiwERumU5IISD9VRzY804Z1tKkRB7_PxpUvE7SOAKdOqmkvZLMn8ob1Fz8I562qiV8oezkVkSqTfqQbK2Vsqn3dYDd-IY0pjUhnw
 -- http[s]://$FQDN:$PORT/send-money/$ADDRESS
 
-type SendMoney = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> RemoteHost :> Post '[OctetStream] LBS.ByteString
--- type MyApi = "books" :> QueryParam' Optional "authors" Text :> Get '[JSON] [Book]
+type SendMoney = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> RemoteHost :> Post '[JSON] SendMoneyReply
 type Metrics = "metrics" :> Get '[PlainText] Text
+--type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
+type SiteVerifyMock = "videos" :> "private" :> "test.php" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
+
+-- faucet root dir
 type RootDir = SendMoney :<|> Metrics
-
-data SiteVerifyRequest = SiteVerifyRequest
-  { svrSecret :: Text
-  , svrResponse :: Text
-  , svrRemoteIP :: Maybe Text
-  }
-
-instance ToForm SiteVerifyRequest where
-  --toForm (SiteVerifyRequest secret token Nothing) = [ ("secret" @ Text, toQueryParam secret), ("response", toQueryParam token) ]
-  toForm (SiteVerifyRequest secret token mRemoteIp) = fromEntriesByKey foo
-    where
-      foo :: [(Text, [Text])]
-      foo = [ ("secret", [secret]), ("response", [token]) ] ++ maybe [] (\x -> [("remoteip",[x])]) mRemoteIp
-
-data SiteVerifyReply = SiteVerifyReply
-  { svrSuccess :: Bool
-  , svrChallengeTs :: Text
-  , svrHostname :: Text
-  , svrErrorCodes :: Maybe [Text]
-  } deriving (Generic, Show)
-
-instance FromJSON SiteVerifyReply where
-  parseJSON = genericParseJSON jsonOptions
-
---type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[JSON] SiteVerifyRequest :> Post '[OctetStream] LBS.ByteString
-type SiteVerify = "videos" :> "private" :> "test.php" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
+-- recaptcha root dir
+type CaptchaRootDir = SiteVerifyMock
 
 userAPI :: Proxy RootDir
 userAPI = Proxy
 
-recaptchaApi :: Proxy SiteVerify
+recaptchaApi :: Proxy CaptchaRootDir
 recaptchaApi = Proxy
 
-siteVerify :: SiteVerifyRequest -> ClientM SiteVerifyReply
-siteVerify = client recaptchaApi
+siteVerifyMock :: SiteVerifyRequest -> ClientM SiteVerifyReply
+siteVerifyMock = client recaptchaApi
 
 doSiteVerify :: Text -> Text -> Maybe Text -> ClientM SiteVerifyReply
 doSiteVerify secret token mRemoteIp = do
-  res <- siteVerify $ SiteVerifyRequest secret token mRemoteIp
+  res <- siteVerifyMock $ SiteVerifyRequest secret token mRemoteIp
   pure res
 
 run :: IO ()
@@ -94,7 +70,7 @@ server :: IsShelleyBasedEra era =>
   -> Server RootDir
 server era sbe faucetState = handleSendMoney era sbe faucetState :<|> handleMetrics faucetState
 
-getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe (Lovelace, NominalDiffTime)
+getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe ApiKeyValue
 getRateLimits Recaptcha FaucetConfigFile{fcfRecaptchaLimits} = Just fcfRecaptchaLimits
 getRateLimits (ApiKey key) FaucetConfigFile{fcfApiKeys} = HM.lookup key fcfApiKeys
 
@@ -109,7 +85,7 @@ insertUsage tmvar apikey addr now = do
     mainMap' = Map.insert apikey apiKeyMap' mainMap
   putTMVar tmvar mainMap'
 
-checkRateLimits :: IsCardanoEra era => AddressAny -> SockAddr -> ApiKey -> FaucetState era -> ExceptT FaucetError IO Lovelace
+checkRateLimits :: IsCardanoEra era => AddressAny -> SockAddr -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [(AssetId, Quantity)])
 checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
   now <- liftIO $ getCurrentTime
   let
@@ -118,7 +94,9 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
     recordUsage = do
       insertUsage fsRateLimitState apikey (Left addr) now
       insertUsage fsRateLimitState apikey (Right remoteip) now
-    checkRateLimitsInternal :: NominalDiffTime -> STM Bool
+    -- Nothing means allow
+    -- Just x means you can do it in x time
+    checkRateLimitsInternal :: NominalDiffTime -> STM (Maybe NominalDiffTime)
     checkRateLimitsInternal interval = do
       mainMap <- readTMVar fsRateLimitState
       let
@@ -134,25 +112,25 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
         compareTimes (Just a) (Just b) = Just (if a > b then a else b)
         lastUsage :: Maybe UTCTime
         lastUsage = Cardano.Prelude.foldl' compareTimes Nothing lastUsages
-      allow <- case lastUsage of
+      disallow <- case lastUsage of
         Nothing -> do
           -- this addr has never been used on this api key
-          pure True
+          pure Nothing
         Just lastUsed -> do
           let
             after = addUTCTime interval lastUsed
-          pure $ if now > after then True else False
-      if allow then recordUsage else pure ()
-      pure allow
+          pure $ if now > after then Nothing else (Just $ after `diffUTCTime` now)
+      if (isNothing disallow) then recordUsage else pure ()
+      pure disallow
   case mRateLimits of
     Nothing -> do
       -- api key not found in config
-      left $ FaucetErrorRateLimit
-    Just (lovelace, interval) -> do
+      left $ FaucetWebErrorRateLimit
+    Just (ApiKeyValue lovelace interval tokens) -> do
       success <- liftIO $ atomically $ checkRateLimitsInternal interval
       case success of
-        True -> pure lovelace
-        False -> left FaucetErrorRateLimit
+        Nothing -> pure (lovelace,tokens)
+        Just t -> left $ FaucetWebErrorRateLimitExeeeded t
 
 checkRecaptcha :: Monad m => m Bool
 checkRecaptcha = pure False
@@ -184,6 +162,7 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes} = do
       isRequiredSize v = if (elem v fsBucketSizes) then [("is_valid",MetricValueInt 1)] else []
       toStats :: (FaucetValue, Integer) -> Metric
       toStats ((Ada l@(Lovelace v)), count) = Metric (Map.fromList $ [("lovelace",MetricValueInt v)] <> (isRequiredSize l)) "bucket_size" (MetricValueInt count)
+      toStats (FaucetValueMultiAsset _, count) = Metric mempty "bucket_todo" (MetricValueInt count)
       metrics :: [Metric]
       metrics = map toStats $ Map.toList stats
       result = Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric metrics
@@ -196,7 +175,7 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Text
   -> Maybe Text
   -> SockAddr
-  -> Servant.Handler LBS.ByteString
+  -> Servant.Handler SendMoneyReply
 handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKey remoteip = do
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
@@ -207,10 +186,10 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKe
           recaptcha <- checkRecaptcha
           case recaptcha of
             False -> do
-              left FaucetErrorRateLimit
+              left FaucetWebErrorRateLimit
             True -> pure Recaptcha
-    lovelace <- checkRateLimits addressAny remoteip apiKey fs
-    txinout@(txin,_) <- findUtxoOfSize utxoTMVar lovelace
+    (lovelace,_tokens) <- checkRateLimits addressAny remoteip apiKey fs
+    txinout@(txin,_) <- findUtxoOfSize utxoTMVar $ Ada lovelace
     putStr @Text "selected the following txin: "
     print txin
     eraInMode <- convertEra era
@@ -221,11 +200,11 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKe
       txid :: TxId
       txid = getTxId unsignedTx
     putStrLn @Text $ "new txid: " <> (show txid)
-    signedTx <- withExceptT FaucetErrorTodo $ txSign network unsignedTx [skey]
+    signedTx <- withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ txSign network unsignedTx [skey]
     let
       prettyTx = friendlyTxBS era signedTx
     liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
-    return $ SendMoneyReply txid txin
+    return $ SendMoneyReplySuccess $ SendMoneySent txid txin
   case eResult of
-    Right msg -> pure $ encode msg
-    Left err -> pure . fromString . T.unpack . renderFaucetError $ err
+    Right msg -> pure msg
+    Left err -> pure $ SendMoneyError err

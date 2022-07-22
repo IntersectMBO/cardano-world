@@ -2,17 +2,18 @@
 
 module Cardano.CLI.Faucet.TxUtils where
 
-import Cardano.Api (ConsensusModeParams, CardanoMode, Lovelace(Lovelace), toEraInMode, ConsensusMode(CardanoMode), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut, CtxUTxO, TxBody, BalancedTxBody(BalancedTxBody), TxBodyContent(TxBodyContent), Witness(KeyWitness), LocalNodeConnectInfo(LocalNodeConnectInfo), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates(TxCertificatesNone), BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(TxMintNone), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, AnyConsensusMode(AnyConsensusMode), UTxO(UTxO), executeLocalStateQueryExpr, queryExpr, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryStakePools, QueryProtocolParameters), QueryInMode(QueryInEra, QueryEraHistory, QuerySystemStart), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), anyAddressInEra, AnyCardanoEra(AnyCardanoEra), makeTransactionBodyAutoBalance, Tx, makeShelleyKeyWitness, makeSignedTransaction)
+import Cardano.Api (ConsensusModeParams, CardanoMode, Lovelace(Lovelace), toEraInMode, ConsensusMode(CardanoMode), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut, CtxUTxO, TxBody, BalancedTxBody(BalancedTxBody), TxBodyContent(TxBodyContent), Witness(KeyWitness), LocalNodeConnectInfo(LocalNodeConnectInfo), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates(TxCertificatesNone), BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(TxMintNone), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, AnyConsensusMode(AnyConsensusMode), UTxO(UTxO), executeLocalStateQueryExpr, queryExpr, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryStakePools, QueryProtocolParameters), QueryInMode(QueryInEra, QueryEraHistory, QuerySystemStart), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), anyAddressInEra, AnyCardanoEra(AnyCardanoEra), makeTransactionBodyAutoBalance, Tx, makeShelleyKeyWitness, makeSignedTransaction, displayError)
 import Control.Monad.Trans.Except.Extra (firstExceptT, left, newExceptT, hoistEither)
 import Cardano.CLI.Environment (readEnvSocketPath)
 import Cardano.Prelude
 import System.IO qualified as IO
-import Cardano.CLI.Faucet.Types (FaucetError(..))
+import Cardano.CLI.Faucet.Types (FaucetWebError(..))
 import Cardano.CLI.Faucet.Utils
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.CLI.Types
 import Data.Map.Strict qualified as Map
 import Prelude qualified
+import Data.Text qualified as T
 
 txBuild :: IsShelleyBasedEra era
   => ShelleyBasedEra era
@@ -21,9 +22,10 @@ txBuild :: IsShelleyBasedEra era
   -> (TxIn, TxOut CtxUTxO era)
   -> [TxOutAnyEra]
   -> TxOutChangeAddress
-  -> ExceptT FaucetError IO (TxBody era)
+  -> ExceptT FaucetWebError IO (TxBody era)
 txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress changeAddr) = do
-  SocketPath sockPath <- firstExceptT FaucetErrorSocketNotFound readEnvSocketPath
+  -- TODO, use the main socket, dont make a new one
+  SocketPath sockPath <- firstExceptT (FaucetWebErrorSocketNotFound . show) readEnvSocketPath
   let localNodeConnInfo = LocalNodeConnectInfo cModeParams networkId sockPath
   let era = shelleyBasedToCardanoEra sbe
   let dummyFee = Just $ Lovelace 0
@@ -32,7 +34,7 @@ txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress chang
     <$> pure [(txin, BuildTxWith $ KeyWitness KeyWitnessForSpending)]
     <*> pure TxInsCollateralNone
     <*> pure TxInsReferenceNone
-    <*> mapM (\x -> withExceptT FaucetErrorTodo $ toTxOutInAnyEra era x) txouts
+    <*> mapM (\x -> withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ toTxOutInAnyEra era x) txouts
     <*> pure TxTotalCollateralNone
     <*> pure TxReturnCollateralNone
     <*> validateTxFee era dummyFee
@@ -49,13 +51,13 @@ txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress chang
 
   eInMode <- case toEraInMode era CardanoMode of
     Just result -> return result
-    Nothing -> left (FaucetErrorConsensusModeMismatchTxBalance (AnyConsensusMode CardanoMode) (AnyCardanoEra era))
+    Nothing -> left (FaucetWebErrorConsensusModeMismatchTxBalance (show $ AnyConsensusMode CardanoMode) (AnyCardanoEra era))
 
   let
     utxo = UTxO $ Map.fromList [ (txin, txout) ]
 
   (pparams, eraHistory, systemStart, stakePools) <-
-    newExceptT . fmap (join . first (FaucetErrorAcquireFailure)) $
+    newExceptT . fmap (join . first (FaucetWebErrorAcquireFailure . show)) $
       executeLocalStateQueryExpr localNodeConnInfo Nothing $ \_ntcVersion -> runExceptT $ do
         --UTxO utxo <- firstExceptT (_ . ShelleyTxCmdTxSubmitErrorEraMismatch) . newExceptT . queryExpr
         --  $ QueryInEra eInMode $ QueryInShelleyBasedEra sbe
@@ -65,14 +67,14 @@ txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress chang
           -- txout for txin does not exist
         --  left $ ShelleyTxCmdTxInsDoNotExist [txin]
 
-        pparams <- firstExceptT FaucetErrorEraMismatch . newExceptT . queryExpr
+        pparams <- firstExceptT (FaucetWebErrorEraMismatch . show) . newExceptT . queryExpr
           $ QueryInEra eInMode $ QueryInShelleyBasedEra sbe QueryProtocolParameters
 
         eraHistory <- lift . queryExpr $ QueryEraHistory CardanoModeIsMultiEra
 
         systemStart <- lift $ queryExpr QuerySystemStart
 
-        stakePools <- firstExceptT FaucetErrorEraMismatch . ExceptT $
+        stakePools <- firstExceptT (FaucetWebErrorEraMismatch . show) . ExceptT $
           queryExpr . QueryInEra eInMode . QueryInShelleyBasedEra sbe $ QueryStakePools
 
         return (pparams, eraHistory, systemStart, stakePools)
@@ -81,7 +83,7 @@ txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress chang
     Just addr -> addr
     Nothing -> Prelude.error "txBuild: Byron address used: "
 
-  (BalancedTxBody balancedTxBody _ _fee) <- firstExceptT FaucetErrorAutoBalance . hoistEither $
+  (BalancedTxBody balancedTxBody _ _fee) <- firstExceptT (FaucetWebErrorAutoBalance . T.pack . displayError) . hoistEither $
     makeTransactionBodyAutoBalance eInMode systemStart eraHistory pparams stakePools utxo txBodyContent cAddr Nothing
 
   liftIO $ IO.putStrLn "Estimated transaction fee"
