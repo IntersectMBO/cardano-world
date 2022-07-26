@@ -97,7 +97,6 @@ in
                 (import ./srv-ogmios.nix {inherit namespace healthChecks;})
               ];
               network = {
-                dns = {servers = update [0] ["172.17.0.1"];};
                 mode = "bridge";
                 port.ogmios = {to = 1337;};
               };

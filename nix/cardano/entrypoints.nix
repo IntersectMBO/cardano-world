@@ -558,7 +558,7 @@ in {
 
       # Build args array
       args+=("--host" "0.0.0.0")
-      args+=("--port" "8070")
+      args+=("--port" "1337")
       args+=("--node-socket" "$SOCKET_PATH")
       args+=("--node-config" "$NODE_CONFIG")
 
