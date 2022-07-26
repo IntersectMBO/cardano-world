@@ -142,8 +142,8 @@
     shelley_qa = rec {
       useByronWallet = false;
       private = false;
-      relaysOld = "relays-old.shelley-qa.dev.cardano.org";
-      relaysNew = "shelley-qa-node.world.dev.cardano.org";
+      relaysNew = "relays-new.shelley-qa.dev.cardano.org";
+      relaysOld = "shelley-qa-node.world.dev.cardano.org";
       explorerUrl = "https://explorer.shelley-qa.dev.cardano.org";
       smashUrl = "https://smash.shelley-qa.dev.cardano.org";
       metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
