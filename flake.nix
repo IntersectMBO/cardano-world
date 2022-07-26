@@ -49,12 +49,12 @@
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35.1";
+      url = "github:input-output-hk/cardano-node/1.35.2";
       flake = false;
     };
-    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.1";
+    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.2";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
-    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
+    cardano-ogmios.url = "github:input-output-hk/cardano-ogmios/vasil";
     cardano-graphql = {
       url = "github:input-output-hk/cardano-graphql";
       flake = false;
@@ -129,19 +129,23 @@
       vasil-dev = inputs.bitte.lib.mkNomadJobs "vasil-dev" nomadEnvs;
     }
     # 3) hydra jobs
-    (let
-      jobs = lib.filterAttrsRecursive (n: _: n != "recurseForDerivations") (
-        lib.mapAttrs (n: lib.mapAttrs (_: cell: cell.hydraJobs or {})) {
-        # systems with hydra builders:
-        inherit (inputs.self) x86_64-linux x86_64-darwin;
-      });
-      requiredJobs = lib.filterAttrsRecursive (n: v: n == "required" || !(lib.isDerivation v)) jobs;
-      required = inputs.self.x86_64-linux.automation.jobs.mkHydraRequiredJob [] requiredJobs;
-     in {
-       hydraJobs = jobs // {
-         inherit required;
-       };
-     }
+    (
+      let
+        jobs = lib.filterAttrsRecursive (n: _: n != "recurseForDerivations") (
+          lib.mapAttrs (n: lib.mapAttrs (_: cell: cell.hydraJobs or {})) {
+            # systems with hydra builders:
+            inherit (inputs.self) x86_64-linux x86_64-darwin;
+          }
+        );
+        requiredJobs = lib.filterAttrsRecursive (n: v: n == "required" || !(lib.isDerivation v)) jobs;
+        required = inputs.self.x86_64-linux.automation.jobs.mkHydraRequiredJob [] requiredJobs;
+      in {
+        hydraJobs =
+          jobs
+          // {
+            inherit required;
+          };
+      }
     )
     # 4) oci-images re-export due to image tag changes stemming from bitte-cells follows
     {
