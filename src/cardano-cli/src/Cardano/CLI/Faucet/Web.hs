@@ -8,7 +8,7 @@
 
 module Cardano.CLI.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace(Lovelace), IsCardanoEra, AssetId, Quantity)
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), getTxId, TxId, AddressAny, Lovelace(Lovelace), IsCardanoEra)
 import Cardano.CLI.Faucet.Misc
 import Cardano.CLI.Faucet.TxUtils
 import Cardano.CLI.Faucet.Types
@@ -85,7 +85,7 @@ insertUsage tmvar apikey addr now = do
     mainMap' = Map.insert apikey apiKeyMap' mainMap
   putTMVar tmvar mainMap'
 
-checkRateLimits :: IsCardanoEra era => AddressAny -> SockAddr -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [(AssetId, Quantity)])
+checkRateLimits :: IsCardanoEra era => AddressAny -> SockAddr -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [FaucetToken])
 checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
   now <- liftIO $ getCurrentTime
   let

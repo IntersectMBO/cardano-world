@@ -6,7 +6,7 @@
 
 module Cardano.CLI.Faucet.Types where
 
-import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny, NetworkId, AssetId(AssetId), Quantity)
+import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny, NetworkId, AssetId(AssetId, AdaAssetId), Quantity)
 import Cardano.CLI.Environment (EnvSocketError)
 import Cardano.CLI.Shelley.Key
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey)
@@ -14,7 +14,7 @@ import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, SomeWitness, rend
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value)
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value, withObject, (.:))
 import Data.HashMap.Strict qualified as HM
 import Data.Time.Clock (UTCTime, NominalDiffTime)
 import Network.Socket (SockAddr)
@@ -66,7 +66,7 @@ data SendMoneyReply = SendMoneyReplySuccess SendMoneySent
 data ApiKeyValue = ApiKeyValue
   { akvLovelace :: Lovelace
   , akvRateLimit :: NominalDiffTime
-  , akvTokens :: [(AssetId, Quantity)]
+  , akvTokens :: [FaucetToken]
   } deriving (Generic, Show)
 
 data FaucetConfigFile = FaucetConfigFile
@@ -101,14 +101,28 @@ instance ToJSON SendMoneyReply where
   toJSON (SendMoneyReplySuccess (SendMoneySent{txid,txin})) = object [ "txid" .= txid, "txin" .= txin ]
   toJSON (SendMoneyError err) = object [ "error" .= err ]
 
-tokenToValue :: (AssetId, Quantity) -> Value
-tokenToValue (AssetId policyid token, q) = undefined
+tokenToValue :: FaucetToken -> Value
+tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
+tokenToValue (FaucetToken (AdaAssetId, q)) = object [ "lovelace" .= q ]
+
+data FaucetToken = FaucetToken (AssetId, Quantity) deriving Show
+
+instance FromJSON FaucetToken where
+  parseJSON = withObject "FaucetToken" $ \v -> do
+    policyid <- v .: "policy_id"
+    quantity <- v .: "quantity"
+    token <- v .: "token"
+    pure $ FaucetToken (AssetId policyid token,quantity)
 
 instance ToJSON ApiKeyValue where
   toJSON (ApiKeyValue l r t) = object [ "lovelace" .= l, "rate_limit" .= r, "tokens" .= map tokenToValue t ]
 
 instance FromJSON ApiKeyValue where
-  parseJSON = undefined
+  parseJSON = withObject "ApiKeyValue" $ \v -> do
+    lovelace <- v .: "lovelace"
+    ratelimit <- v .: "rate_limit"
+    tokens <- v .: "tokens"
+    pure $ ApiKeyValue lovelace ratelimit tokens
 
 instance ToJSON FaucetConfigFile where
   toJSON = genericToJSON jsonOptions
@@ -130,6 +144,7 @@ renderFaucetError (FaucetErrorTodo err) = renderShelleyTxCmdError err
 renderFaucetError (FaucetErrorSocketNotFound err) = show err
 renderFaucetError (FaucetErrorLoadingKey err) = show err
 renderFaucetError (FaucetErrorParsingConfig err) = show err
+renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"
 
 -- TODO, find a better way to do this
 jsonOptions :: Options
