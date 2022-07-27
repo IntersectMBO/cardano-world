@@ -140,7 +140,13 @@ main = do
   -- getVerificationKey :: Key keyrole => SigningKey keyrole -> VerificationKey keyrole
   dryRun <- maybe False (== "1") <$> lookupEnv "DRY_RUN"
   eResult <- runExceptT $ do
-    config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
+    let
+      unmaybe :: Maybe Prelude.String -> ExceptT FaucetError IO Prelude.String
+      unmaybe (Just path) = pure path
+      unmaybe Nothing = left FaucetErrorConfigFileNotSet
+    configFilePath <- liftIO $ lookupEnv "CONFIG_FILE";
+    bar <- unmaybe configFilePath
+    config <- parseConfig bar
     print config
     pay_skey <- foo $ fcfSkeyPath config
     let

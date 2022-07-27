@@ -24,7 +24,9 @@ import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorSocketNotFound EnvSocketError
   | FaucetErrorLoadingKey (FileError InputDecodeError)
-  | FaucetErrorParsingConfig String deriving Generic
+  | FaucetErrorParsingConfig String
+  | FaucetErrorConfigFileNotSet
+  deriving Generic
 
 data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorRateLimit
