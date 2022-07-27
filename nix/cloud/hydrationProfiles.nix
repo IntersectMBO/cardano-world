@@ -111,6 +111,9 @@ in {
           # Dashboards
           {
             inherit (cell.dashboards)
+              application-metrics
+              p2p
+              performance
               ;
             inherit (inputs.bitte-cells.bitte.dashboards)
               bitte-consul

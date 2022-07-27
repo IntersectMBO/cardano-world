@@ -3932,7 +3932,7 @@
     "nix2container": {
       "inputs": {
         "flake-utils": "flake-utils_29",
-        "nixpkgs": "nixpkgs_62"
+        "nixpkgs": "nixpkgs_63"
       },
       "locked": {
         "lastModified": 1653427219,
@@ -5754,22 +5754,6 @@
     },
     "nixpkgs_62": {
       "locked": {
-        "lastModified": 1650469885,
-        "narHash": "sha256-BuILRZ6pzMnGey8/irbjGq1oo3vIvZa1pitSdZCmIXA=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "df78cc4e2a46fca75d14508a5d2ed3494add28ff",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_62": {
-      "locked": {
         "lastModified": 1642451377,
         "narHash": "sha256-hvAuYDUN8XIrcQKE6wDw4LjTCcwrTp2B1i1i/5vfDMQ=",
         "owner": "NixOS",
@@ -5785,6 +5769,21 @@
     },
     "nixpkgs_63": {
       "locked": {
+        "lastModified": 1642451377,
+        "narHash": "sha256-hvAuYDUN8XIrcQKE6wDw4LjTCcwrTp2B1i1i/5vfDMQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e5b47c5c21336e3fdd887d24c7e34363fa09c6d7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_64": {
+      "locked": {
         "lastModified": 1653920503,
         "narHash": "sha256-BBeCZwZImtjP3oYy4WogkQYy5OxNyfNciVSc1AfZgLQ=",
         "owner": "nixos",
@@ -5799,7 +5798,7 @@
         "type": "github"
       }
     },
-    "nixpkgs_64": {
+    "nixpkgs_65": {
       "locked": {
         "lastModified": 1650469885,
         "narHash": "sha256-BuILRZ6pzMnGey8/irbjGq1oo3vIvZa1pitSdZCmIXA=",
@@ -6751,8 +6750,8 @@
     "std_4": {
       "inputs": {
         "devshell": "devshell_16",
-        "nixpkgs": "nixpkgs_64",
-        "yants": "yants_6"
+        "nixpkgs": "nixpkgs_65",
+        "yants": "yants_7"
       },
       "locked": {
         "lastModified": 1652784712,
@@ -7094,7 +7093,7 @@
     "tullia": {
       "inputs": {
         "nix2container": "nix2container",
-        "nixpkgs": "nixpkgs_63",
+        "nixpkgs": "nixpkgs_64",
         "std": "std_4"
       },
       "locked": {
@@ -7562,6 +7561,7 @@
     "yants_6": {
       "inputs": {
         "nixpkgs": [
+          "tullia",
           "std",
           "nixpkgs"
         ]
@@ -7580,7 +7580,7 @@
         "type": "github"
       }
     },
-    "yants_6": {
+    "yants_7": {
       "inputs": {
         "nixpkgs": [
           "tullia",

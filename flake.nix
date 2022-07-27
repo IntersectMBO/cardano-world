@@ -84,6 +84,8 @@
         (inputs.std.data "constants")
         (inputs.std.data "environments")
         (inputs.std.data "nomadEnvs")
+        (inputs.std.data "alerts")
+        (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
         (inputs.std.functions "bitteProfile")
         (inputs.std.functions "devshellProfiles")
