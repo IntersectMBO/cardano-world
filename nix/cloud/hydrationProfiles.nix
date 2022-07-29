@@ -95,6 +95,7 @@ in {
         # Alerts
           {
             inherit (cell.alerts)
+              node
               ;
             # Upstream alerts
               inherit (inputs.bitte-cells.bitte.alerts)
