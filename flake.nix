@@ -14,9 +14,9 @@
     # --------------------------------------------------------------
     # --- Bride Heads ----------------------------------------------
     # TODO: remove when moved to monorepo
-    cardano-node.url = "github:input-output-hk/cardano-node/1.35.1";
+    cardano-node.url = "github:input-output-hk/cardano-node/1.35.2";
     cardano-node.inputs.membench.url = "github:divnix/blank";
-    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.1";
+    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.2";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
     # --------------------------------------------------------------
