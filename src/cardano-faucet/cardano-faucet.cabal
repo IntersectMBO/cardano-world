@@ -1,0 +1,169 @@
+cabal-version: 3.0
+
+name:                   cardano-faucet
+version:                1.35.1
+description:            The Cardano command-line interface.
+author:                 IOHK
+maintainer:             operations@iohk.io
+license:                Apache-2.0
+license-files:          LICENSE
+                        NOTICE
+build-type:             Simple
+extra-source-files:     README.md
+
+Flag unexpected_thunks
+  Description:   Turn on unexpected thunks checks
+  Default:       False
+
+common base
+  build-depends: base >= 4.14 && < 4.15
+
+common project-config
+  default-language:     Haskell2010
+
+  default-extensions:   NoImplicitPrelude
+                        OverloadedStrings
+
+  ghc-options:          -Wall
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wpartial-fields
+                        -Wredundant-constraints
+                        -Wunused-packages
+
+common maybe-unix
+  if !os(windows)
+     build-depends:    unix
+
+common maybe-Win32
+  if os(windows)
+     build-depends:    Win32
+
+library
+  import:               base, project-config
+                      , maybe-Win32
+
+  if flag(unexpected_thunks)
+    cpp-options: -DUNEXPECTED_THUNKS
+
+  hs-source-dirs:       src
+
+  exposed-modules:      Cardano.CLI.Helpers
+                        Cardano.CLI.Parsers
+                        Cardano.CLI.Render
+                        Cardano.CLI.Run
+                        Cardano.CLI.Run.Friendly
+                        Cardano.CLI.Types
+
+                        Cardano.CLI.Environment
+
+                        Cardano.CLI.Byron.Commands
+                        Cardano.CLI.Byron.Parsers
+                        Cardano.CLI.Byron.Run
+                        Cardano.CLI.Byron.Delegation
+                        Cardano.CLI.Byron.Genesis
+                        Cardano.CLI.Byron.Key
+                        Cardano.CLI.Byron.Legacy
+                        Cardano.CLI.Byron.Tx
+                        Cardano.CLI.Byron.Query
+                        Cardano.CLI.Byron.UpdateProposal
+                        Cardano.CLI.Byron.Vote
+
+                        Cardano.CLI.Faucet
+                        Cardano.CLI.Faucet.Misc
+                        Cardano.CLI.Faucet.TxUtils
+                        Cardano.CLI.Faucet.Types
+                        Cardano.CLI.Faucet.Utils
+                        Cardano.CLI.Faucet.Web
+
+                        Cardano.CLI.Shelley.Commands
+                        Cardano.CLI.Shelley.Key
+                        Cardano.CLI.Shelley.Orphans
+                        Cardano.CLI.Shelley.Output
+                        Cardano.CLI.Shelley.Parsers
+                        Cardano.CLI.Shelley.Run
+                        Cardano.CLI.Shelley.Run.Address
+                        Cardano.CLI.Shelley.Run.Address.Info
+                        Cardano.CLI.Shelley.Run.Genesis
+                        Cardano.CLI.Shelley.Run.Governance
+                        Cardano.CLI.Shelley.Run.Key
+                        Cardano.CLI.Shelley.Run.Node
+                        Cardano.CLI.Shelley.Run.Pool
+                        Cardano.CLI.Shelley.Run.Query
+                        Cardano.CLI.Shelley.Run.StakeAddress
+                        Cardano.CLI.Shelley.Run.TextView
+                        Cardano.CLI.Shelley.Run.Transaction
+                        Cardano.CLI.Shelley.Script
+
+                        Cardano.CLI.TopHandler
+
+  other-modules:        Paths_cardano_cli
+
+  build-depends:        aeson             >= 1.5.6.0
+                      , aeson-pretty      >= 0.8.5
+                      , MissingH
+                      , ansi-terminal
+                      , attoparsec
+                      , base16-bytestring >= 1.0
+                      , bech32            >= 1.1.0
+                      , binary
+                      , bytestring
+                      , canonical-json
+                      , cardano-api
+                      , cardano-binary
+                      , cardano-crypto
+                      , cardano-crypto-class
+                      , cardano-crypto-wrapper
+                      , cardano-data
+                      , cardano-git-rev
+                      , cardano-ledger-alonzo
+                      , cardano-ledger-byron
+                      , cardano-ledger-core
+                      , cardano-ledger-shelley
+                      , cardano-ledger-shelley-ma
+                      , cardano-prelude
+                      , cardano-protocol-tpraos
+                      , cardano-slotting
+                      , cborg >= 0.2.4 && < 0.3
+                      , containers
+                      , contra-tracer
+                      , cryptonite
+                      , directory
+                      , filepath
+                      , formatting
+                      , vector-map
+                      , http-api-data
+                      , http-client
+                      , http-client-tls
+                      , iproute
+                      , network
+                      , optparse-applicative-fork
+                      , ouroboros-consensus
+                      , ouroboros-consensus-byron
+                      , ouroboros-consensus-cardano
+                      , ouroboros-consensus-protocol
+                      , ouroboros-consensus-shelley
+                      , ouroboros-network
+                      , parsec
+                      , prettyprinter
+                      , servant-client
+                      , servant-server
+                      , set-algebra
+                      , split
+                      , stm
+                      , strict-containers
+                      , text
+                      , time
+                      , transformers
+                      , transformers-except
+                      , unordered-containers
+                      , utf8-string
+                      , vector
+                      , warp
+                      , yaml
+
+executable cardano-new-faucet
+  import:               base, project-config
+  main-is:              cardano-new-faucet.hs
+  build-depends:        cardano-cli

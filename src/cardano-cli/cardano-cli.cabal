@@ -221,11 +221,6 @@ test-suite cardano-cli-test
 
   ghc-options:          -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
 
-executable cardano-new-faucet
-  import:               base, project-config
-  main-is:              cardano-new-faucet.hs
-  build-depends:        cardano-cli
-
 test-suite cardano-cli-golden
   import:               base, project-config
 

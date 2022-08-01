@@ -258,6 +258,9 @@ package cardano-api
 package cardano-cli
   --ghc-options: -Werror
 
+package cardano-faucet
+  --ghc-options: -Werror
+
 package cardano-client
   ghc-options: -Werror
 
