@@ -45,7 +45,6 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
     nixpkgs-haskell.follows = "haskell-nix/nixpkgs-unstable";
     capsules.url = "github:input-output-hk/devshell-capsules";
-    grafonnix.url = "github:divnix/grafonnix/auto-convert";
     # --------------------------------------------------------------
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
