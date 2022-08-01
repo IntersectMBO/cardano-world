@@ -14,14 +14,14 @@
   # -----------------------------------------------------------------------
   shelley-qa = mkComponents constants.envs.shelley-qa;
   vasil-dev = mkComponents constants.envs.vasil-dev;
-  # TODO: pull this from nomadJob?
+  # TODO: pull this from nomadCharts?
   persistanceMount = "/persist";
 in
   with data-merge; {
     infra = let
       WALG_S3_PREFIX = "s3://iog-cardano-bitte/backups/infra/walg";
     in {
-      documentation = docs.nomadJob.documentation constants.envs.infra;
+      documentation = docs.nomadCharts.documentation constants.envs.infra;
       database = merge (patroni.nomadJob.default (constants.envs.infra
         // {
           datacenters = ["eu-central-1"];
@@ -35,7 +35,7 @@ in
         jobname = "cardano-bft-0";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
+          cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["eu-central-1"];
               inherit jobname;
@@ -55,7 +55,7 @@ in
         jobname = "cardano-bft-1";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
+          cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["eu-west-1"];
               inherit jobname;
@@ -75,7 +75,7 @@ in
         jobname = "cardano-bft-2";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.shelley-qa
+          cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
             // {
               datacenters = ["us-east-2"];
               inherit jobname;
@@ -95,7 +95,7 @@ in
         jobname = "cardano-sp-1";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.shelley-qa
             // {
               datacenters = ["eu-west-1"];
@@ -117,7 +117,7 @@ in
         jobname = "cardano-sp-2";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.shelley-qa
             // {
               datacenters = ["us-east-2"];
@@ -139,7 +139,7 @@ in
         jobname = "cardano-sp-3";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.shelley-qa
             // {
               datacenters = ["eu-central-1"];
@@ -160,7 +160,7 @@ in
       ogmios-0 = let
         jobname = "ogmios-0";
       in
-        merge (cardano.nomadJob.ogmios (
+        merge (cardano.nomadCharts.ogmios (
           constants.envs.shelley-qa
           // {
             datacenters = ["eu-central-1"];
@@ -188,7 +188,7 @@ in
       db-sync-0 = let
         jobname = "db-sync-0";
       in
-        merge (cardano.nomadJob.cardano-db-sync (
+        merge (cardano.nomadCharts.cardano-db-sync (
           constants.envs.shelley-qa
           // {
             datacenters = ["eu-central-1"];
@@ -224,7 +224,7 @@ in
         jobname = "cardano-bft-0";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-dev
+          cardano.nomadCharts.cardano-node (constants.envs.vasil-dev
             // {
               datacenters = ["eu-central-1"];
               inherit jobname;
@@ -247,7 +247,7 @@ in
         jobname = "cardano-bft-1";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-dev
+          cardano.nomadCharts.cardano-node (constants.envs.vasil-dev
             // {
               datacenters = ["eu-west-1"];
               inherit jobname;
@@ -270,7 +270,7 @@ in
         jobname = "cardano-bft-2";
       in
         merge (
-          cardano.nomadJob.cardano-node (constants.envs.vasil-dev
+          cardano.nomadCharts.cardano-node (constants.envs.vasil-dev
             // {
               datacenters = ["us-east-2"];
               inherit jobname;
@@ -293,7 +293,7 @@ in
         jobname = "cardano-sp-1";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.vasil-dev
             // {
               datacenters = ["eu-west-1"];
@@ -318,7 +318,7 @@ in
         jobname = "cardano-sp-2";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.vasil-dev
             // {
               datacenters = ["us-east-2"];
@@ -343,7 +343,7 @@ in
         jobname = "cardano-sp-3";
       in
         merge (
-          cardano.nomadJob.cardano-node (
+          cardano.nomadCharts.cardano-node (
             constants.envs.vasil-dev
             // {
               datacenters = ["eu-central-1"];
@@ -367,7 +367,7 @@ in
       ogmios-0 = let
         jobname = "ogmios-0";
       in
-        merge (cardano.nomadJob.ogmios (
+        merge (cardano.nomadCharts.ogmios (
           constants.envs.vasil-dev
           // {
             datacenters = ["eu-central-1"];
@@ -399,7 +399,7 @@ in
       db-sync-0 = let
         jobname = "db-sync-0";
       in
-        merge (cardano.nomadJob.cardano-db-sync (
+        merge (cardano.nomadCharts.cardano-db-sync (
           constants.envs.vasil-dev
           // {
             datacenters = ["eu-central-1"];

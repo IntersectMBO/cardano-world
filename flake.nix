@@ -91,6 +91,7 @@
         (inputs.std.functions "hydrationProfiles")
         (inputs.std.functions "library")
         (inputs.std.functions "nomadJob")
+        (inputs.std.functions "nomadCharts")
         (inputs.std.containers "oci-images")
         (inputs.std.installables "packages")
         (inputs.std.functions "hydraJobs")

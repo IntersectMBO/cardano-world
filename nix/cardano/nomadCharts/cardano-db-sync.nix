@@ -2,15 +2,17 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) data-merge cells nixpkgs;
+  inherit (inputs) data-merge cells;
+  inherit (inputs.nixpkgs) lib;
+  inherit (inputs.nixpkgs) system;
   inherit (inputs.bitte-cells) vector _utils;
   inherit (cell) healthChecks constants oci-images;
-  l = nixpkgs.lib // builtins;
   # OCI-Image Namer
-  ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+  ociNamer = oci: l.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+  l = lib // builtins;
 in
   {
-    jobname ? "ogmios",
+    jobname ? "db-sync",
     namespace,
     datacenters ? ["eu-central-1" "eu-west-1" "us-east-2"],
     domain,
@@ -21,8 +23,8 @@ in
     type = "service";
     priority = 50;
     persistanceMount = "/persist";
-    vaultPkiPath = "pki/issue/ogmios";
-    consulRolePath = "consul/creds/ogmios";
+    vaultPkiPath = "pki/issue/db-sync";
+    consulRolePath = "consul/creds/db-sync";
   in
     with data-merge; {
       job.${id} = {
@@ -36,10 +38,10 @@ in
             operator = "=";
             value = "${nodeClass}";
           }
-          # {
-          #   attribute = "\${meta.cardano}";
-          #   operator = "is_set";
-          # }
+          {
+            attribute = "\${meta.cardano}";
+            operator = "is_set";
+          }
           {
             operator = "distinct_hosts";
             value = "true";
@@ -72,9 +74,9 @@ in
         # ----------
         # Task Groups
         # ----------
-        group.ogmios = let
+        group.db-sync = let
           # work-around: we need to get rid of vector first
-          node' = (cell.nomadJob.cardano-node (args // {jobname = "node";})).job.node.group.cardano;
+          node' = (cell.nomadCharts.cardano-node (args // {jobname = "node";})).job.node.group.cardano;
           group = l.removeAttrs node' ["task"];
           node = group // {task.node = node'.task.node;};
         in
@@ -83,8 +85,8 @@ in
           (vector.nomadTask.default {
             inherit namespace;
             endpoints = [
-              # prometheus metrics for ogmios
-              "http://127.0.0.1:1337/health"
+              # prometheus metrics for db-sync
+              "http://127.0.0.1:8080"
               # prometheus metrics for cardano-node
               "http://127.0.0.1:12798/metrics"
             ];
@@ -94,37 +96,45 @@ in
             {
               count = scaling;
               service = append [
-                (import ./srv-ogmios.nix {inherit namespace healthChecks;})
+                (import ./srv-db-sync.nix {inherit namespace healthChecks;})
               ];
-              network = {
-                mode = "bridge";
-                port.ogmios = {to = 1337;};
+              volume = {
+                "persist-db-sync-local" = {
+                  source = "${namespace}-persist-db-sync-local";
+                  type = "host";
+                };
               };
               task = {
                 # ----------
-                # Task: Ogmios
+                # Task: Db Sync
                 # ----------
-                ogmios = {
+                db-sync = {
                   env.DATA_DIR = persistanceMount;
-                  env.SOCKET_PATH = "/alloc/tmp/node.socket"; # figure out how to pass this from the cardano group
-
+                  env.SOCKET_PATH = "/alloc/tmp/node.socket";
                   template =
                     _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
                     ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
                   env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                   env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                   env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
-                  config.image = ociNamer oci-images.ogmios;
+                  config.image = ociNamer oci-images.cardano-db-sync;
                   user = "0:0";
                   driver = "docker";
                   kill_signal = "SIGINT";
                   kill_timeout = "30s";
-                  resources.cpu = 2000;
-                  resources.memory = 4096;
+                  resources = {
+                    cpu = 2000;
+                    memory = 4096;
+                  };
+                  volume_mount = {
+                    destination = persistanceMount;
+                    propagation_mode = "private";
+                    volume = "persist-db-sync-local";
+                  };
                   vault = {
                     change_mode = "noop";
                     env = true;
-                    policies = ["ogmios"];
+                    policies = ["db-sync"];
                   };
                 };
               };
