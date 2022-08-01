@@ -12,29 +12,11 @@ let
 
   merge-mono-repo =
     let
-      ouroboros = fetchFromGitHub {
-        owner = "input-output-hk";
-        repo = "ouroboros-network";
-        rev = project.pkg-set.config.packages.ouroboros-network.src.rev;
-        sha256 = lib.fileContents ./ouroboros-network.sha256;
-      };
       ouroborosProject = project.appendModule {
-        src = lib.mkForce ouroboros;
-      };
-      ledger = fetchFromGitHub {
-        owner = "input-output-hk";
-        repo = "cardano-ledger";
-        rev = project.pkg-set.config.packages.cardano-ledger-core.src.rev;
-        sha256 = lib.fileContents ./cardano-ledger.sha256;
+        src = lib.mkForce project.pkg-set.config.packages.ouroboros-network.src;
       };
       ledgerProject = project.appendModule {
-        src = lib.mkForce ledger;
-      };
-      ekgforward = fetchFromGitHub {
-        owner = "input-output-hk";
-        repo = "ekg-forward";
-        rev = project.pkg-set.config.packages.ekg-forward.src.rev;
-        sha256 = lib.fileContents ./ekg-forward.sha256;
+        src = lib.mkForce project.pkg-set.config.packages.cardano-ledger-core.src;
       };
       packagePaths = project: lib.concatStringsSep " " (lib.mapAttrsToList (_: p: let subdir = lib.removePrefix "/" p.src.origSubDir; in "--path-rename ${subdir}:src/${subdir} --path ${subdir}") project.packages);
       cabalProject = builtins.toFile "cabal.project" (import ./cabal.project.nix {
@@ -70,7 +52,7 @@ let
 
       cd ouroboros
       ouroboros_repo="$(pwd)"
-      git reset --hard ${ouroboros.rev}
+      git reset --hard ${ouroborosProject.args.src.rev}
       git-filter-repo --force --path-rename docs:docs/network --path docs ${packagePaths ouroborosProject}
       git filter-repo --force --path-glob '*.nix' --invert-paths
 
@@ -78,7 +60,7 @@ let
 
       cd ledger
       ledger_repo="$(pwd)"
-      git reset --hard ${ledger.rev}
+      git reset --hard ${ledgerProject.args.src.rev}
       git-filter-repo --force --path-rename doc:docs/ledger --path-rename docs:docs/ledger  --path docs --path doc \
        --path-rename eras/alonzo/formal-spec:docs/ledger/eras/alonzo/formal-spec --path eras/alonzo/formal-spec \
        --path-rename eras/babbage/formal-spec:docs/ledger/eras/babbage/formal-spec --path eras/babbage/formal-spec \
@@ -95,7 +77,7 @@ let
 
       cd ekgforward
       ekgforward_repo="$(pwd)"
-      git reset --hard ${ekgforward.rev}
+      git reset --hard ${project.pkg-set.config.packages.ekg-forward.src.rev}
       git-filter-repo --force --path demo --path src --path test --path ekg-forward.cabal --path README.md --path CHANGELOG.md --path LICENSE
       git-filter-repo --to-subdirectory-filter src/ekg-forward
 
@@ -104,8 +86,6 @@ let
       cd node
       node_repo="$(pwd)"
       git reset --hard ${cardano-node.rev}
-      # cherry-pick faucet
-      #git cherry-pick ca31cab600bf24f3732903e09c9c2a0d4423a2ac
       git-filter-repo --force --path cabal.project --path-rename doc:docs/node --path doc --path scripts ${packagePaths project}
 
       cd "$world"

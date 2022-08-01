@@ -112,10 +112,6 @@ rec {
   monorepo = _: {
     commands = [
       {
-        package = inputs.cells.automation.jobs.update-mono-repo;
-        category = "nix-build";
-      }
-      {
         package = inputs.cells.cardano.prepare-mono-repo.merge-mono-repo;
         category = "nix-build";
       }
