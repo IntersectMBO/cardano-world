@@ -72,7 +72,7 @@
   };
   outputs = inputs: let
     inherit (inputs.nixpkgs) lib;
-    nomadEnvs = inputs.self.${system}.cloud.nomadEnvs;
+    cloud = inputs.self.${system}.cloud;
     system = "x86_64-linux";
   in
     inputs.std.growOn {
@@ -82,7 +82,9 @@
       organelles = [
         (inputs.std.data "constants")
         (inputs.std.data "environments")
-        (inputs.std.data "nomadEnvs")
+        (inputs.std.data "namespaces/infra")
+        (inputs.std.data "namespaces/vasil-dev")
+        (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
@@ -91,6 +93,7 @@
         (inputs.std.functions "hydrationProfiles")
         (inputs.std.functions "library")
         (inputs.std.functions "nomadJob")
+        (inputs.std.functions "nomadCharts")
         (inputs.std.containers "oci-images")
         (inputs.std.installables "packages")
         (inputs.std.functions "hydraJobs")
@@ -125,11 +128,24 @@
         else {}
     )
     # 2) renderes nomad environments (TODO: `std`ize as actions)
-    {
-      infra = inputs.bitte.lib.mkNomadJobs "infra" nomadEnvs;
-      vasil-qa = inputs.bitte.lib.mkNomadJobs "vasil-qa" nomadEnvs;
-      vasil-dev = inputs.bitte.lib.mkNomadJobs "vasil-dev" nomadEnvs;
-    }
+    (let
+      mkNomadJobs = let
+        pkgs = inputs.nixpkgs.legacyPackages.${system};
+      in
+        builtins.mapAttrs (
+          n: job:
+            pkgs.linkFarm "job.${n}" [
+              {
+                name = "job";
+                path = pkgs.writeText "${n}.nomad.json" (builtins.toJSON job);
+              }
+            ]
+        );
+    in {
+      infra = mkNomadJobs cloud."namespaces/infra";
+      vasil-qa = mkNomadJobs cloud."namespaces/vasil-qa";
+      vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
+    })
     # 3) hydra jobs
     (
       let
