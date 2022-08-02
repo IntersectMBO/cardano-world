@@ -1,8 +1,8 @@
 diff --git a/flake.nix b/flake.nix
-index 014180e7ecf..2597c66c216 100644
+index b275f4c669..d1db8b974a 100644
 --- a/flake.nix
 +++ b/flake.nix
-@@ -35,7 +35,6 @@
+@@ -37,7 +37,6 @@
          n2c.follows = "n2c";
          data-merge.follows = "data-merge";
          cardano-iohk-nix.follows = "iohk-nix";
@@ -10,23 +10,23 @@ index 014180e7ecf..2597c66c216 100644
          cardano-db-sync.follows = "cardano-db-sync";
          cardano-wallet.follows = "cardano-wallet";
        };
-@@ -47,11 +46,6 @@
-     capsules.url = "github:input-output-hk/devshell-capsules";
+@@ -50,11 +49,6 @@
+     grafonnix.url = "github:divnix/grafonnix/auto-convert";
      # --------------------------------------------------------------
      # --- Bride Heads ----------------------------------------------
 -    # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
 -    cardano-node = {
--      url = "github:input-output-hk/cardano-node/1.35.1";
+-      url = "github:input-output-hk/cardano-node/1.35.2";
 -      flake = false;
 -    };
-     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.1";
+     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.2";
      cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
-     cardano-ogmios.url = "github:input-output-hk/cardano-ogmios";
+     ogmios = {
 diff --git a/nix/automation/devshells.nix b/nix/automation/devshells.nix
-index 6eb1d8cd4d0..0f9f3ea8359 100644
+index e55834b276..7171255e8f 100644
 --- a/nix/automation/devshells.nix
 +++ b/nix/automation/devshells.nix
-@@ -72,12 +72,6 @@ in {
+@@ -73,12 +73,6 @@ in {
        inputs.cells.cardano.devshellProfiles.world
      ];
    };
@@ -39,45 +39,25 @@ index 6eb1d8cd4d0..0f9f3ea8359 100644
    minimal = std.lib.mkShell {
      imports = [
        cardanoWorld
-diff --git a/nix/automation/jobs.nix b/nix/automation/jobs.nix
-index 183c5f8aecc..6ae72d4215c 100644
---- a/nix/automation/jobs.nix
-+++ b/nix/automation/jobs.nix
-@@ -2,7 +2,7 @@
-   inputs,
-   cell,
- }: let
--  inherit (inputs) nixpkgs cells iohk-nix cardano-node;
-+  inherit (inputs) nixpkgs cells iohk-nix;
-   inherit (cells.cardano) packages oci-images;
-   inherit (nixpkgs) lib;
-   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
-@@ -67,23 +67,6 @@
-       fi
-   '';
- in {
--  update-mono-repo = writeShellApplication {
--    name = "update-mono-repo";
--    description = "Update the checksums neccesary to build the mono-repo";
--    text = let project = packages.project.appendModule { src = lib.mkForce cardano-node; }; in ''
--      # go to project root directory:
--      while [[ $PWD != / && ! -e "flake.nix" ]]; do
--        cd ..
--      done
--
--      nix-prefetch-git --quiet https://github.com/input-output-hk/cardano-node ${cardano-node.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-node.sha256
--      nix-prefetch-git --quiet https://github.com/input-output-hk/ouroboros-network ${project.pkg-set.config.packages.ouroboros-network.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ouroboros-network.sha256
--      nix-prefetch-git --quiet https://github.com/input-output-hk/cardano-ledger ${project.pkg-set.config.packages.cardano-ledger-core.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/cardano-ledger.sha256
--      nix-prefetch-git --quiet https://github.com/input-output-hk/ekg-forward ${project.pkg-set.config.packages.ekg-forward.src.rev} | jq -r .sha256 > nix/cardano/prepare-mono-repo/ekg-forward.sha256
--      direnv reload
--    '';
--    runtimeInputs = with nixpkgs; [ nix-prefetch-git git jq];
+diff --git a/nix/cardano/devshellProfiles.nix b/nix/cardano/devshellProfiles.nix
+index f20934dd60..1515e39000 100644
+--- a/nix/cardano/devshellProfiles.nix
++++ b/nix/cardano/devshellProfiles.nix
+@@ -117,12 +117,4 @@ rec {
+       }
+     ];
+   };
+-  monorepo = _: {
+-    commands = [
+-      {
+-        package = inputs.cells.cardano.prepare-mono-repo.merge-mono-repo;
+-        category = "nix-build";
+-      }
+-    ];
 -  };
-   update-cabal-source-repo-checksums = writeShellApplication {
-     name = "update-cabal-source-repo-checksums";
-     text = ''
+ }
 diff --git a/nix/cardano/packages/default.nix b/nix/cardano/packages/default.nix
-index aecdeada67d..2ee88cc56ac 100644
+index 7bd4dd27b7..90e32b0f57 100644
 --- a/nix/cardano/packages/default.nix
 +++ b/nix/cardano/packages/default.nix
 @@ -3,7 +3,7 @@
@@ -86,7 +66,7 @@ index aecdeada67d..2ee88cc56ac 100644
  let
 -  inherit (inputs) self std nixpkgs iohk-nix cardano-node
 +  inherit (inputs) self std nixpkgs iohk-nix
-     cardano-wallet cardano-db-sync cardano-ogmios cardano-graphql cardano-explorer-app nix-inclusive;
+     cardano-wallet cardano-db-sync ogmios cardano-graphql cardano-explorer-app nix-inclusive;
    inherit (inputs.cells) cardano;
    inherit (nixpkgs) lib;
 @@ -27,8 +27,7 @@ let
@@ -100,7 +80,7 @@ index aecdeada67d..2ee88cc56ac 100644
        release = nixpkgs.callPackage ./binary-release.nix {
          inherit (final.pkgs) stdenv;
 diff --git a/nix/cardano/packages/haskell.nix b/nix/cardano/packages/haskell.nix
-index 430638aa223..6ee44039b73 100644
+index 430638aa22..6ee44039b7 100644
 --- a/nix/cardano/packages/haskell.nix
 +++ b/nix/cardano/packages/haskell.nix
 @@ -42,14 +42,9 @@ in
