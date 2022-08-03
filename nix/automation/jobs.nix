@@ -151,18 +151,20 @@ in {
     name = "gen-custom-node-config";
     runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
     text = ''
-      # Inputs: $START_TIME, $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR
+      # Inputs: $START_TIME, $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS
       export START_TIME=''${START_TIME:-$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date " now +30 min")}
       export SLOT_LENGTH=''${SLOT_LENGTH:-1000}
       export SECURITY_PARAM=''${SECURITY_PARAM:-36}
+      export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
+      export TESTNET_MAGIC=''${TESTNET_MAGIC:-42}
       export TEMPLATE_DIR=''${TEMPLATE_DIR:-"$PRJ_ROOT/nix/cardano/environments/testnet-template"}
       export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
       mkdir -p "$GENESIS_DIR"
       cardano-cli genesis create-cardano \
         --genesis-dir "$GENESIS_DIR" \
-        --gen-genesis-keys 3 \
+        --gen-genesis-keys "$NUM_GENESIS_KEYS" \
         --supply 30000000000000000 \
-        --testnet-magic 9 \
+        --testnet-magic "$TESTNET_MAGIC" \
         --slot-coefficient 0.05 \
         --byron-template "$TEMPLATE_DIR/byron.json" \
         --shelley-template "$TEMPLATE_DIR/shelley.json" \
@@ -173,7 +175,7 @@ in {
         --start-time "$START_TIME"
       # TODO remove when genesis generator outputs non-extended-key format
       pushd "$GENESIS_DIR/genesis-keys"
-        for i in {0..2}
+        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
         do
           mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
           cardano-cli key non-extended-key \
@@ -190,46 +192,47 @@ in {
       name = "gen-custom-kv-config";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        # Inputs: $GENESIS_DIR, $ENV_NAME
-        export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
-        export ENV_NAME=''${ENV_NAME:-"custom-env"}
-        mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
-        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-        pushd "$GENESIS_DIR"
-          jq -n \
-            --arg byron "$(base64 -w 0 < byron-genesis.json)" \
-            --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
-            --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
-            --argjson config "$(< node-config.json)" \
-            '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
-          > config.json
-          cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
-          pushd delegate-keys
-            for i in {0..2}; do
-              jq -n \
-                --argjson cold "$(<shelley."00$i".skey)" \
-                --argjson vrf "$(<shelley."00$i".vrf.skey)" \
-                --argjson kes "$(<shelley."00$i".kes.skey)" \
-                --argjson opcert "$(<shelley."00$i".opcert.json)" \
-                --argjson counter "$(<shelley."00$i".counter.json)" \
-                --argjson byron_cert "$(<byron."00$i".cert.json)" \
-                '{
-                  "kes.skey": $kes,
-                  "vrf.skey": $vrf,
-                  "opcert.json": $opcert,
-                  "byron.cert.json": $byron_cert,
-                  "cold.skey": $cold,
-                  "cold.counter": $counter
-                }' > "bft-$i.json"
-                cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-            done
+          # Inputs: $GENESIS_DIR, $NUM_GENESIS_KEYS, $ENV_NAME
+          export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
+        export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
+          export ENV_NAME=''${ENV_NAME:-"custom-env"}
+          mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
+          mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+          pushd "$GENESIS_DIR"
+            jq -n \
+              --arg byron "$(base64 -w 0 < byron-genesis.json)" \
+              --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
+              --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
+              --argjson config "$(< node-config.json)" \
+              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
+            > config.json
+            cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
+            pushd delegate-keys
+              for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
+                jq -n \
+                  --argjson cold "$(<shelley."00$i".skey)" \
+                  --argjson vrf "$(<shelley."00$i".vrf.skey)" \
+                  --argjson kes "$(<shelley."00$i".kes.skey)" \
+                  --argjson opcert "$(<shelley."00$i".opcert.json)" \
+                  --argjson counter "$(<shelley."00$i".counter.json)" \
+                  --argjson byron_cert "$(<byron."00$i".cert.json)" \
+                  '{
+                    "kes.skey": $kes,
+                    "vrf.skey": $vrf,
+                    "opcert.json": $opcert,
+                    "byron.cert.json": $byron_cert,
+                    "cold.skey": $cold,
+                    "cold.counter": $counter
+                  }' > "bft-$i.json"
+                  cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+              done
+            popd
+            pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+              for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
+                sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
+              done
+            popd
           popd
-          pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-            for i in {0..2}; do
-              sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
-            done
-          popd
-        popd
       '';
     }
     // {after = ["gen-custom-node-config"];};
