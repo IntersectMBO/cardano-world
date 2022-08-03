@@ -101,6 +101,11 @@ in {
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
+                    ["preprod-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
                     ["vasil-dev-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
@@ -213,9 +218,9 @@ in {
               services.traefik.staticConfigOptions = {
                 entryPoints =
                   lib.pipe {
-                    shelley-qa = 30000;
+                    preprod = 30000;
+                    shelley-qa = 30003;
                     vasil-dev = 30001;
-                    preprod = 3001;
                   } [
                     (
                       lib.mapAttrsToList (
