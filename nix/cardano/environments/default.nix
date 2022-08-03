@@ -184,7 +184,7 @@
       dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
       usePeersFromLedgerAfterSlot = 60000;
     };
-    preprod = rec {
+    /** preprod = rec {
       useByronWallet = false;
       private = false;
       relaysNew = "preprod.world.dev.cardano.org";
@@ -201,9 +201,9 @@
         }
       ];
       submitApiConfig = mkSubmitApiConfig "preprod" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
+       dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
       usePeersFromLedgerAfterSlot = -1;
-    };
+    };*/
     # used for SRE development
     sre = rec {
       useByronWallet = false;
