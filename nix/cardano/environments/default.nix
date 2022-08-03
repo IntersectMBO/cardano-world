@@ -184,6 +184,26 @@
       dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
       usePeersFromLedgerAfterSlot = 60000;
     };
+    preprod = rec {
+      useByronWallet = false;
+      private = false;
+      relaysNew = "preprod.world.dev.cardano.org";
+      explorerUrl = "https://preprod-dev-explorer.world.dev.cardano.org";
+      smashUrl = "https://preprod-dev-smash.world.dev.cardano.org";
+      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      networkConfig = import ./preprod-config.nix;
+      consensusProtocol = networkConfig.Protocol;
+      nodeConfig = defaultLogConfig // networkConfig;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = 3001;
+        }
+      ];
+      submitApiConfig = mkSubmitApiConfig "preprod" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
+      usePeersFromLedgerAfterSlot = -1;
+    };
     # used for SRE development
     sre = rec {
       useByronWallet = false;

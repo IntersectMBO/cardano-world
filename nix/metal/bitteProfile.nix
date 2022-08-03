@@ -215,6 +215,7 @@ in {
                   lib.pipe {
                     shelley-qa = 30000;
                     vasil-dev = 30001;
+                    preprod = 3001;
                   } [
                     (
                       lib.mapAttrsToList (

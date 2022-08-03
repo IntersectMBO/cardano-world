@@ -27,5 +27,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    preprod = {
+      namespace = "preprod";
+      domain = "preprod.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }
