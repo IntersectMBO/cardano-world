@@ -8,7 +8,7 @@
   ByronGenesisFile = ./preprod + "/byron-genesis.json";
   ByronGenesisHash = "d4b8de7a11d929a323373cbab6c1a9bdc931beffff11db111cf9d57356ee1937";
   ShelleyGenesisFile = ./preprod + "/shelley-genesis.json";
-  ShelleyGenesisHash =  "90c8bae45d3cb34ef25d84171a74f6e8a4a8f4615fbe289d5a1b21eb6896ac0b";
+  ShelleyGenesisHash = "90c8bae45d3cb34ef25d84171a74f6e8a4a8f4615fbe289d5a1b21eb6896ac0b";
   AlonzoGenesisFile = ./preprod + "/alonzo-genesis.json";
   AlonzoGenesisHash = "8bfa9249601f7174594b0e792a4c5697421df1ec8102a236224b4e0e398dd1d7";
 
