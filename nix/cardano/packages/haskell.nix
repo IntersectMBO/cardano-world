@@ -42,14 +42,9 @@ in
       name = "cardano-world-src";
       filter = path: type:
         let relPath = lib.removePrefix "${src.outPath}/" path; in
-        # excludes directories not part of cabal project:
-        (type != "directory" || (builtins.match ".*/.*" relPath != null) || (!(lib.elem relPath [
-          "nix"
-          "doc"
-          "docs"
-        ]) && !(lib.hasPrefix "." relPath)))
-        # only keep cabal.project from files at root:
-        && (type == "directory" || builtins.match ".*/.*" relPath != null || (relPath == "cabal.project"))
+        # only keep cabal.project and directories under src:
+        (relPath == "cabal.project" || relPath == "src" || (type == "directory" && (builtins.match "src/.*" relPath != null))
+          || (builtins.match "src/.*/.*" relPath != null))
         && (lib.cleanSourceFilter path type)
         && (haskell-nix.haskellSourceFilter path type)
         && !(lib.hasSuffix ".gitignore" relPath)
@@ -87,41 +82,6 @@ in
       [
         # Allow reinstallation of Win32
         ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isWindows {
-          nonReinstallablePkgs =
-            [
-              "rts"
-              "ghc-heap"
-              "ghc-prim"
-              "integer-gmp"
-              "integer-simple"
-              "base"
-              "deepseq"
-              "array"
-              "ghc-boot-th"
-              "pretty"
-              "template-haskell"
-              # ghcjs custom packages
-              "ghcjs-prim"
-              "ghcjs-th"
-              "ghc-boot"
-              "ghc"
-              "array"
-              "binary"
-              "bytestring"
-              "containers"
-              #"filepath"
-              "ghc-boot"
-              "ghc-compact"
-              "ghc-prim"
-              # "ghci" "haskeline"
-              "hpc"
-              "mtl"
-              "parsec"
-              "text"
-              "transformers"
-              "xhtml"
-              # "stm" "terminfo"
-            ];
           # When cross compfixesiling we don't have a `ghc` package
           packages.plutus-tx-plugin.flags.use-ghc-stub = true;
           # ruby/perl dependencies cannot be cross-built for cddl tests:

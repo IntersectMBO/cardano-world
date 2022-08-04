@@ -37,14 +37,37 @@
     haskell-nix
     ;
 
+  inherit (haskell-nix) haskellLib;
+
   project =
     (import ./haskell.nix {
       inherit lib haskell-nix;
       inherit (inputs) byron-chain;
-      # TODO: switch to self after mono-repo branch is merged:
-      src = cardano-node;
-    })
-    .extend (final: prev: {
+      src = self;
+    });
+
+  nodeProject = (project.appendModule {
+    name = lib.mkForce "cardano-node";
+    src = lib.mkForce (haskellLib.cleanSourceWith {
+        src = cardano-node.outPath;
+        name = "cardano-node-src";
+        filter = path: type:
+          let relPath = lib.removePrefix "${cardano-node.outPath}/" path; in
+          # excludes directories not part of cabal project:
+          (type != "directory" || (builtins.match ".*/.*" relPath != null) || (!(lib.elem relPath [
+            "nix"
+            "doc"
+            "docs"
+          ]) && !(lib.hasPrefix "." relPath)))
+          # only keep cabal.project from files at root:
+          && (type == "directory" || builtins.match ".*/.*" relPath != null || (relPath == "cabal.project"))
+          && (lib.cleanSourceFilter path type)
+          && (haskell-nix.haskellSourceFilter path type)
+          && !(lib.hasSuffix ".gitignore" relPath)
+          # removes socket files
+          && lib.elem type [ "regular" "directory" "symlink" ];
+      });
+  }).extend (final: prev: {
       release = nixpkgs.callPackage ./binary-release.nix {
         inherit (final.pkgs) stdenv;
         exes =
@@ -61,15 +84,30 @@
   inherit (project.args) compiler-nix-name;
   inherit (project) index-state;
 
-  ogmiosProject = import ./ogmios.nix {
-    inherit haskell-nix;
-    src = ogmios;
+  ogmiosProject = project.appendModule {
+    name = lib.mkForce "ogmios";
+    src = lib.mkForce (haskellLib.cleanSourceWith {
+      name = "ogmios-src";
+      src = ogmios;
+      subDir = "server";
+      filter = path: type:
+        builtins.all (x: x) [
+          (baseNameOf path != "package.yaml")
+        ];
+    });
+    modules = [
+      {
+        doHaddock = lib.mkForce false;
+        doCheck = lib.mkForce false;
+      }
+    ];
   };
 in {
-  inherit project; # TODO REMOVE
-  inherit (project.exes) cardano-node cardano-cli cardano-submit-api cardano-tracer;
-  inherit (project.hsPkgs.bech32.components.exes) bech32;
-  inherit (project.hsPkgs.network-mux.components.exes) cardano-ping;
+  inherit project nodeProject ogmiosProject; # TODO REMOVE
+  inherit (nodeProject.exes) cardano-node cardano-cli cardano-submit-api cardano-tracer;
+  inherit (nodeProject.hsPkgs.bech32.components.exes) bech32;
+  inherit (nodeProject.hsPkgs.network-mux.components.exes) cardano-ping;
+  inherit (project.exes) cardano-new-faucet;
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;
   inherit (cardano-db-sync.packages) cardano-db-sync;
