@@ -6,9 +6,9 @@
   ##### Locations #####
 
   ByronGenesisFile = ./vasil-dev + "/byron-genesis.json";
-  ByronGenesisHash = "c0627a409c0bf0a32b7c9b346809638a149658da81b616b3e14b7df7ce0d87f7";
+  ByronGenesisHash = "970eb02f09ccd5e4b284cf92350e679cf0828e410c57b470bcd26e718bf15931";
   ShelleyGenesisFile = ./vasil-dev + "/shelley-genesis.json";
-  ShelleyGenesisHash = "3c824cd1fa5dda79e3331765960deb3393ab89f97af011b5d3d2ea8b501aaf63";
+  ShelleyGenesisHash = "25264c807eb610ca6c0706fa051a4cefbf37c9b9bbea9f669a0b085f9e3e840a";
   AlonzoGenesisFile = ./vasil-dev + "/alonzo-genesis.json";
   AlonzoGenesisHash = "8bfa9249601f7174594b0e792a4c5697421df1ec8102a236224b4e0e398dd1d7";
 
@@ -28,12 +28,12 @@
   TargetNumberOfEstablishedPeers = 50;
   TargetNumberOfKnownPeers = 100;
   TargetNumberOfRootPeers = 100;
-  TestAllegraHardForkAtEpoch = 2;
-  TestAlonzoHardForkAtEpoch = 4;
   TestEnableDevelopmentHardForkEras = true;
   TestEnableDevelopmentNetworkProtocols = true;
-  TestMaryHardForkAtEpoch = 3;
-  TestShelleyHardForkAtEpoch = 1;
+  TestShelleyHardForkAtEpoch = 0;
+  TestAllegraHardForkAtEpoch = 0;
+  TestAlonzoHardForkAtEpoch = 0;
+  TestMaryHardForkAtEpoch = 0;
 
   ##### Update system parameters #####
 
