@@ -18,7 +18,7 @@ import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value, withObject, (.:))
 import Data.HashMap.Strict qualified as HM
 import Data.Time.Clock (UTCTime, NominalDiffTime)
-import Network.Socket (SockAddr)
+import Network.Socket (HostAddress)
 import Prelude (String, error)
 import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
@@ -59,7 +59,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , skey :: SomeWitness
   , vkey :: SomeAddressVerificationKey
   , fsConfig :: FaucetConfigFile
-  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny SockAddr) UTCTime))
+  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny HostAddress) UTCTime))
   , fsBucketSizes :: [Lovelace]
   }
 

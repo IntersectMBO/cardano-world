@@ -1,13 +1,15 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Cardano.Faucet.TxUtils where
 
-import Cardano.Api (ConsensusModeParams, CardanoMode, Lovelace(Lovelace), toEraInMode, ConsensusMode(CardanoMode), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut, CtxUTxO, TxBody, BalancedTxBody(BalancedTxBody), TxBodyContent(TxBodyContent), Witness(KeyWitness), LocalNodeConnectInfo(LocalNodeConnectInfo), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates(TxCertificatesNone), BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(TxMintNone), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, AnyConsensusMode(AnyConsensusMode), UTxO(UTxO), executeLocalStateQueryExpr, queryExpr, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryStakePools, QueryProtocolParameters), QueryInMode(QueryInEra, QueryEraHistory, QuerySystemStart), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), anyAddressInEra, AnyCardanoEra(AnyCardanoEra), makeTransactionBodyAutoBalance, Tx, makeShelleyKeyWitness, makeSignedTransaction, displayError)
+import Cardano.Api (ConsensusModeParams, CardanoMode, Lovelace(Lovelace), toEraInMode, ConsensusMode(CardanoMode), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut, CtxUTxO, TxBody, BalancedTxBody(BalancedTxBody), TxBodyContent(TxBodyContent), Witness(KeyWitness), LocalNodeConnectInfo(LocalNodeConnectInfo), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(TxMintNone), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, AnyConsensusMode(AnyConsensusMode), UTxO(UTxO), executeLocalStateQueryExpr, queryExpr, QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryStakePools, QueryProtocolParameters), QueryInMode(QueryInEra, QueryEraHistory, QuerySystemStart), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), anyAddressInEra, AnyCardanoEra(AnyCardanoEra), makeTransactionBodyAutoBalance, Tx, makeShelleyKeyWitness, makeSignedTransaction, displayError, AddressAny, TxId, getTxId, BuildTx)
 import Cardano.CLI.Environment (readEnvSocketPath)
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.CLI.Types
 import Cardano.Faucet.Types (FaucetWebError(..))
 import Cardano.Faucet.Utils
+import Cardano.Faucet.Misc
 import Cardano.Prelude
 import Control.Monad.Trans.Except.Extra (firstExceptT, left, newExceptT, hoistEither)
 import Data.Map.Strict qualified as Map
@@ -22,8 +24,9 @@ txBuild :: IsShelleyBasedEra era
   -> (TxIn, TxOut CtxUTxO era)
   -> [TxOutAnyEra]
   -> TxOutChangeAddress
+  -> TxCertificates BuildTx era
   -> ExceptT FaucetWebError IO (TxBody era)
-txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress changeAddr) = do
+txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress changeAddr) certs = do
   -- TODO, use the main socket, dont make a new one
   SocketPath sockPath <- firstExceptT (FaucetWebErrorSocketNotFound . show) readEnvSocketPath
   let localNodeConnInfo = LocalNodeConnectInfo cModeParams networkId sockPath
@@ -44,7 +47,7 @@ txBuild sbe cModeParams networkId (txin, txout) txouts (TxOutChangeAddress chang
     <*> pure TxExtraKeyWitnessesNone
     <*> pure (BuildTxWith Nothing)
     <*> pure TxWithdrawalsNone
-    <*> pure TxCertificatesNone
+    <*> pure certs
     <*> pure TxUpdateProposalNone
     <*> pure TxMintNone
     <*> pure TxScriptValidityNone
@@ -106,3 +109,22 @@ txSign networkId txBody sks = do
   let tx = makeSignedTransaction (byronWitnesses ++ shelleyKeyWitnesses) txBody
 
   return tx
+
+makeAndSignTx :: IsShelleyBasedEra era
+  => ShelleyBasedEra era
+  -> (TxIn, TxOut CtxUTxO era)
+  -> AddressAny
+  -> NetworkId
+  -> SomeWitness
+  -> TxCertificates BuildTx era
+  -> ExceptT FaucetWebError IO (Tx era, TxId)
+makeAndSignTx sbe txinout addressAny network skey certs = do
+  -- instead of having to specify an output that is exactly equal to input-fees
+  -- i specify no outputs, and set the change addr to the end-user
+  unsignedTx <- txBuild sbe defaultCModeParams network txinout [] (TxOutChangeAddress addressAny) certs
+  let
+    txid :: TxId
+    txid = getTxId unsignedTx
+  putStrLn @Text $ "new txid: " <> (show txid)
+  signedTx <- withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ txSign network unsignedTx [skey]
+  pure (signedTx, txid)

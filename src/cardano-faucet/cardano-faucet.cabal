@@ -68,12 +68,14 @@ library
                       , containers
                       , http-api-data
                       , http-client-tls
+                      , iproute
                       , network
                       , ouroboros-consensus
                       , ouroboros-network
                       , parsec
                       , servant-client
                       , servant-server
+                      , split
                       , stm
                       , text
                       , time
