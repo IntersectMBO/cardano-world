@@ -15,7 +15,6 @@ import Control.Concurrent.STM (TMVar, takeTMVar, putTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Map.Strict qualified as Map
 
-
 computeUtxoStats :: Map TxIn (TxOut CtxUTxO era) -> UtxoStats
 computeUtxoStats utxo = do
   let
@@ -46,6 +45,7 @@ takeOneUtxo utxoTMVar value = do
 
 findUtxoOfSize :: TMVar (Map TxIn (TxOut CtxUTxO era)) -> FaucetValue -> ExceptT FaucetWebError IO (TxIn, TxOut CtxUTxO era)
 findUtxoOfSize utxoTMVar value = do
+  -- TODO, include fee
   mTxinout <- liftIO $ atomically $ takeOneUtxo utxoTMVar value
   case mTxinout of
     Just txinout -> pure txinout
