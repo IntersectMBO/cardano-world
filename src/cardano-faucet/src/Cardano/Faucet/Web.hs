@@ -8,13 +8,13 @@
 
 module Cardano.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), AddressAny, Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone))
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), AddressAny, Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.Faucet.Misc
 import Cardano.Faucet.TxUtils
 import Cardano.Faucet.Types
 import Cardano.Faucet.Utils
-import Cardano.Prelude
+import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.HashMap.Strict qualified as HM
@@ -23,9 +23,10 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Char8 as BSC
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
+import qualified Data.Text.Lazy as LT
 import Data.Time.Clock
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
-import Network.Socket (SockAddr(SockAddrInet), HostAddress)
+import Network.Socket (SockAddr(SockAddrInet))
 import Prelude (read, String)
 import Servant
 import Servant.Client
@@ -33,14 +34,16 @@ import Cardano.Address.Style.Shelley (getKey)
 import Cardano.Api.Crypto.Ed25519Bip32
 import Data.List.Split
 import Data.IP
+import Formatting.ShortFormatters hiding (x, b, f, l)
+import Formatting ((%), format)
 
 -- https://faucet.cardano-testnet.iohkdev.io/send-money/addr_test1vr3g684kyarnug89c7p7gqxr5y8t45g7q4ge4u8hghndvugn6yn5s?apiKey=&g-recaptcha-response=03AGdBq24qppnXuY6fIcCG2Hrpqxfp0V9Xd3oDqElSikr38sAuPMmpO4dKke9O0NzhtFnv_-cXVSs8h4loNDBDeM3rIb5UDHmoCsIylCHXmOovfDIOWM7417-9nW_8XegF7murR2CpVGDp8js7L33ygKqbPUus8AQncJ26AikCDiDNOe7_u6pHb20pR_a8a2cjfcRu6Ptrq8uTWxk2QiinvSctAZbnyTRscupJNDVvoJ1l52LNXOFNTFowRuyaRu1K9mLAJvbwy5n1il_05UGWRNvK3raCUA1DKhf0l9yOCfEvoNJNp10rTG5JFWeYaIiI3-ismQITIsR3u4akYy1PPjmNyF12vfcjlgbvXdGOcodyiZvKulnp2XNSQVIu-OHiwERumU5IISD9VRzY804Z1tKkRB7_PxpUvE7SOAKdOqmkvZLMn8ob1Fz8I562qiV8oezkVkSqTfqQbK2Vsqn3dYDd-IY0pjUhnw
 -- http[s]://$FQDN:$PORT/send-money/$ADDRESS
 
-newtype ForwardedFor = ForwardedFor [HostAddress] deriving (Eq, Show)
+newtype ForwardedFor = ForwardedFor [IPv4] deriving (Eq, Show)
 
 parseIpList :: Prelude.String -> ForwardedFor
-parseIpList input = ForwardedFor $ reverse $ map (toHostAddress . Prelude.read) (splitOn "," input)
+parseIpList input = ForwardedFor $ reverse $ map (Prelude.read) (splitOn "," input)
 
 instance FromHttpApiData ForwardedFor where
   parseHeader = Right . parseIpList . BSC.unpack
@@ -88,18 +91,18 @@ getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe ApiKeyValue
 getRateLimits Recaptcha FaucetConfigFile{fcfRecaptchaLimits} = Just fcfRecaptchaLimits
 getRateLimits (ApiKey key) FaucetConfigFile{fcfApiKeys} = HM.lookup key fcfApiKeys
 
-insertUsage :: TMVar (Map ApiKey (Map (Either AddressAny HostAddress) UTCTime)) -> ApiKey -> Either AddressAny HostAddress -> UTCTime -> STM ()
+insertUsage :: TMVar (Map ApiKey (Map (Either AddressAny IPv4) UTCTime)) -> ApiKey -> Either AddressAny IPv4 -> UTCTime -> STM ()
 insertUsage tmvar apikey addr now = do
   mainMap <- takeTMVar tmvar
   let
-    apiKeyMap :: Map (Either AddressAny HostAddress) UTCTime
+    apiKeyMap :: Map (Either AddressAny IPv4) UTCTime
     apiKeyMap = fromMaybe mempty (Map.lookup apikey mainMap)
-    apiKeyMap' :: Map (Either AddressAny HostAddress) UTCTime
+    apiKeyMap' :: Map (Either AddressAny IPv4) UTCTime
     apiKeyMap' = Map.insert addr now apiKeyMap
     mainMap' = Map.insert apikey apiKeyMap' mainMap
   putTMVar tmvar mainMap'
 
-checkRateLimits :: IsCardanoEra era => AddressAny -> HostAddress -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [FaucetToken])
+checkRateLimits :: IsCardanoEra era => AddressAny -> IPv4 -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [FaucetToken])
 checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
   now <- liftIO $ getCurrentTime
   let
@@ -115,7 +118,7 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
       mainMap <- readTMVar fsRateLimitState
       let
         apiKeyMap = fromMaybe mempty (Map.lookup apikey mainMap)
-        getLastUsage :: Either AddressAny HostAddress -> Maybe UTCTime
+        getLastUsage :: Either AddressAny IPv4 -> Maybe UTCTime
         getLastUsage addr' = Map.lookup addr' apiKeyMap
         lastUsages :: [ Maybe UTCTime]
         lastUsages = [ getLastUsage (Left addr), getLastUsage (Right remoteip) ]
@@ -139,12 +142,12 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
   case mRateLimits of
     Nothing -> do
       -- api key not found in config
-      left $ FaucetWebErrorRateLimit
+      left $ FaucetWebErrorInvalidApiKey
     Just (ApiKeyValue lovelace interval tokens) -> do
       success <- liftIO $ atomically $ checkRateLimitsInternal interval
       case success of
         Nothing -> pure (lovelace,tokens)
-        Just t -> left $ FaucetWebErrorRateLimitExeeeded t
+        Just time -> left $ FaucetWebErrorRateLimitExeeeded time (serialiseAddress addr)
 
 checkRecaptcha :: Monad m => m Bool
 checkRecaptcha = pure False
@@ -183,10 +186,10 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes} = do
     pure result
 
 
-pickIp :: Maybe ForwardedFor -> SockAddr -> HostAddress
-pickIp Nothing (SockAddrInet _port hostaddr) = hostaddr
+pickIp :: Maybe ForwardedFor -> SockAddr -> IPv4
+pickIp Nothing (SockAddrInet _port hostaddr) = fromHostAddress hostaddr
 pickIp (Just (ForwardedFor (a:_))) _ = a
-pickIp _ _ = 0x100007f -- 127.0.0.1
+pickIp _ _ = fromHostAddress 0x100007f -- 127.0.0.1
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -209,12 +212,10 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKe
           recaptcha <- checkRecaptcha
           case recaptcha of
             False -> do
-              left FaucetWebErrorRateLimit
+              left FaucetWebErrorInvalidApiKey
             True -> pure Recaptcha
     (lovelace,_tokens) <- checkRateLimits addressAny clientIP apiKey fs
     txinout@(txin,_) <- findUtxoOfSize utxoTMVar $ Ada lovelace
-    putStr @Text "selected the following txin: "
-    print txin
     eraInMode <- convertEra era
     (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network skey TxCertificatesNone
     let
@@ -223,4 +224,14 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKe
     return $ SendMoneyReplySuccess $ SendMoneySent txid txin
   case eResult of
     Right msg -> pure msg
-    Left err -> pure $ SendMoneyError err
+    Left err -> do
+      liftIO $ logError clientIP err
+      pure $ SendMoneyError err
+
+logError :: IPv4 -> FaucetWebError -> IO ()
+logError ip (FaucetWebErrorRateLimitExeeeded secs addr) = putStrLn $ format (sh % ": rate limit exeeded for " % t % " will reset in " % sh) ip (LT.fromStrict addr) secs
+logError ip (FaucetWebErrorInvalidAddress addr _) = putStrLn $ format (sh % ": invalid cardano address: " % t) ip (LT.fromStrict addr)
+logError ip (FaucetWebErrorInvalidApiKey) = putStrLn $ format (sh % ": invalid api key") ip
+logError ip (FaucetWebErrorUtxoNotFound value) = putStrLn $ format (sh % ": faucet out of funds for: " % sh) ip value
+logError _ FaucetWebErrorEraConversion = putStr @Text "era conversion error"
+logError ip err = putStrLn $ format (sh % ": unsupported error: " % sh) ip err

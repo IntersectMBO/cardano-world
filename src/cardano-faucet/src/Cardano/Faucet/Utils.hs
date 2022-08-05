@@ -49,7 +49,7 @@ findUtxoOfSize utxoTMVar value = do
   mTxinout <- liftIO $ atomically $ takeOneUtxo utxoTMVar value
   case mTxinout of
     Just txinout -> pure txinout
-    Nothing -> left $ FaucetWebErrorUtxoNotFound
+    Nothing -> left $ FaucetWebErrorUtxoNotFound value
 
 validateTxFee ::
      CardanoEra era

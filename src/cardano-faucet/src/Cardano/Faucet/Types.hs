@@ -15,16 +15,16 @@ import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, SomeWitness(APaym
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value, withObject, (.:))
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value(String), withObject, (.:))
 import Data.HashMap.Strict qualified as HM
 import Data.Time.Clock (UTCTime, NominalDiffTime)
-import Network.Socket (HostAddress)
 import Prelude (String, error)
 import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
 import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey)
 import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), getKey)
 import qualified Data.Text as T
+import Data.IP (IPv4)
 
 data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorSocketNotFound EnvSocketError
@@ -37,9 +37,9 @@ data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   deriving Generic
 
 data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
-  | FaucetWebErrorRateLimit
-  | FaucetWebErrorRateLimitExeeeded NominalDiffTime
-  | FaucetWebErrorUtxoNotFound
+  | FaucetWebErrorInvalidApiKey
+  | FaucetWebErrorRateLimitExeeeded NominalDiffTime Text
+  | FaucetWebErrorUtxoNotFound FaucetValue
   | FaucetWebErrorEraConversion
   | FaucetWebErrorSocketNotFound Text
   | FaucetWebErrorTodo Text
@@ -48,7 +48,7 @@ data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorAcquireFailure Text
   | FaucetWebErrorEraMismatch Text
   | FaucetWebErrorAutoBalance Text
-  deriving Generic
+  deriving (Generic, Show)
 
 data ApiKey = Recaptcha | ApiKey Text deriving (Ord, Eq)
 
@@ -59,7 +59,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , skey :: SomeWitness
   , vkey :: SomeAddressVerificationKey
   , fsConfig :: FaucetConfigFile
-  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny HostAddress) UTCTime))
+  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny IPv4) UTCTime))
   , fsBucketSizes :: [Lovelace]
   }
 
@@ -86,6 +86,10 @@ data FaucetConfigFile = FaucetConfigFile
 
 data FaucetValue = Ada Lovelace
   | FaucetValueMultiAsset [(AssetId, Quantity)] deriving (Show, Eq, Ord)
+
+instance ToJSON FaucetValue where
+  toJSON (Ada lovelace) = object [ "lovelace" .= lovelace ]
+  toJSON (FaucetValueMultiAsset _) = String "unsupported"
 
 data UtxoStats = UtxoStats (Map FaucetValue Integer) deriving Show
 

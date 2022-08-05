@@ -14,7 +14,7 @@
 
 module Cardano.Faucet (main) where
 
-import Cardano.Api (TxInMode, CardanoMode, AddressAny, CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, TxOut(TxOut), serialiseAddress)
+import Cardano.Api (TxInMode, CardanoMode, AddressAny, CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
 import Cardano.Api.Byron ()
 import Cardano.Api.Shelley ()
 import Cardano.CLI.Environment (readEnvSocketPath)
@@ -42,6 +42,7 @@ import Prelude qualified
 import Servant
 import System.Environment (lookupEnv)
 import Cardano.Address.Style.Shelley (getKey)
+import System.IO (hSetBuffering, BufferMode(LineBuffering))
 
 app :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -70,11 +71,9 @@ findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values ++ 
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
   txQueue <- newTQueueIO
-  --pay_skey <- bar
-  --pay_vkey <- loadvkey "/home/clever/iohk/cardano-node/pay.vkey"
-  -- note:
-  -- getVerificationKey :: Key keyrole => SigningKey keyrole -> VerificationKey keyrole
   dryRun <- maybe False (== "1") <$> lookupEnv "DRY_RUN"
   eResult <- runExceptT $ do
     let
@@ -88,7 +87,6 @@ main = do
       port = Prelude.read $ portString
     bar <- unmaybe configFilePath
     config <- parseConfig bar
-    print config
     rootK <- mnemonicToRootKey $ fcfMnemonic config
     acctK <- rootKeytoAcctKey rootK 0x80000000
     addrK <- accountKeyToPaymentKey acctK 0x14
@@ -96,9 +94,6 @@ main = do
       pay_skey = PaymentExtendedSigningKey $ getKey addrK
       pay_vkey = getVerificationKey pay_skey
       net = fcfNetwork config
-    putStrLn @Text "vkeys"
-    print pay_vkey
-    putStrLn @Text "skey"
     SocketPath sockPath <- withExceptT FaucetErrorSocketNotFound readEnvSocketPath
     let
       localNodeConnInfo :: LocalNodeConnectInfo CardanoMode
@@ -143,10 +138,7 @@ main = do
             putStrLn @Text "lovelace values for api keys"
             print $ fsBucketSizes faucetState
             addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr (network faucetState) (vkey faucetState)
-            print addressAny
-            putStrLn $ serialiseAddress addressAny
-            putStrLn @Text "new era"
-            print era3
+            putStrLn $ "faucet address: " <> serialiseAddress addressAny
             case cardanoEraStyle era3 of
               ShelleyBasedEra sbe -> do
                 _child <- forkIO $ startApiServer era3 sbe faucetState port
@@ -157,11 +149,7 @@ main = do
                       --reduceTxo out@(TxOut _ value _ _) = (getValue value, out)
                       --reducedUtxo :: Map TxIn (Lovelace, TxOut CtxUTxO era)
                       --reducedUtxo = Map.map reduceTxo $ unUTxO result
-                      prt :: TxOut ctx era -> IO ()
-                      prt (TxOut _ val _ _) = do
-                        print $ getValue val
                     --atomically $ putTMVar utxoTMVar $ unUTxO result
-                    mapM_ prt (unUTxO result)
                     let stats = computeUtxoStats (unUTxO result)
                     print stats
                     atomically $ putTMVar (utxoTMVar faucetState) (unUTxO result)
