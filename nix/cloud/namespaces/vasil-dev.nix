@@ -242,11 +242,7 @@ in {
             EDGE_NODE = "1";
           };
         };
-        faucet = {
-          env = {
-            CONFIG_FILE = "/secrets/faucet-config.json";
-            PORT = 8090;
-          };
+        cardano-faucet = {
         };
       };
     };
