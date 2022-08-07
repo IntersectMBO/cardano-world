@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.Faucet.Types where
 
@@ -91,7 +92,8 @@ data DelegationReply = DelegationReplySuccess
   |DelegationReplyError FaucetWebError
 
 data ApiKeyValue = ApiKeyValue
-  { akvLovelace :: Lovelace
+  { akvApiKey :: Text
+  , akvLovelace :: Lovelace
   , akvRateLimit :: NominalDiffTime
   , akvTokens :: [FaucetToken]
   } deriving (Generic, Show)
@@ -105,6 +107,18 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfDebug :: Bool
   , fcfDelegationUtxoSize :: Integer
   } deriving (Generic, Show)
+
+instance FromJSON FaucetConfigFile where
+  parseJSON = withObject "FaucetConfigFile" $ \o -> do
+    fcfMnemonic <- o .: "mnemonic"
+    apiKeyList <- o .: "api_keys"
+    let fcfApiKeys = HM.fromList $ map (\key@ApiKeyValue{akvApiKey} -> (akvApiKey, key)) apiKeyList
+    fcfRecaptchaLimits <- o .: "recaptcha_limits"
+    fcfNetwork <- o .: "network"
+    fcfMaxStakeKeyIndex <- o .: "max_stake_key_index"
+    fcfDebug <- o .: "debug"
+    fcfDelegationUtxoSize <- o .: "delegation_utxo_size"
+    pure FaucetConfigFile{..}
 
 data FaucetValue = Ada Lovelace
   | FaucetValueMultiAsset [(AssetId, Quantity)] deriving (Show, Eq, Ord)
@@ -156,21 +170,13 @@ instance FromJSON FaucetToken where
     token <- v .: "token"
     pure $ FaucetToken (AssetId policyid token,quantity)
 
-instance ToJSON ApiKeyValue where
-  toJSON (ApiKeyValue l r t) = object [ "lovelace" .= l, "rate_limit" .= r, "tokens" .= map tokenToValue t ]
-
 instance FromJSON ApiKeyValue where
   parseJSON = withObject "ApiKeyValue" $ \v -> do
-    lovelace <- v .: "lovelace"
-    ratelimit <- v .: "rate_limit"
-    tokens <- v .: "tokens"
-    pure $ ApiKeyValue lovelace ratelimit tokens
-
-instance ToJSON FaucetConfigFile where
-  toJSON = genericToJSON jsonOptions
-
-instance FromJSON FaucetConfigFile where
-  parseJSON = genericParseJSON jsonOptions
+    akvApiKey <- v .: "api_key"
+    akvLovelace <- v .: "lovelace"
+    akvRateLimit <- v .: "rate_limit"
+    akvTokens <- v .: "tokens"
+    pure $ ApiKeyValue{..}
 
 instance ToForm SiteVerifyRequest where
   toForm (SiteVerifyRequest secret token mRemoteIp) = fromEntriesByKey foo

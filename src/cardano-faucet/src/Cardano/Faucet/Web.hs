@@ -195,7 +195,7 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
     Nothing -> do
       -- api key not found in config
       left $ FaucetWebErrorInvalidApiKey
-    Just (ApiKeyValue lovelace interval tokens) -> do
+    Just (ApiKeyValue _ lovelace interval tokens) -> do
       success <- liftIO $ atomically $ checkRateLimitsInternal interval
       case success of
         Nothing -> pure (lovelace,tokens)
