@@ -68,6 +68,7 @@
       url = "github:input-output-hk/cardano-explorer-app/fix-nix-system";
       flake = false;
     };
+    oura.url = "github:txpipe/oura";
     #cardano-rosetta = {
     #  url = "github:input-output-hk/cardano-rosetta";
     #  flake = false;

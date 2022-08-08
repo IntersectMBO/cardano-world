@@ -13,6 +13,7 @@ in {
       (cells.cardano.hydrationProfiles.workload-policies-ogmios)
       (cells.cardano.hydrationProfiles.workload-policies-db-sync)
       (cells.cardano.hydrationProfiles.workload-policies-faucet)
+      (cells.cardano.hydrationProfiles.workload-policies-oura)
       (cells.cardano.hydrationProfiles.workload-policies-wallet)
       (cells.cardano.hydrationProfiles.workload-policies-submit-api)
     ];

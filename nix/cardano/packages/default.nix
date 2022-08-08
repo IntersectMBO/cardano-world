@@ -16,6 +16,7 @@ let
     cardano-graphql
     cardano-explorer-app
     nix-inclusive
+    oura
     ;
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
@@ -136,4 +137,5 @@ in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
   inherit nix-inclusive; # TODO REMOVE
+  oura = oura.packages.oura;
 }

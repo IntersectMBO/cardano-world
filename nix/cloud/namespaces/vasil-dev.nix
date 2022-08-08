@@ -246,4 +246,37 @@ in {
         };
       };
     };
+  oura-0 = let
+    jobname = "oura-0";
+  in
+    data-merge.merge (cardano.nomadCharts.oura (
+      constants.envs.vasil-dev
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+      }
+    )) {
+      job.${jobname}.group.oura.task = {
+        node = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DATA_DIR = persistanceMount + "/oura-0";
+            CONSUL_KV_PATH = "config/cardano/vasil-dev";
+            EDGE_NODE = "1";
+            LOCAL_ROOTS_SRV_DNS = "_vasil-dev-${jobname}-node._tcp.service.consul";
+            PUBLIC_ROOTS_SRV_DNS = "_vasil-dev-node._tcp.service.consul";
+          };
+        };
+        oura = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DATA_DIR = persistanceMount + "/oura-0";
+            CONSUL_KV_PATH = "config/cardano/vasil-dev";
+          };
+        };
+      };
+    };
+
 }

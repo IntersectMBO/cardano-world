@@ -114,6 +114,32 @@
     };
   };
 
+  # Oura
+  workload-policies-oura = {
+    tf.hydrate-cluster.configuration.locals.policies = {
+      consul.oura = {
+        # oura also needs to read the cardano config
+        key_prefix."config/cardano" = {
+          policy = "read";
+          intentions = "deny";
+        };
+        session_prefix."" = {
+          policy = "write";
+          intentions = "deny";
+        };
+      };
+      vault.oura = {
+        path."consul/creds/oura".capabilities = ["read"];
+      };
+
+    };
+    services.vault.policies.client = {
+      path."consul/creds/oura".capabilities = ["read"];
+      path."auth/token/roles/oura".capabilities = ["read"];
+    };
+  };
+
+
   # Wallet
   workload-policies-wallet = {
     tf.hydrate-cluster.configuration.locals.policies = {

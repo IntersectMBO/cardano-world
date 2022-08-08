@@ -279,7 +279,8 @@
         | jq -s 'add' > "$NODE_TOPOLOGY"
     }
   '';
-in {
+
+  in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
@@ -591,4 +592,45 @@ in {
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
     '';
   };
+
+  oura = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [packages.oura];
+    name = "entrypoint";
+    text = ''
+      cmd=(
+        "curl"
+        "$CONSUL_HTTP_ADDR/v1/kv/$CONSUL_KV_PATH?raw"
+        "--header" "X-Consul-Token: $CONSUL_HTTP_TOKEN"
+        "--header" "Content-Type: application/json"
+      )
+
+      json=$("''${cmd[@]}") 2>/dev/null
+
+      # the menu of environments that we ship as built-in envs
+      ${library.copyEnvsTemplate environments}
+
+      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
+
+      NODE_CONFIG_DATA=$(echo "$json" | jq '.nodeConfig')
+      echo "$NODE_CONFIG_DATA" > "$NODE_CONFIG"
+
+      NETWORK_MAGIC=$(jq '.networkMagic' "$(
+        file="$(echo "$NODE_CONFIG_DATA" | jq '.ShelleyGenesisFile')"
+        folder="$(dirname "$NODE_CONFIG")"
+        [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
+      )")
+
+      SOURCE_CONFIG_DATA=$( jq -n \
+        --arg sp "$SOCKET_PATH" \
+        --arg nm "$NETWORK_MAGIC" \
+        '{metrics: {}, source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
+
+      OURA_CONFIG="$DATA_DIR/config/$ENVIRONMENT/oura-config.json"
+      echo "[$json,$SOURCE_CONFIG_DATA]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
+
+      exec ${packages.oura}/bin/oura daemon --config "$OURA_CONFIG"
+    '';
+  };
+
 }
