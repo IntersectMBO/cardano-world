@@ -48,6 +48,7 @@
 
   nodeProject = (project.appendModule {
     name = lib.mkForce "cardano-node";
+    gitrev = cardano-node.rev;
     src = lib.mkForce (haskellLib.cleanSourceWith {
         src = cardano-node.outPath;
         name = "cardano-node-src";
@@ -86,6 +87,7 @@
 
   ogmiosProject = project.appendModule {
     name = lib.mkForce "ogmios";
+    gitrev = ogmios.rev;
     src = lib.mkForce (haskellLib.cleanSourceWith {
       name = "ogmios-src";
       src = ogmios;
