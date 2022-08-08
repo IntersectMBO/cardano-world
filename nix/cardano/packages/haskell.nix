@@ -27,21 +27,21 @@ in
     };
   };
   config = {
-    name = "cardano-world";
-    src = haskellLib.cleanSourceWith {
+    name = lib.mkDefault "cardano-world";
+    src = lib.mkDefault (haskellLib.cleanSourceWith {
       src = src.outPath;
       name = "cardano-world-src";
       filter = path: type:
         let relPath = lib.removePrefix "${src.outPath}/" path; in
         # only keep cabal.project and directories under src:
         (relPath == "cabal.project" || relPath == "src" || (type == "directory" && (builtins.match "src/.*" relPath != null))
-          || (builtins.match "src/.*/.*" relPath != null))
+        || (builtins.match "src/.*/.*" relPath != null))
         && (lib.cleanSourceFilter path type)
         && (haskell-nix.haskellSourceFilter path type)
         && !(lib.hasSuffix ".gitignore" relPath)
         # removes socket files
         && lib.elem type [ "regular" "directory" "symlink" ];
-    };
+    });
     compiler-nix-name = "ghc8107";
     cabalProjectLocal = ''
       allow-newer: terminfo:base
@@ -68,15 +68,16 @@ in
     modules =
       let
         inherit (config) src;
-        packagesExes = let
-          project = haskell-nix.cabalProject' {
-            inherit (config) name src compiler-nix-name cabalProjectLocal;
-          };
-          packages = haskellLib.selectProjectPackages project.hsPkgs;
-        in
-        lib.genAttrs
-          (lib.attrNames packages)
-          (name: lib.attrNames packages.${name}.components.exes);
+        packagesExes =
+          let
+            project = haskell-nix.cabalProject' {
+              inherit (config) name src compiler-nix-name cabalProjectLocal;
+            };
+            packages = haskellLib.selectProjectPackages project.hsPkgs;
+          in
+          lib.genAttrs
+            (lib.attrNames packages)
+            (name: lib.attrNames packages.${name}.components.exes);
         packageNames = builtins.attrNames packagesExes;
       in
       [
