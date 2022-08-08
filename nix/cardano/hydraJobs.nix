@@ -8,7 +8,8 @@ let
   inherit (nixpkgs.stdenv) hostPlatform;
   inherit (cells.automation.jobs) mkHydraRequiredJob;
   inherit (cell.packages) project nodeProject ogmiosProject;
-  mergedProject = lib.recursiveUpdate (lib.recursiveUpdate ogmiosProject nodeProject) project;
+  mergedProject = lib.recursiveUpdate (lib.recursiveUpdate
+    (removeAttrs ogmiosProject ["checks" "benchmarks"]) nodeProject) project;
   internal = {
     roots = {
       nodeProject = nodeProject.roots;
