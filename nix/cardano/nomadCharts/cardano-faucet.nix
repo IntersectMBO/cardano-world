@@ -96,7 +96,7 @@ in
               network.port.http.to = "8090";
               service = append [
                 {
-                  name = "cardano-faucet";
+                  name = "cardano-faucet-${namespace}";
                   port = "http";
                   tags = [
                     "ingress"
