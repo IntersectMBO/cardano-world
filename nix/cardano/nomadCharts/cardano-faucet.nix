@@ -101,9 +101,9 @@ in
                   tags = [
                     "ingress"
                     "traefik.enable=true"
-                    "traefik.http.routers.cardano-faucet.rule=Host(`faucet.${domain}`) && PathPrefix(`/{send-money,delegate}`)"
-                    "traefik.http.routers.cardano-faucet.entrypoints=https"
-                    "traefik.http.routers.cardano-faucet.tls.certresolver=acme"
+                    "traefik.http.routers.cardano-faucet-${namespace}.rule=Host(`faucet.${domain}`) && PathPrefix(`/{send-money,delegate}`)"
+                    "traefik.http.routers.cardano-faucet-${namespace}.entrypoints=https"
+                    "traefik.http.routers.cardano-faucet-${namespace}.tls.certresolver=acme"
                   ];
                   check = [
                     {
