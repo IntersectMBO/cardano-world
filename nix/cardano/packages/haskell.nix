@@ -20,19 +20,10 @@ in
                             , ...
                             }: {
   options = {
-    packagesExes = lib.mkOption {
-      type = lib.types.attrs;
-      default =
-        let
-          project = haskell-nix.cabalProject' {
-            inherit (config) name src compiler-nix-name cabalProjectLocal;
-          };
-          packages = haskellLib.selectProjectPackages project.hsPkgs;
-        in
-        lib.genAttrs
-          (lib.attrNames packages)
-          (name: lib.attrNames packages.${name}.components.exes);
-      description = "Set of local project packages to list of executables";
+    gitrev = lib.mkOption {
+      type = lib.types.str;
+      default = src.rev;
+      description = "Git revision to use for tagging executables (`--version`).";
     };
   };
   config = {
@@ -76,7 +67,16 @@ in
     };
     modules =
       let
-        inherit (config) src packagesExes;
+        inherit (config) src;
+        packagesExes = let
+          project = haskell-nix.cabalProject' {
+            inherit (config) name src compiler-nix-name cabalProjectLocal;
+          };
+          packages = haskellLib.selectProjectPackages project.hsPkgs;
+        in
+        lib.genAttrs
+          (lib.attrNames packages)
+          (name: lib.attrNames packages.${name}.components.exes);
         packageNames = builtins.attrNames packagesExes;
       in
       [
@@ -293,7 +293,7 @@ in
               let
                 # setGitRev is a script to stamp executables with version info.
                 # Done here to avoid tests depending on rev.
-                setGitRev = ''${final.pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${src.rev}" $out/bin/*'';
+                setGitRev = ''${final.pkgs.buildPackages.haskellBuildUtils}/bin/set-git-rev "${final.args.gitrev}" $out/bin/*'';
               in
               final.pkgs.buildPackages.runCommand value.name
                 {
