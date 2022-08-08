@@ -1,35 +1,27 @@
 {
 	"debug": "ENC[AES256_GCM,data:YVKchsw=,iv:q7Nyq3t+ZbahCwYng7aaHzLiMr3YERchbFmdb57t6Vc=,tag:WU+6q3xHIvYigBF5Ia98HQ==,type:bool]",
-	"api_keys": {
-		"api_key1": {
-			"lovelace": "ENC[AES256_GCM,data:5djN24Kc5i6Vzw==,iv:BsPeoLB0DTxkOt0qqpOCGVHW2qptWQKj8jGjAMFkGOA=,tag:MgWk9oVj0GtntXvCon3nlA==,type:float]",
-			"rate_limit": "ENC[AES256_GCM,data:P34=,iv:667FK59tT6wJgZ8uER8Vj2Usa/OU1R0/SHxJkopR0kw=,tag:kXxu0D0nZW+h4C2S2Vk5rQ==,type:float]",
+	"api_keys": [
+		{
+			"api_key": "ENC[AES256_GCM,data:uJXPoyCJrn81yPwbtHXefRCiq41Abx0C4+J17C9X1KY=,iv:xDmQ0JnDnfMezrNnF8BfA8God3mmfbkKzNZf5ztzFaU=,tag:3JkmyDwJmZ/ejYxhdoq21A==,type:str]",
+			"lovelace": "ENC[AES256_GCM,data:m24wF2jPk+gGnw==,iv:jg+tViFOQX8MVOrTU/Hv+hO2dD7EPDnUOthLBRfjBgo=,tag:tCUVzA/OJPx0HzS+QDkRQw==,type:float]",
+			"rate_limit": "ENC[AES256_GCM,data:mcI=,iv:KaT5AMVrMKPJUoHhxvhbYei8upAkR+2FAva/tmha6lw=,tag:OnK2WG9irNhCXK9cXet/Zw==,type:float]",
 			"tokens": []
 		},
-		"api_key2": {
-			"lovelace": "ENC[AES256_GCM,data:dCuHK49VbzEfxY8=,iv:YfcVz6ZTlDn0ahGoENc9d/eU4SiM86BDjtDwpgcvzG8=,tag:YXB0oL7hRl0JPPl9bjApwA==,type:float]",
-			"rate_limit": "ENC[AES256_GCM,data:OtqU7sw=,iv:mUuIniHX52sLY3DNkV5DxDPr753dHU127p5NzDa0M/s=,tag:UtvC7TrO+nAQSmw8FXs44w==,type:float]",
+		{
+			"api_key": "ENC[AES256_GCM,data:3sC7uC8JT9MnK+MdxvisTHMIlmLBm92bxdgShUdyDXg=,iv:kpC/3F8vqysZW89P9mz0ZqGYtLfEjmeFIAHCR8UpZlQ=,tag:krw8lIWb2ZFq77mHHABW7Q==,type:str]",
+			"lovelace": "ENC[AES256_GCM,data:m24wF2jPk+gGnw==,iv:jg+tViFOQX8MVOrTU/Hv+hO2dD7EPDnUOthLBRfjBgo=,tag:tCUVzA/OJPx0HzS+QDkRQw==,type:float]",
+			"rate_limit": "ENC[AES256_GCM,data:7QhJi6k=,iv:2sTQ+CjfqXwZeVgeSRINFDb4JUWvSpj4/nVSMOmqyck=,tag:Y1F7FZx5ddtKCmnOjHFecw==,type:float]",
 			"tokens": []
-		},
-		"api_key3": {
-			"lovelace": "ENC[AES256_GCM,data:CVBISlJ6tuI=,iv:IlLSTlzG051NXOk8eSX4YWUTXOBf12DwvU1c91Yffis=,tag:k00D4Ek0udnOoCCCQEXoGA==,type:float]",
-			"rate_limit": "ENC[AES256_GCM,data:CJU=,iv:UOr+P6JBkbd4StZ1RXdRs8BQJOdgCvsLtQy+59tqdaI=,tag:nzrOOzOhhFo/MFuIZkWELQ==,type:float]",
-			"tokens": [
-				{
-					"policy_id": "ENC[AES256_GCM,data:FavxIt9yiefYrPIzV1YgNA3s3E5zUi1rwYxUVRdxA5g06FK9bOadAy7GEpOZR+N87JlpWGZNLdc=,iv:0tvT46dP++nsbQeSkwsNDSUVILKJzzglXHa1JPzNbfY=,tag:PKcrPGI1r9w25300pKnIZA==,type:str]",
-					"token": "ENC[AES256_GCM,data:9AUhB5aLWVanIwl9ANx9An9E,iv:l/70AB31XuxF5hkrgDBixLbTzPfamjrv5Nao3ooD3zY=,tag:kISeISyn9BZ5ix7j8tkMMQ==,type:str]",
-					"quantity": "ENC[AES256_GCM,data:tXg=,iv:3h46dhpMl2lL66DgCqQu+lcymt/fsPOdYAfnz2i+Am0=,tag:EKOFsdXARqziP71nnThjPA==,type:float]"
-				}
-			]
 		}
-	},
+	],
 	"recaptcha_limits": {
+		"api_key": "",
 		"lovelace": "ENC[AES256_GCM,data:MvLNQMyAiDntQw==,iv:DfS1A4LRH3v3GytajNXY1q9C4yxj7zROf+uJkvMogoU=,tag:XC/GvCebJbM9SosWqTNfLw==,type:float]",
 		"rate_limit": "ENC[AES256_GCM,data:QlCNfQ==,iv:k2xfiiTskhjPlOR7VWvmiZeYJXCWbi5LNwzB7/aURig=,tag:022re0GVATW5BRfokarKRg==,type:float]",
 		"tokens": []
 	},
 	"max_stake_key_index": "ENC[AES256_GCM,data:XHOD,iv:nkqqZ9lCQXnirw4zn6c6t4SuLSV3TFpb/n11o+hAqYs=,tag:r3CJ4WddVkHpqGYLEPmGkg==,type:float]",
-	"delegation_utxo_size": "ENC[AES256_GCM,data:d9grmqP9D+w=,iv:4Sw4lK5hHtwMm+ZkL3kE5GQvfTKC5i6vTwuKr1hzUkU=,tag:MfvealwreA8pg4ltCW1RUg==,type:float]",
+	"delegation_utxo_size": "ENC[AES256_GCM,data:2NA=,iv:xD1uskKQ4jPQsWMNVLDn29l5j+hNZSejPe1YoDltZXI=,tag:iih5Sex8esNvnmsqciMhwg==,type:float]",
 	"mnemonic": [
 		"ENC[AES256_GCM,data:gS3aOYwF,iv:9Shzz2Wxp/1QSkTmpojb5eN/Zms92DJy7P39eQsd/5E=,tag:0z0c4UT8V87Lz3ctka6Vhw==,type:str]",
 		"ENC[AES256_GCM,data:dMcZSRE=,iv:LS12z+bxpCFQibVVYbiW8RXrc2lJWxjlT5C5FtYl3DE=,tag:k0xUwts/FA9nVyYAUdFlqQ==,type:str]",
@@ -73,8 +65,8 @@
 			}
 		],
 		"age": null,
-		"lastmodified": "2022-08-07T01:53:26Z",
-		"mac": "ENC[AES256_GCM,data:pPNhjjk4U22hlbBY7FK3AqatQVuJ5IvnXoe3id9sTwFh8HzgYlabLtkN5l4t0WGE/Ivn0kx3Dcariw0eezN1hVDoVig+yEymBVZsyTWnova4R+5zR8neemLms5DBcvXGBqrRSLLRxFQkNEaRiEy6QlSdyEQyePxh60ghi6mfFNA=,iv:BjMJLzQNRV+Gjz9a2xlJq5Ld6BkYZRLcsHP+ufu8Dwk=,tag:WGiDn9Me/0tfQTh38S4ZHg==,type:str]",
+		"lastmodified": "2022-08-07T03:14:49Z",
+		"mac": "ENC[AES256_GCM,data:NP/GbwcAqoi4JqtRHfqtmvqdj6kIdd1iKsQY6zttdXtRCoHTemYBYjDG5WH4H827UPIUC2gItGKxT9TaWQA8R/RgsAkPSz4MKNxgzsDVHHgsLeH5w8SCpgMcCfVC1GUqrfXJxLr6e74lzEoIWnilj1IYmXMMMr1dogFurMR2kUo=,iv:mxNYqr3cboTypQi0rQbyUSVgePA93Cpk1BjMiCuQUi0=,tag:j5ZXm5He90a9UYBD2uzLJg==,type:str]",
 		"pgp": null,
 		"unencrypted_suffix": "_unencrypted",
 		"version": "3.7.2"
