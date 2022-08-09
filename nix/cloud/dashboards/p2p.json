@@ -29,7 +29,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -107,7 +107,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_connectionManager_duplexConns{namespace=\"$namespace\"}",
@@ -123,7 +123,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -201,7 +201,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_peerSelection_hot{namespace=\"$namespace\"}",
@@ -217,7 +217,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -295,7 +295,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_inboundGovernor_hot{namespace=\"$namespace\"}",
@@ -311,7 +311,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -389,7 +389,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_connectionManager_unidirectionalConns{namespace=\"$namespace\"}",
@@ -405,7 +405,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -483,7 +483,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_peerSelection_warm{namespace=\"$namespace\"}",
@@ -499,7 +499,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -577,7 +577,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_inboundGovernor_warm{namespace=\"$namespace\"}",
@@ -593,7 +593,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -671,7 +671,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_connectionManager_incomingConns{namespace=\"$namespace\"}",
@@ -687,7 +687,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -765,7 +765,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_peerSelection_cold{namespace=\"$namespace\"}",
@@ -781,7 +781,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -859,7 +859,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rate(cardano_node_metrics_served_block_latest_count_int{namespace=\"$namespace\"}[1h])/rate(cardano_node_metrics_blockNum_int{namespace=\"$namespace\"}[1h])",
@@ -875,7 +875,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -953,7 +953,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_connectionManager_outgoingConns{namespace=\"$namespace\"}",
@@ -969,7 +969,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1047,7 +1047,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockfetchclient_blockdelay_cdfOne{namespace=\"$namespace\"}",
@@ -1063,7 +1063,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1141,7 +1141,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockadoption_cdfOne_real{namespace=\"$namespace\"}",
@@ -1157,7 +1157,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1235,7 +1235,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_connectionManager_prunableConns{namespace=\"$namespace\"}",
@@ -1251,7 +1251,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1329,7 +1329,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockfetchclient_blockdelay_cdfThree{namespace=\"$namespace\"}",
@@ -1345,7 +1345,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1423,7 +1423,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockadoption_cdfThree_real{namespace=\"$namespace\"}",
@@ -1439,7 +1439,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1517,7 +1517,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rate(cardano_node_metrics_blockfetchclient_lateblocks{namespace=\"$namespace\"}[1h])/rate(cardano_node_metrics_blockNum_int{namespace=\"$namespace\"}[1h])",
@@ -1533,7 +1533,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1611,7 +1611,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockfetchclient_blockdelay_cdfFive{namespace=\"$namespace\"}",
@@ -1627,7 +1627,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1705,7 +1705,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockadoption_cdfFive_real{namespace=\"$namespace\"}",
@@ -1721,7 +1721,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1801,7 +1801,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(quantile_over_time(0.5,cardano_node_metrics_blockfetchclient_blockdelay_s{namespace=\"$namespace\"}[15m]))",
@@ -1813,7 +1813,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(quantile_over_time(0.95,cardano_node_metrics_blockfetchclient_blockdelay_s{namespace=\"$namespace\"}[15m]))",
@@ -1830,7 +1830,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "",
       "fieldConfig": {
@@ -1909,7 +1909,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockadoption_delay_real{namespace=\"$namespace\"}",
@@ -1925,7 +1925,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "",
       "fieldConfig": {
@@ -2004,7 +2004,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(quantile_over_time(0.5, cardano_node_metrics_blockadoption_forgeDelay_real{namespace=\"$namespace\"}[15m]))",
@@ -2016,7 +2016,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(quantile_over_time(0.95, cardano_node_metrics_blockadoption_forgeDelay_real{namespace=\"$namespace\"}[1h]))",
@@ -2028,7 +2028,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(quantile_over_time(0.95, cardano_node_metrics_blockadoption_forgeDelay_real{namespace=\"$namespace\"}[6h:30s]))",
@@ -2056,7 +2056,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "KjvoGGUnz"
+          "uid": "VictoriaMetrics"
         },
         "definition": "label_values(namespace)",
         "hide": 0,

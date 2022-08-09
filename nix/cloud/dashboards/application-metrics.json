@@ -30,7 +30,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -110,7 +110,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_blockNum_int{namespace=\"$namespace\"}",
@@ -127,7 +127,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -207,7 +207,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_slotNum_int{namespace=\"$namespace\"}",
@@ -223,7 +223,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -304,7 +304,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "quantile(0.5,cardano_node_metrics_density_real{namespace=\"$namespace\"}) / 0.05",
@@ -322,7 +322,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -402,7 +402,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_epoch_int{namespace=\"$namespace\"}",
@@ -417,7 +417,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "Calculated at a 1 hr averaging window",
       "fieldConfig": {
@@ -499,7 +499,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rate(cardano_node_metrics_Forge_node_is_leader_int{namespace=\"$namespace\"}[1h])/rate(cardano_node_metrics_slotNum_int{namespace=\"$namespace\"}[1h]) / 0.05",
@@ -510,7 +510,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "sum(rate(cardano_node_metrics_Forge_node_is_leader_int{namespace=\"$namespace\"}[1h])/rate(cardano_node_metrics_slotNum_int{namespace=\"$namespace\"}[1h])) / 0.05",
@@ -525,7 +525,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -607,7 +607,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_Forge_forged_int{namespace=\"$namespace\"} - cardano_node_metrics_Forge_adopted_int{namespace=\"$namespace\"}",
@@ -622,7 +622,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -702,7 +702,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_slotInEpoch_int{namespace=\"$namespace\"}",
@@ -717,7 +717,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -796,7 +796,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rate(cardano_node_metrics_slotsMissedNum_int{namespace=\"$namespace\"}[1h]) * 3600",
@@ -812,7 +812,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "",
       "fieldConfig": {
@@ -891,7 +891,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(avg_over_time(cardano_node_metrics_txsInMempool_int{namespace=\"$namespace\"}[30m]))",
@@ -907,7 +907,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -987,7 +987,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rate(cardano_node_metrics_blockNum_int{namespace=\"$namespace\"}[150s])*60",
@@ -1003,7 +1003,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1083,7 +1083,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": false,
           "expr": "quantile(0.5, cardano_node_metrics_blockfetchclient_blocksize{namespace=\"$namespace\"} / 66636)",
@@ -1097,7 +1097,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(avg_over_time(cardano_node_metrics_blockfetchclient_blocksize{namespace=\"$namespace\"}[15m]) / 66636)",
@@ -1110,7 +1110,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(avg_over_time(cardano_node_metrics_blockfetchclient_blocksize{namespace=\"$namespace\"}[4h]) / 66636)",
@@ -1123,7 +1123,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(avg_over_time(cardano_node_metrics_blockfetchclient_blocksize{namespace=\"$namespace\"}[24h]) / 66636)",
@@ -1136,7 +1136,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "avg(avg_over_time(cardano_node_metrics_blockfetchclient_blocksize{namespace=\"$namespace\"}[7d]) / 66636)",
@@ -1153,7 +1153,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "Remaining faucet funds in ADA",
       "fieldConfig": {
@@ -1234,7 +1234,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_faucet_metrics_value_available{namespace=\"$namespace\"} / 1e6",
@@ -1249,7 +1249,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1314,7 +1314,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "quantile(0.5,cardano_node_metrics_currentKESPeriod_int{namespace=\"$namespace\"})",
@@ -1329,7 +1329,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1410,7 +1410,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "irate((rts_gc_cpu_ms{namespace=\"$namespace\"} + rts_gc_mutator_cpu_ms{namespace=\"$namespace\"} + rts_gc_init_cpu_ms{namespace=\"$namespace\"})[1m]) / 1000",
@@ -1425,7 +1425,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1505,7 +1505,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rts_gc_current_bytes_used{namespace=\"$namespace\"}",
@@ -1520,7 +1520,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "KES periods remaining",
       "fieldConfig": {
@@ -1601,7 +1601,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "cardano_node_metrics_remainingKESPeriods_int{namespace=\"$namespace\"}",
@@ -1616,7 +1616,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "description": "Counts only memory that is physically free",
       "fieldConfig": {
@@ -1696,7 +1696,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rts_gc_peak_megabytes_allocated{namespace=\"$namespace\"}",
@@ -1711,7 +1711,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "KjvoGGUnz"
+        "uid": "VictoriaMetrics"
       },
       "fieldConfig": {
         "defaults": {
@@ -1790,7 +1790,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "KjvoGGUnz"
+            "uid": "VictoriaMetrics"
           },
           "exemplar": true,
           "expr": "rts_gc_max_bytes_used{namespace=\"$namespace\"}",
@@ -1817,7 +1817,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "KjvoGGUnz"
+          "uid": "VictoriaMetrics"
         },
         "definition": "label_values(namespace)",
         "hide": 0,
