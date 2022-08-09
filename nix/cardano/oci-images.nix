@@ -22,6 +22,19 @@ in {
     ];
     config.User = "1000:1000";
   };
+  cardano-tracer = buildDebugImage entrypoints.cardano-tracer {
+    name = "registry.ci.iog.io/cardano-tracer";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = entrypoints.cardano-tracer.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.cardano-tracer];})
+    ];
+    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc];
+    config.Cmd = [
+      "${entrypoints.cardano-tracer}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
     maxLayers = 25;

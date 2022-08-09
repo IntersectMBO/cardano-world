@@ -317,6 +317,7 @@ in {
       [ -n "''${HOST_IPV6_ADDR:-}" ] && args+=("--host-ipv6-addr" "$HOST_IPV6_ADDR")
       [ -n "''${PORT:-}" ] && args+=("--port" "$PORT")
       [ -n "''${SOCKET_PATH:-}" ] && args+=("--socket-path" "$SOCKET_PATH")
+      [ -n "''${TRACER_SOCKET_PATH:-}" ] && args+=("--tracer-socket-path-connect" "$TRACER_SOCKET_PATH")
 
       # Ignore RTS flags for now. Need to figure out best way to pass a list
       #[ -n "''${RTS_FLAGS:-}" ] && args+=$RTS_FLAGS
@@ -326,6 +327,9 @@ in {
       [ -n "''${SHELLEY_KES_KEY:-}" ] && args+=("--shelley-kes-key" "$SHELLEY_KES_KEY")
       [ -n "''${SHELLEY_VRF_KEY:-}" ] && args+=("--shelley-vrf-key" "$SHELLEY_VRF_KEY")
       [ -n "''${SHELLEY_OPCERT:-}" ] && args+=("--shelley-operational-certificate" "$SHELLEY_OPCERT")
+
+      [ -n "''${SHUTDOWN_ON_SLOT_SYNCED:-}" ] && args+=("--shutdown-on-slot-synced" "$SHUTDOWN_ON_SLOT_SYNCED")
+      [ -n "''${SHUTDOWN_ON_BLOCK_SYNCED:-}" ] && args+=("--shutdown-on-block-synced" "$SHUTDOWN_ON_BLOCK_SYNCED")
 
       if [ -z "''${NODE_TOPOLOGY:-}" ]; then
         echo "Doing legacy service discovery ..." >&2
@@ -354,12 +358,16 @@ in {
   };
 
   cardano-tracer = writeShellApplication {
-    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    runtimeInputs = [nixpkgs.coreutils];
     debugInputs = [packages.cardano-tracer];
     name = "entrypoint";
     text = ''
-      args+("")
-      exec ${packages.cardano-tracer}/bin/cardano-tracer run "''${args[@]}"
+      [ -z "''${TRACER_CONFIG:-}" ] && echo "TRACER_CONFIG env var must be set -- aborting" && exit 1
+      args+=("--config" "$TRACER_CONFIG")
+      [ -z "''${HOME:-}" ] && echo "HOME env var must be set -- aborting" && exit 1
+      mkdir -p "$HOME"
+      cd "$HOME"
+      exec ${packages.cardano-tracer}/bin/cardano-tracer "''${args[@]}"
     '';
   };
 
