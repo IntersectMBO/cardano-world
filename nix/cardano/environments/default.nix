@@ -136,16 +136,7 @@
       networkConfig = import ./shelley_qa-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
-      edgeNodes = [
-        {
-          addr = relaysNew;
-          port = 30000;
-        }
-        {
-          addr = relaysOld;
-          port = 3001;
-        }
-      ];
+      edgePort = 3001;
       submitApiConfig = mkSubmitApiConfig "shelley_qa" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "shelley_qa" nodeConfig;
       usePeersFromLedgerAfterSlot = 23574838;
@@ -188,7 +179,7 @@
       ];
       submitApiConfig = mkSubmitApiConfig "preprod" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
-      usePeersFromLedgerAfterSlot = 3869000;
+      usePeersFromLedgerAfterSlot = -1;
     };
     # used for SRE development
     sre = rec {

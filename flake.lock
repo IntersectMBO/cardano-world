@@ -932,7 +932,7 @@
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "1.35.3-rc1",
+        "ref": "1.35.3",
         "repo": "cardano-node",
         "type": "github"
       }
