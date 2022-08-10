@@ -41,10 +41,6 @@ in
             attribute = "\${meta.cardano}";
             operator = "is_set";
           }
-          {
-            operator = "distinct_hosts";
-            value = "true";
-          }
         ];
         spread = [{attribute = "\${attr.platform.aws.placement.availability-zone}";}];
         # ----------
