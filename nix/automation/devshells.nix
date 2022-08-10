@@ -48,6 +48,7 @@ in {
       capsules.cloud
       capsules.integrations
       inputs.cells.cardano.devshellProfiles.dev
+      inputs.cells.cardano.devshellProfiles.world
     ];
   };
   devops = std.lib.mkShell {
