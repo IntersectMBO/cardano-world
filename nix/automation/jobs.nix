@@ -8,7 +8,7 @@
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (lib.strings) fileContents;
 
-  cabal-project-utils = nixpkgs.callPackages iohk-nix.utils.cabal-project { };
+  cabal-project-utils = nixpkgs.callPackages iohk-nix.utils.cabal-project {};
 
   updateProposalTemplate = ''
     # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $PROPOSAL_ARGS
@@ -92,15 +92,21 @@ in {
   shell-check = nixpkgs.callPackage inputs.iohk-nix.checks.shell {
     src = inputs.self;
   };
-  mkHydraRequiredJob = nonRequiredPaths: jobs: nixpkgs.releaseTools.aggregate {
-    name = "github-required";
-    meta.description = "All jobs required to pass CI";
-    constituents = lib.collect lib.isDerivation
-      (lib.mapAttrsRecursiveCond (v: !(lib.isDerivation v))
-        (path: value:
-          let stringPath = lib.concatStringsSep "." path; in if lib.isAttrs value && (lib.any (p: p stringPath) nonRequiredPaths) then { } else value)
-        jobs);
-  };
+  mkHydraRequiredJob = nonRequiredPaths: jobs:
+    nixpkgs.releaseTools.aggregate {
+      name = "github-required";
+      meta.description = "All jobs required to pass CI";
+      constituents =
+        lib.collect lib.isDerivation
+        (lib.mapAttrsRecursiveCond (v: !(lib.isDerivation v))
+          (path: value: let
+            stringPath = lib.concatStringsSep "." path;
+          in
+            if lib.isAttrs value && (lib.any (p: p stringPath) nonRequiredPaths)
+            then {}
+            else value)
+          jobs);
+    };
   # run-local-node = let
   #   envName = "testnet";
   #   config =
@@ -479,4 +485,53 @@ in {
         gh release create -d "$TAG" --notes-file ${release-notes}
       '';
     };
+  generate-and-run-node = writeShellApplication {
+    name = "generate-and-run-node";
+    runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
+    text = ''
+      # Inputs: $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS
+      export SLOT_LENGTH=''${SLOT_LENGTH:-200}
+      export SECURITY_PARAM=''${SECURITY_PARAM:-8}
+      export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-1}
+      export TESTNET_MAGIC=''${TESTNET_MAGIC:-42}
+      export TEMPLATE_DIR=''${TEMPLATE_DIR:-"$PRJ_ROOT/nix/cardano/environments/testnet-template"}
+      export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/local-dev"}
+      rm -rf "$GENESIS_DIR"
+      mkdir -p "$GENESIS_DIR"
+      cardano-cli genesis create-cardano \
+        --genesis-dir "$GENESIS_DIR" \
+        --gen-genesis-keys "$NUM_GENESIS_KEYS" \
+        --supply 30000000000000000 \
+        --testnet-magic "$TESTNET_MAGIC" \
+        --slot-coefficient 0.05 \
+        --byron-template "$TEMPLATE_DIR/byron.json" \
+        --shelley-template "$TEMPLATE_DIR/shelley.json" \
+        --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --node-config-template "$TEMPLATE_DIR/config.json" \
+        --security-param "$SECURITY_PARAM" \
+        --slot-length "$SLOT_LENGTH" \
+      # TODO remove when genesis generator outputs non-extended-key format
+      pushd "$GENESIS_DIR/genesis-keys"
+        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
+        do
+          mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
+          cardano-cli key non-extended-key \
+            --extended-verification-key-file shelley.00"$i".vkey-ext \
+            --verification-key-file shelley.00"$i".vkey
+
+        done
+
+      popd
+      cp "$TEMPLATE_DIR/topology-empty-p2p.json" "$GENESIS_DIR/topology.json"
+      cardano-node run \
+        --config "$GENESIS_DIR/node-config.json" \
+        --database-path "$GENESIS_DIR/db" \
+        --topology "$GENESIS_DIR/topology.json" \
+        +RTS -N2 -A16m -qg -qb -M3584.000000M -RTS \
+        --socket-path "$GENESIS_DIR/node.socket" \
+        --shelley-kes-key "$GENESIS_DIR/delegate-keys/shelley.000.kes.skey" \
+        --shelley-vrf-key "$GENESIS_DIR/delegate-keys/shelley.000.vrf.skey" \
+        --shelley-operational-certificate "$GENESIS_DIR/delegate-keys/shelley.000.opcert.json"
+    '';
+  };
 }
