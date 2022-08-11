@@ -78,18 +78,6 @@ in
           group = l.removeAttrs node' ["task"];
           node = group // {task.node = node'.task.node;};
         in
-          merge
-          # task.vector ...
-          (vector.nomadTask.default {
-            inherit namespace;
-            endpoints = [
-              # prometheus metrics for oura
-              "http://127.0.0.1:9186/metrics"
-              # prometheus metrics for cardano-node
-              # "http://127.0.0.1:12798/metrics"
-            ];
-          })
-          (
             merge node
             {
               count = scaling;
@@ -102,6 +90,12 @@ in
                 port.oura = {
                   # port from https://github.com/txpipe/oura/blob/main/book/src/advanced/pipeline_metrics.md
                   to = 9186;
+                };
+              };
+              volume = {
+                "persist-oura-local" = {
+                  source = "${namespace}-persist-oura-local";
+                  type = "host";
                 };
               };
               task = {
@@ -125,6 +119,11 @@ in
                   kill_timeout = "30s";
                   resources.cpu = 2000;
                   resources.memory = 4096;
+                  volume_mount = {
+                    destination = persistanceMount;
+                    propagation_mode = "private";
+                    volume = "persist-oura-local";
+                  };
                   vault = {
                     change_mode = "noop";
                     env = true;
@@ -133,6 +132,6 @@ in
                 };
               };
             }
-          );
+          ;
       };
     }

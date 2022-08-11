@@ -1,5 +1,8 @@
 {
   "ouraConfig": {
+    "source": {
+      "magic": 9
+    },
     "sink": {
       "type": "Terminal",
       "throttle_min_span_millis": 500

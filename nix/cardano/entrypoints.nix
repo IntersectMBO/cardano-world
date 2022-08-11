@@ -607,26 +607,11 @@
 
       json=$("''${cmd[@]}") 2>/dev/null
 
-      # the menu of environments that we ship as built-in envs
-      ${library.copyEnvsTemplate environments}
-
-      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
-
-      NODE_CONFIG_DATA=$(echo "$json" | jq '.nodeConfig')
-      echo "$NODE_CONFIG_DATA" > "$NODE_CONFIG"
-
-      NETWORK_MAGIC=$(jq '.networkMagic' "$(
-        file="$(echo "$NODE_CONFIG_DATA" | jq '.ShelleyGenesisFile')"
-        folder="$(dirname "$NODE_CONFIG")"
-        [[ "$file" == /* ]] && echo "$file" || echo "$folder/$file"
-      )")
-
       SOURCE_CONFIG_DATA=$( jq -n \
         --arg sp "$SOCKET_PATH" \
-        --arg nm "$NETWORK_MAGIC" \
-        '{metrics: {}, source: {type: "N2C", address: ["Unix", $sp], magic: $nm}}' )
+        '{metrics: {}, source: {type: "N2C", address: ["Unix", $sp]}}' )
 
-      OURA_CONFIG="$DATA_DIR/config/$ENVIRONMENT/oura-config.json"
+      OURA_CONFIG="$DATA_DIR/config.json"
       echo "[$json,$SOURCE_CONFIG_DATA]" | jq '.[0].ouraConfig + .[1]'  > "$OURA_CONFIG"
 
       exec ${packages.oura}/bin/oura daemon --config "$OURA_CONFIG"

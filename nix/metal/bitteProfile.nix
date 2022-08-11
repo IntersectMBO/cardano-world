@@ -109,6 +109,11 @@ in {
                     ["vasil-dev-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["vasil-dev-persist-oura-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];
