@@ -26,7 +26,7 @@ Informed: Cardano Core Tribe
 
 - [Node Config](environments/vasil-dev/config.json)
 - [Node Topology](environments/vasil-dev/topology.json)
-- [Db Sync Config](environments/vasil-dev/config.json)
+- [DB Sync Config](environments/vasil-dev/db-sync-config.json)
 - [Submit API Config](environments/vasil-dev/submit-api-config.json)
 - [Byron Genesis](environments/vasil-dev/byron-genesis.json)
 - [Shelley Genesis](environments/vasil-dev/shelley-genesis.json)
@@ -82,7 +82,7 @@ Informed: Cardano Core Tribe, COO, Director of Engineering
 
 - [Node Config](environments/preview/config.json)
 - [Node Topology](environments/preview/topology.json)
-- [Db Sync Config](environments/preview/config.json)
+- [DB Sync Config](environments/preview/db-sync-config.json)
 - [Submit API Config](environments/preview/submit-api-config.json)
 - [Byron Genesis](environments/preview/byron-genesis.json)
 - [Shelley Genesis](environments/preview/shelley-genesis.json)
@@ -111,7 +111,7 @@ Informed: Cardano Core Tribe, COO, Director of Engineering, VP Community
 
 - [Node Config](environments/preprod/config.json)
 - [Node Topology](environments/preprod/topology.json)
-- [Db Sync Config](environments/preprod/config.json)
+- [DB Sync Config](environments/preprod/db-sync-config.json)
 - [Submit API Config](environments/preprod/submit-api-config.json)
 - [Byron Genesis](environments/preprod/byron-genesis.json)
 - [Shelley Genesis](environments/preprod/shelley-genesis.json)
