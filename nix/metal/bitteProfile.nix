@@ -101,12 +101,27 @@ in {
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
+                    ["vasil-dev-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
                     ["preprod-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    ["vasil-dev-persist-db-sync-local"]
+                    ["preprod-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["preview-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["preview-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
                   # for scheduling constraints
@@ -219,6 +234,7 @@ in {
                 entryPoints =
                   lib.pipe {
                     preprod = 30000;
+                    preview = 30002;
                     shelley-qa = 30003;
                     vasil-dev = 30001;
                   } [

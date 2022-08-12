@@ -91,6 +91,7 @@
         (inputs.std.data "namespaces/vasil-dev")
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
+        (inputs.std.data "namespaces/preview")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")

@@ -181,6 +181,27 @@
       dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
       usePeersFromLedgerAfterSlot = -1;
     };
+    preview = rec {
+      useByronWallet = false;
+      private = false;
+      relaysNew = "preview-node.world.dev.cardano.org";
+      explorerUrl = "https://preview-explorer.world.dev.cardano.org";
+      smashUrl = "https://preview-smash.world.dev.cardano.org";
+      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      networkConfig = import ./preview-config.nix;
+      consensusProtocol = networkConfig.Protocol;
+      nodeConfig = defaultLogConfig // networkConfig;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = 30002;
+        }
+      ];
+      submitApiConfig = mkSubmitApiConfig "preview" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
+      usePeersFromLedgerAfterSlot = -1;
+    };
+
     # used for SRE development
     sre = rec {
       useByronWallet = false;
