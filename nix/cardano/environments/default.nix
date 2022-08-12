@@ -179,7 +179,7 @@
       ];
       submitApiConfig = mkSubmitApiConfig "preprod" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
-      usePeersFromLedgerAfterSlot = -1;
+      usePeersFromLedgerAfterSlot = 4642000;
     };
     preview = rec {
       useByronWallet = false;
@@ -199,7 +199,7 @@
       ];
       submitApiConfig = mkSubmitApiConfig "preview" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
-      usePeersFromLedgerAfterSlot = -1;
+      usePeersFromLedgerAfterSlot = 322000;
     };
 
     # used for SRE development

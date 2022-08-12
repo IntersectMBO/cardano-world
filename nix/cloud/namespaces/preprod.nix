@@ -7,7 +7,7 @@
   inherit (cell) constants;
 
   persistanceMount = "/persist";
-  LEDGER_SLOT = "-1"; # cardano.environments.preprod.usePeersFromLedgerAfterSlot;
+  LEDGER_SLOT = cardano.environments.preprod.usePeersFromLedgerAfterSlot;
 in {
   sp-1 = let
     jobname = "cardano-sp-1";
@@ -110,5 +110,4 @@ in {
         };
       };
     };
-
-  }
+}

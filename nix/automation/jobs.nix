@@ -363,6 +363,61 @@ in {
       cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
     '';
   };
+  update-stake-pools = writeShellApplication {
+    name = "update-stake-pools";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $POOL_RELAY, $POOL_RELAY_PORT
+      WITNESSES=$(("$NUM_POOLS" * 2 + 1))
+      END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
+      CHANGE_ADDRESS=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --testnet-magic "$TESTNET_MAGIC")
+
+      mkdir -p "$STAKE_POOL_DIR"
+
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
+      do
+        cardano-cli stake-pool registration-certificate \
+          --testnet-magic "$TESTNET_MAGIC" \
+          --cold-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-cold.vkey \
+          --pool-cost 500000000 \
+          --pool-margin 1 \
+          --pool-owner-stake-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-owner-stake.vkey \
+          --pool-pledge 100000000000000 \
+          --single-host-pool-relay "$POOL_RELAY" \
+          --pool-relay-port "$POOL_RELAY_PORT" \
+          --pool-reward-account-verification-key-file "$STAKE_POOL_DIR"/sp-0-reward-stake.vkey \
+          --vrf-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-vrf.vkey \
+          --out-file sp-"$i"-registration.cert
+      done
+      # generate transaction
+      TXIN=$(cardano-cli query utxo --address "$CHANGE_ADDRESS" --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout \
+              | jq -r 'to_entries[0]|.key'
+      )
+      # generate arrays needed for build/sign commands
+      BUILD_TX_ARGS=()
+      SIGN_TX_ARGS=()
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
+      do
+        BUILD_TX_ARGS+=("--certificate-file" "sp-$i-registration.cert")
+        SIGN_TX_ARGS+=("--signing-key-file" "$STAKE_POOL_DIR/sp-$i-cold.skey")
+        SIGN_TX_ARGS+=("--signing-key-file" "$STAKE_POOL_DIR/sp-$i-owner-stake.skey")
+      done
+
+      cardano-cli transaction build \
+        --tx-in "$TXIN" \
+        --change-address "$CHANGE_ADDRESS" \
+        --witness-override "$WITNESSES" \
+        "''${BUILD_TX_ARGS[@]}" \
+        --testnet-magic "$TESTNET_MAGIC" \
+        --out-file tx-pool-reg.txbody
+      cardano-cli transaction sign \
+        --tx-body-file tx-pool-reg.txbody \
+        --out-file tx-pool-reg.txsigned \
+        --signing-key-file "$PAYMENT_KEY".skey \
+        "''${SIGN_TX_ARGS[@]}"
+      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
+    '';
+  };
   gen-custom-kv-config-pools =
     writeShellApplication {
       name = "gen-custom-kv-config-pools";
