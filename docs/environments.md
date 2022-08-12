@@ -27,7 +27,7 @@ Informed: Cardano Core Tribe
 - [Node Config](environments/vasil-dev/config.json)
 - [Node Topology](environments/vasil-dev/topology.json)
 - [Db Sync Config](environments/vasil-dev/config.json)
-- [Subit API Config](environments/vasil-dev/config.json)
+- [Submit API Config](environments/vasil-dev/submit-api-config.json)
 - [Byron Genesis](environments/vasil-dev/byron-genesis.json)
 - [Shelley Genesis](environments/vasil-dev/shelley-genesis.json)
 - [Alonzo Genesis](environments/vasil-dev/alonzo-genesis.json)
@@ -80,6 +80,14 @@ Accountable: SRE Director/Release Manager
 Consulted: Release Manager
 Informed: Cardano Core Tribe, COO, Director of Engineering
 
+- [Node Config](environments/preview/config.json)
+- [Node Topology](environments/preview/topology.json)
+- [Db Sync Config](environments/preview/config.json)
+- [Submit API Config](environments/preview/submit-api-config.json)
+- [Byron Genesis](environments/preview/byron-genesis.json)
+- [Shelley Genesis](environments/preview/shelley-genesis.json)
+- [Alonzo Genesis](environments/preview/alonzo-genesis.json)
+
 ## Pre-Production Testnet
 
 Usage: Testing release candidates and mainnet releases. Forks at approximately same time as mainnet (within an epoch of each other).
@@ -104,7 +112,7 @@ Informed: Cardano Core Tribe, COO, Director of Engineering, VP Community
 - [Node Config](environments/preprod/config.json)
 - [Node Topology](environments/preprod/topology.json)
 - [Db Sync Config](environments/preprod/config.json)
-- [Subit API Config](environments/preprod/config.json)
+- [Submit API Config](environments/preprod/submit-api-config.json)
 - [Byron Genesis](environments/preprod/byron-genesis.json)
 - [Shelley Genesis](environments/preprod/shelley-genesis.json)
 - [Alonzo Genesis](environments/preprod/alonzo-genesis.json)
