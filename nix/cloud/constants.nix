@@ -33,5 +33,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    preview = {
+      namespace = "preview";
+      domain = "preview.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }

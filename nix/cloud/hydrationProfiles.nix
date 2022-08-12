@@ -37,6 +37,7 @@ in {
         shelley-qa.description = "Cardano Shelley Internal QA";
         vasil-dev.description = "Cardano Vasil HF Development Testnet";
         preprod.description = "Cardano Pre-Production Environment";
+        preview.description = "Cardano Preview Environment";
       };
     };
 
@@ -58,6 +59,11 @@ in {
             policy = "write";
             intentions = "write";
           };
+          service_prefix."preview-" = {
+            policy = "write";
+            intentions = "write";
+          };
+
         };
 
         nomad.admin = {
@@ -99,9 +105,21 @@ in {
               "alloc-lifecycle"
             ];
           };
+          namespace.preview = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
           host_volume."preprod-*".policy = "write";
+          host_volume."preview-*".policy = "write";
         };
       };
     };

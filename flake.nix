@@ -153,6 +153,7 @@
       vasil-qa = mkNomadJobs cloud."namespaces/vasil-qa";
       vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
       preprod = mkNomadJobs cloud."namespaces/preprod";
+      preview = mkNomadJobs cloud."namespaces/preview";
     })
     # 3) hydra jobs
     (
