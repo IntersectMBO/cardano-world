@@ -106,6 +106,8 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfMaxStakeKeyIndex :: Maybe Word32
   , fcfDebug :: Bool
   , fcfDelegationUtxoSize :: Integer
+  , fcfRecaptchaSiteKey :: Text
+  , fcfRecaptchaSecretKey :: Text
   } deriving (Generic, Show)
 
 instance FromJSON FaucetConfigFile where
@@ -118,6 +120,8 @@ instance FromJSON FaucetConfigFile where
     fcfMaxStakeKeyIndex <- o .: "max_stake_key_index"
     fcfDebug <- o .: "debug"
     fcfDelegationUtxoSize <- o .: "delegation_utxo_size"
+    fcfRecaptchaSiteKey <- o .: "recaptcha_site_key"
+    fcfRecaptchaSecretKey <- o .: "recaptcha_secret_key"
     pure FaucetConfigFile{..}
 
 data FaucetValue = Ada Lovelace
@@ -131,7 +135,7 @@ instance ToJSON FaucetValue where
   toJSON (Ada lovelace) = object [ "lovelace" .= lovelace ]
   toJSON (FaucetValueMultiAsset _) = String "unsupported"
 
-data UtxoStats = UtxoStats (Map FaucetValue Integer) deriving Show
+data UtxoStats = UtxoStats (Map FaucetValue Int) deriving Show
 
 data SiteVerifyRequest = SiteVerifyRequest
   { svrSecret :: Text

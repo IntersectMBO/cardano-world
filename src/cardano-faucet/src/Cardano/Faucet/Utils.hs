@@ -14,16 +14,31 @@ import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, takeTMVar, putTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Map.Strict qualified as Map
+import qualified Prelude
 
 computeUtxoStats :: Map TxIn (TxOut CtxUTxO era) -> UtxoStats
 computeUtxoStats utxo = do
   let
-    convertValue :: TxOut ctx era -> [FaucetValue]
+    convertValue :: TxOut ctx era -> FaucetValue
     -- TODO, also report tokens in this list/type
-    convertValue (TxOut _ value _ _) = [ getValue value ]
-    folder :: UtxoStats -> FaucetValue -> UtxoStats
-    folder (UtxoStats m) v = UtxoStats $ Map.insert v ((fromMaybe 0 $ Map.lookup v m) + 1) m
-  foldl' folder (UtxoStats mempty) $ concat $ map convertValue $ Map.elems utxo
+    convertValue (TxOut _ value _ _) = getValue value
+    --folder :: UtxoStats -> FaucetValue -> UtxoStats
+    --folder (UtxoStats m) v = UtxoStats $ Map.insert v ((fromMaybe 0 $ Map.lookup v m) + 1) m
+  UtxoStats $ Map.fromList $ countLength $ map convertValue $ Map.elems utxo
+  --foldl' folder (UtxoStats mempty) $ concat $ map convertValue $ Map.elems utxo
+
+countDuplicates :: Ord a => [a] -> [(a, Int)]
+countDuplicates = map fn . group . sort
+  where
+    fn (x:xs) = (x, 1 + length xs)
+    fn [] = Prelude.error "not possible"
+
+-- from https://hackage.haskell.org/package/polysemy-plugin-0.4.3.1/docs/Polysemy-Plugin-Fundep-Utils.html#v:countLength
+-- | Count the number of times 'a' is present in the list.
+countLength ::  Eq a => [a] -> [(a, Int)]
+countLength as =
+  let grouped = group as
+   in zipWith (curry $ bimap Prelude.head Prelude.length) grouped grouped
 
 takeOneUtxo :: TMVar (Map TxIn (TxOut ctx era)) -> FaucetValue -> STM (Maybe (TxIn, TxOut ctx era))
 takeOneUtxo utxoTMVar value = do
