@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -9,7 +10,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Cardano.Faucet.Web (userAPI, server, run, SiteVerifyRequest(..)) where
+module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
 import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), AddressAny, Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
 import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32)
@@ -29,20 +30,22 @@ import Data.IP
 import Data.List.Split
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
+import Data.Text.Lazy.Encoding qualified as LT
 import Data.Time.Clock
-import Formatting ((%), format)
+import Formatting ((%), format, sformat)
 import Formatting.ShortFormatters hiding (x, b, f, l)
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
 import Network.Socket (SockAddr(SockAddrInet))
 import Servant
-import Servant.Client
+import Servant.Client (ClientM, ClientError, client, runClientM, mkClientEnv, BaseUrl(BaseUrl), Scheme(Https))
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text.Lazy as LT
 import qualified Prelude (read, String, id)
+import Network.HTTP.Media.MediaType
 
--- https://faucet.cardano-testnet.iohkdev.io/send-money/addr_test1vr3g684kyarnug89c7p7gqxr5y8t45g7q4ge4u8hghndvugn6yn5s?apiKey=&g-recaptcha-response=03AGdBq24qppnXuY6fIcCG2Hrpqxfp0V9Xd3oDqElSikr38sAuPMmpO4dKke9O0NzhtFnv_-cXVSs8h4loNDBDeM3rIb5UDHmoCsIylCHXmOovfDIOWM7417-9nW_8XegF7murR2CpVGDp8js7L33ygKqbPUus8AQncJ26AikCDiDNOe7_u6pHb20pR_a8a2cjfcRu6Ptrq8uTWxk2QiinvSctAZbnyTRscupJNDVvoJ1l52LNXOFNTFowRuyaRu1K9mLAJvbwy5n1il_05UGWRNvK3raCUA1DKhf0l9yOCfEvoNJNp10rTG5JFWeYaIiI3-ismQITIsR3u4akYy1PPjmNyF12vfcjlgbvXdGOcodyiZvKulnp2XNSQVIu-OHiwERumU5IISD9VRzY804Z1tKkRB7_PxpUvE7SOAKdOqmkvZLMn8ob1Fz8I562qiV8oezkVkSqTfqQbK2Vsqn3dYDd-IY0pjUhnw
--- http[s]://$FQDN:$PORT/send-money/$ADDRESS
+-- create recaptcha api keys at https://www.google.com/recaptcha/admin/create
+-- reCAPTCHA v2, "i am not a robot"
 
 newtype ForwardedFor = ForwardedFor [IPv4] deriving (Eq, Show)
 
@@ -56,16 +59,25 @@ instance FromHttpApiData ForwardedFor where
 instance FromHttpApiData PoolId where
   parseUrlPiece input = either (Left . T.pack) (Right . Prelude.id) $ eitherDecode (LBS.fromStrict $ encodeUtf8 $ "\"" <> input <> "\"")
 
-type SendMoney = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Post '[JSON] SendMoneyReply
+data HTML
+instance Accept HTML where
+  contentType _ = "text" // "html" /: ("charset", "utf-8")
+
+instance MimeRender HTML Text where
+  mimeRender _ = LT.encodeUtf8 . LT.fromStrict
+
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Post '[JSON] SendMoneyReply
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Get '[JSON] SendMoneyReply
 type Metrics = "metrics" :> Get '[PlainText] Text
 type DelegateStake = "delegate" :> Capture "poolid" PoolId :> Get '[JSON] DelegationReply
---type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
-type SiteVerifyMock = "videos" :> "private" :> "test.php" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
+type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
+type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
+type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
 
 -- faucet root dir
-type RootDir = SendMoney :<|> Metrics :<|> DelegateStake
+type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStake :<|> GetSiteKey :<|> GetBasicFaucet
 -- recaptcha root dir
-type CaptchaRootDir = SiteVerifyMock
+type CaptchaRootDir = SiteVerify
 
 userAPI :: Proxy RootDir
 userAPI = Proxy
@@ -73,27 +85,24 @@ userAPI = Proxy
 recaptchaApi :: Proxy CaptchaRootDir
 recaptchaApi = Proxy
 
-siteVerifyMock :: SiteVerifyRequest -> ClientM SiteVerifyReply
-siteVerifyMock = client recaptchaApi
+siteVerify :: SiteVerifyRequest -> ClientM SiteVerifyReply
+siteVerify = client recaptchaApi
 
-doSiteVerify :: Text -> Text -> Maybe Text -> ClientM SiteVerifyReply
-doSiteVerify secret token mRemoteIp = do
-  res <- siteVerifyMock $ SiteVerifyRequest secret token mRemoteIp
-  pure res
-
-run :: IO ()
-run = do
-  --manager' <- newManager defaultManagerSettings
+doSiteVerify :: Text -> Text -> IO (Either ClientError SiteVerifyReply)
+doSiteVerify secret token = do
   manager' <- newTlsManagerWith tlsManagerSettings
-  res <- runClientM (doSiteVerify "secret" "token" (Just "1.2.3.4")) (mkClientEnv manager' (BaseUrl Https "ext.earthtools.ca" 443 ""))
-  print res
+  runClientM (siteVerify $ SiteVerifyRequest secret token Nothing) (mkClientEnv manager' (BaseUrl Https "www.google.com" 443 ""))
 
 server :: IsShelleyBasedEra era =>
   CardanoEra era
   -> ShelleyBasedEra era
   -> FaucetState era
+  -> Text
   -> Server RootDir
-server era sbe faucetState = handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState
+server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleGetSiteKey (fcfRecaptchaSiteKey $ fsConfig faucetState) :<|> (handleStaticFile indexHtml)
+
+handleStaticFile :: Text -> Servant.Handler Text
+handleStaticFile = pure
 
 getKeyToDelegate :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)]) -> PoolId -> STM DelegationAtomicResult
 getKeyToDelegate tmvar poolid = do
@@ -201,8 +210,18 @@ checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
         Nothing -> pure (lovelace,tokens)
         Just time -> left $ FaucetWebErrorRateLimitExeeeded time (serialiseAddress addr)
 
-checkRecaptcha :: Monad m => m Bool
-checkRecaptcha = pure False
+checkRecaptcha :: Text -> Maybe Text -> IO Bool
+checkRecaptcha _ Nothing = pure False
+checkRecaptcha secret (Just token) = do
+  res <- doSiteVerify secret token
+  print res
+  case res of
+    (Left _err) -> do
+      pure False
+    (Right (SiteVerifyReply True _ts _host _error)) -> do
+      pure True
+    _ -> do
+      pure False
 
 data MetricValue = MetricValueInt Integer | MetricValueFloat Float | MetricValueStr Text deriving Show
 
@@ -234,26 +253,31 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       isRequiredSize :: Lovelace -> Maybe (Text, MetricValue)
       isRequiredSize v = if (elem v fsBucketSizes) then Just ("is_valid",MetricValueInt 1) else Nothing
       isForDelegation v = if (v == Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)) then Just ("for_delegation",MetricValueInt 1) else Nothing
-      toStats :: (FaucetValue, Integer) -> Metric
+      toStats :: FaucetValue -> Int -> Metric
       -- TODO, tag the delegation size
-      toStats ((Ada l@(Lovelace v)), count) = Metric (Map.fromList $ catMaybes $ [Just ("lovelace",MetricValueInt v), isRequiredSize l, isForDelegation l]) "faucet_utxo" (MetricValueInt count)
-      toStats (FaucetValueMultiAsset _, count) = Metric mempty "bucket_todo" (MetricValueInt count)
+      toStats ((Ada l@(Lovelace v))) count = Metric (Map.fromList $ catMaybes $ [Just ("lovelace",MetricValueInt v), isRequiredSize l, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
+      toStats (FaucetValueMultiAsset _) count = Metric mempty "bucket_todo" (MetricValueInt $ fromIntegral count)
       stakeUnusedToMetric :: Metric
       stakeUnusedToMetric = Metric mempty "faucet_delegation_available" (MetricValueInt $ fromIntegral $ length stakeUnused)
       stakeUsedToMetric :: Metric
       stakeUsedToMetric = Metric mempty "faucet_delegation_pools" (MetricValueInt $ fromIntegral $ length stakeUsed)
       stakeRewardsMetric :: [Metric]
       stakeRewardsMetric = map (\(index, Lovelace reward, pool) -> Metric (Map.fromList [("index", MetricValueInt $ fromIntegral index), ("pool", MetricValueStr $ serialiseToBech32 pool)]) "faucet_delegation_rewards" (MetricValueInt reward)) stakeUsed
+      utxoMetrics :: [Metric]
+      utxoMetrics = Map.foldlWithKey (\rows value count -> (toStats value count):rows) [] stats
       metrics :: [Metric]
-      metrics = (map toStats $ Map.toList stats) <> [ stakeUnusedToMetric, stakeUsedToMetric ] <> stakeRewardsMetric
+      metrics = utxoMetrics <> [ stakeUnusedToMetric, stakeUsedToMetric ] <> stakeRewardsMetric
       result = Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric metrics
     pure result
-
 
 pickIp :: Maybe ForwardedFor -> SockAddr -> IPv4
 pickIp Nothing (SockAddrInet _port hostaddr) = fromHostAddress hostaddr
 pickIp (Just (ForwardedFor (a:_))) _ = a
 pickIp _ _ = fromHostAddress 0x100007f -- 127.0.0.1
+
+handleGetSiteKey :: Text -> Servant.Handler Text
+handleGetSiteKey sitekey = do
+  pure $ sformat ("site_key = \"" % st % "\";") sitekey
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -261,18 +285,31 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Maybe Text
+  -> Maybe Text
   -> SockAddr
   -> Maybe ForwardedFor
   -> Servant.Handler SendMoneyReply
-handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue} addr mApiKey remoteip forwardedFor = do
+handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mRecaptcha remoteip forwardedFor = do
+  print mRecaptcha
   let clientIP = pickIp forwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
     apiKey <- do
       case mApiKey of
-        Just key -> pure $ ApiKey key
+        -- TODO, should recaptcha be checked if an apikey is present?
+        Just key -> do
+          case (key `HM.lookup` (fcfApiKeys fsConfig)) of
+            Just _ -> pure $ ApiKey key
+            Nothing -> do
+              -- api key was not valid, just use recaptcha
+              -- TODO, should it give an error instead?
+              recaptcha <- liftIO $ checkRecaptcha (fcfRecaptchaSecretKey fsConfig) mRecaptcha
+              case recaptcha of
+                False -> do
+                  left FaucetWebErrorInvalidApiKey
+                True -> pure Recaptcha
         Nothing -> do
-          recaptcha <- checkRecaptcha
+          recaptcha <- liftIO $ checkRecaptcha (fcfRecaptchaSecretKey fsConfig) mRecaptcha
           case recaptcha of
             False -> do
               left FaucetWebErrorInvalidApiKey

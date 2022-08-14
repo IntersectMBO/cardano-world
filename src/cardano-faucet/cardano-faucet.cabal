@@ -10,6 +10,8 @@ license-files:          LICENSE
                         NOTICE
 build-type:             Simple
 extra-source-files:     README.md
+data-dir:             data
+data-files:           index.html
 
 Flag unexpected_thunks
   Description:   Turn on unexpected thunks checks
@@ -56,6 +58,7 @@ library
                         Cardano.Faucet.Types
                         Cardano.Faucet.Utils
                         Cardano.Faucet.Web
+                        Paths_cardano_faucet
 
   build-depends:        aeson             >= 1.5.6.0
                       , MissingH
@@ -69,6 +72,7 @@ library
                       , formatting
                       , http-api-data
                       , http-client-tls
+                      , http-media
                       , iproute
                       , network
                       , ouroboros-consensus
@@ -89,3 +93,4 @@ executable cardano-new-faucet
   import:               base, project-config
   main-is:              cardano-new-faucet.hs
   build-depends:        cardano-faucet
+  ghc-options:          -threaded

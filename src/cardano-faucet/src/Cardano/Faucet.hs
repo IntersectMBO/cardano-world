@@ -48,13 +48,15 @@ import System.IO (hSetBuffering, BufferMode(LineBuffering))
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Formatting ((%), format)
 import Formatting.ShortFormatters hiding (x, b, f, l)
+import Paths_cardano_faucet (getDataFileName)
 
 app :: IsShelleyBasedEra era =>
   CardanoEra era
   -> ShelleyBasedEra era
   -> FaucetState era
+  -> Text
   -> Application
-app era sbe faucetState = serve userAPI $ server era sbe faucetState
+app era sbe faucetState indexHtml = serve userAPI $ server era sbe faucetState indexHtml
 
 startApiServer :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -65,7 +67,10 @@ startApiServer :: IsShelleyBasedEra era =>
 startApiServer era sbe faucetState port = do
   let
     settings = setTimeout 600 $ setPort port $ defaultSettings
-  runSettings settings (app era sbe faucetState)
+  index_path <- getDataFileName "index.html"
+  print index_path
+  index_html <- readFile index_path
+  runSettings settings (app era sbe faucetState index_html)
 
 findAllSizes :: FaucetConfigFile -> [Lovelace]
 findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values ++ [v]
