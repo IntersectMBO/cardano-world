@@ -3,7 +3,7 @@
 	"api_keys": [
 		{
 			"api_key": "ENC[AES256_GCM,data:Y7K7gb6EaPbfvROUshWn2x8yY/qFZ8Ern78z3Khi3q8=,iv:G3CyistzO1QB4HZlfoO71I0h1Izbj+T7AtITxMG4C0A=,tag:IBauLu3CNly6D6Cvb85NTQ==,type:str]",
-			"lovelace": "ENC[AES256_GCM,data:g/U11Q2/QS1dMvw=,iv:a8O+5yPvAxy3a7sw11OIbCmsrDH3Wm8+wsJkeEgUQFs=,tag:uqT7w3DwXC7J8aAq7P/rYw==,type:float]",
+			"lovelace": "ENC[AES256_GCM,data:OJnERY+9ry4Iq8w=,iv:F2AzvOPU+PZgKfB8SN5BMv5VbotwKmeTVeCjf8VJQqI=,tag:l08VMwFQ+G7Legc47hiJlg==,type:float]",
 			"rate_limit": "ENC[AES256_GCM,data:wtM=,iv:K5JUlpnA8SM/irHnmGB1m15CfcdfMXOpvwIoeBIfPm8=,tag:ygjWc/RewcA/6b8wFTWIXA==,type:float]",
 			"tokens": []
 		},
@@ -51,6 +51,11 @@
 	"network": {
 		"Testnet": "ENC[AES256_GCM,data:/g==,iv:Ohnz5vI7zHqB9Ekm+30eqQFqzVKewwUTEtoHlQFnsOc=,tag:0eOlN4ou/hTvgqeV0NuenA==,type:float]"
 	},
+	"recaptcha_site_key": "ENC[AES256_GCM,data:ldXxu3mmi1El6CSYP/oEPe6bC/KMY5/VDslrrF3BNQ04l+3tW1cDDg==,iv:eUF7zgB1dh32LTuZX2uzQU41IbhT9tpTeROraYv/ACc=,tag:uaxD/3qORMVHm+Z/lu3b5Q==,type:str]",
+	"recaptcha_secret_key": "ENC[AES256_GCM,data:1wETN5Xw2MNNDLskN1S/GXoaNlsxBGtEYNlLjZ6VwecycBDqkMtK5g==,iv:cplpe4xkEtVi3dQXcO/CF3aFOXejLz3OtpCce6Kjlic=,tag:V6/98WYW55CBi7huRNe4hA==,type:str]",
+	"allowed_cors_origins": [
+		"ENC[AES256_GCM,data:l0nmkZYTcdDS6rXUJ3jxKuXzg+UoYTsW,iv:HTyp5U96QGpj0IpzVfgdyY7NaKnRUNR8+LowzNRtgeg=,tag:PI7hIAiqHREU4z9RH7RyOQ==,type:str]"
+	],
 	"sops": {
 		"kms": null,
 		"gcp_kms": null,
@@ -65,8 +70,8 @@
 			}
 		],
 		"age": null,
-		"lastmodified": "2022-08-12T03:21:47Z",
-		"mac": "ENC[AES256_GCM,data:ZysskMVGg+QrExaKmKF+fuNawuOGIiRVbSnV2yK1OBiiObo2A/QGZhF1U7S6tDb+/g1F+W/zfI6ug786H3f8pzSAhp6KeIpT9Y1PrlwDwDJzXpZH+4/SRE/l1DVVuZN/aYbXwE9+eW2ueL4Hc6MRRz0dtRKHCv9CLEw7eeOQEUs=,iv:R2EvHE99ha/+hZUersS6TPKZeuU/4JOWnq45BnlICgA=,tag:aI0EkSYB9VjKF7vLo2NJ6g==,type:str]",
+		"lastmodified": "2022-08-15T20:19:37Z",
+		"mac": "ENC[AES256_GCM,data:BkgvwEP/thWOQLxF0Ry/fEImM535hTenKaH3YVOZC5fFwgZmzu5bFRV5JpnEpZF39EKOQ4twMjfVBDfSJbkfdP/GvNf04AHb3cYC+bxXAVgHcCoio9EWtAk9Ft91G5aaNxBxhhWCR2F/lg5x0mkRJzqAl9pdLRQZ35m/if88sdA=,iv:tOdKtM41ElkJP8KQCEp1LSGpd6jCwPnMiWzHuulxu3Q=,tag:u0uwavpQGuUNuLJtcvb+Mg==,type:str]",
 		"pgp": null,
 		"unencrypted_suffix": "_unencrypted",
 		"version": "3.7.2"

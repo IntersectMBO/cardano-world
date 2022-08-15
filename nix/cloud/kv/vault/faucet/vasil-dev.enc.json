@@ -51,6 +51,11 @@
 	"network": {
 		"Testnet": "ENC[AES256_GCM,data:6Q==,iv:Ce0D+b+1k5Q6ntHXqwGrYJ9DO6sHbzth3qWrIFtb2Is=,tag:HDKnVjFm1Oqgd37NM8mTZA==,type:float]"
 	},
+	"recaptcha_site_key": "ENC[AES256_GCM,data:m7s9ddRfzpgRCEvHQZ6424CLuB6x3Y6f8kRVoIltjK62GUQsurrKcg==,iv:tQcn1WqUJHRtW7ruRKCijaWZCS2CV9uCsdBr+LiAz8Q=,tag:IyM2X/w7ia1NgsIu2mqgYw==,type:str]",
+	"recaptcha_secret_key": "ENC[AES256_GCM,data:XgWUsw6nK0nUBAX5SZNjkjCTHcrQ3gML/f6zyl5ra748oLnzKzc7hw==,iv:UTTGnWqlL3D+JvjO39ZVQjufSvizzEnPKsRFWdJWa2A=,tag:znxaACWQ8HOqJfLdG2htAQ==,type:str]",
+	"allowed_cors_origins": [
+		"ENC[AES256_GCM,data:PUW/n0GQVAPO8vvrsd2VXkCYCWzAvGqc,iv:j+/XmQriqvN8H7TFncX4ZAcrbHpQQnrhZNv3ng78ST4=,tag:/kQ7DatF0kZrCZXDrl6pNA==,type:str]"
+	],
 	"sops": {
 		"kms": null,
 		"gcp_kms": null,
@@ -65,8 +70,8 @@
 			}
 		],
 		"age": null,
-		"lastmodified": "2022-08-07T03:14:49Z",
-		"mac": "ENC[AES256_GCM,data:NP/GbwcAqoi4JqtRHfqtmvqdj6kIdd1iKsQY6zttdXtRCoHTemYBYjDG5WH4H827UPIUC2gItGKxT9TaWQA8R/RgsAkPSz4MKNxgzsDVHHgsLeH5w8SCpgMcCfVC1GUqrfXJxLr6e74lzEoIWnilj1IYmXMMMr1dogFurMR2kUo=,iv:mxNYqr3cboTypQi0rQbyUSVgePA93Cpk1BjMiCuQUi0=,tag:j5ZXm5He90a9UYBD2uzLJg==,type:str]",
+		"lastmodified": "2022-08-15T20:18:17Z",
+		"mac": "ENC[AES256_GCM,data:H02y0DuzmgCjFXrcflI7meVNWimzjGNy2IALdxWN0zdO7OljXMmMjROzIqQMKiXDLWfa1LLdyo5az/9ZtsynY+OnBMtEZh1ldtry7yMNS+/YeMMsyW/txJiXPvLNFVdzbhEAJKGVwYrf9DVDXxfZYNOWtqRboyaUJmg2Rh4uMtg=,iv:CB67hNFUTMNZwBSKOYoExMXXvHkz7kYVcKPYSkrrmf8=,tag:opZ7t4S+Hjtt18w56NAJpA==,type:str]",
 		"pgp": null,
 		"unencrypted_suffix": "_unencrypted",
 		"version": "3.7.2"
