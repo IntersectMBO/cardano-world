@@ -16,7 +16,7 @@ import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, SomeWitness, rend
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), genericParseJSON, eitherDecodeFileStrict, Value(String), withObject, (.:))
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:))
 import Data.HashMap.Strict qualified as HM
 import Data.Time.Clock (UTCTime, NominalDiffTime)
 import Prelude (String, error, id)
@@ -108,6 +108,7 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfDelegationUtxoSize :: Integer
   , fcfRecaptchaSiteKey :: Text
   , fcfRecaptchaSecretKey :: Text
+  , fcfAllowedCorsOrigins :: [Text]
   } deriving (Generic, Show)
 
 instance FromJSON FaucetConfigFile where
@@ -122,6 +123,7 @@ instance FromJSON FaucetConfigFile where
     fcfDelegationUtxoSize <- o .: "delegation_utxo_size"
     fcfRecaptchaSiteKey <- o .: "recaptcha_site_key"
     fcfRecaptchaSecretKey <- o .: "recaptcha_secret_key"
+    fcfAllowedCorsOrigins <- o .: "allowed_cors_origins"
     pure FaucetConfigFile{..}
 
 data FaucetValue = Ada Lovelace
@@ -143,12 +145,9 @@ data SiteVerifyRequest = SiteVerifyRequest
   , svrRemoteIP :: Maybe Text
   }
 
-data SiteVerifyReply = SiteVerifyReply
-  { svrSuccess :: Bool
-  , svrChallengeTs :: Text
-  , svrHostname :: Text
-  , svrErrorCodes :: Maybe [Text]
-  } deriving (Generic, Show)
+data SiteVerifyReply = SiteVerifyReply Text Text
+  | SiteVerifyError [Text]
+  deriving (Generic, Show)
 
 instance ToJSON FaucetWebError where
   toJSON = genericToJSON defaultOptions
@@ -188,8 +187,19 @@ instance ToForm SiteVerifyRequest where
       foo :: [(Text, [Text])]
       foo = [ ("secret", [secret]), ("response", [token]) ] ++ maybe [] (\x -> [("remoteip",[x])]) mRemoteIp
 
+-- example replies:
+-- { "success": false, "error-codes": [ "timeout-or-duplicate" ]}
 instance FromJSON SiteVerifyReply where
-  parseJSON = genericParseJSON jsonOptions
+  parseJSON = withObject "SiteVerifyReply" $ \o -> do
+    success <- o .: "success"
+    case success of
+      True -> do
+        ts <- o .: "challenge_ts"
+        hostname <- o .: "hostname"
+        pure $ SiteVerifyReply ts hostname
+      False -> do
+        errors <- o .: "error-codes"
+        pure $ SiteVerifyError errors
 
 renderFaucetError :: FaucetError -> Text
 renderFaucetError (FaucetErrorTodo err) = renderShelleyTxCmdError err
