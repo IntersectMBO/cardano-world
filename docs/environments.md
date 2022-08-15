@@ -135,6 +135,8 @@ Consulted: Release Manager
 Informed: Cardano Core Tribe, COO, Director of Engineering, VP Community
 
 - [Node Config](environments/mainnet/config.json)
+- [DB Sync Config](environments/mainnet/db-sync-config.json)
+- [Submit API Config](environments/mainnet/submit-api-config.json)
 - [Node Topology](environments/mainnet/topology.json)
 - [Byron Genesis](environments/mainnet/byron-genesis.json)
 - [Shelley Genesis](environments/mainnet/shelley-genesis.json)
