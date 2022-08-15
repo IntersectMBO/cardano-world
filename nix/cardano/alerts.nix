@@ -1,7 +1,14 @@
 {
   inputs,
   cell,
-}: {
+}:
+let
+  chainDensityLow = toString 70;
+  highBlockUtilization = toString 95; # Alert if blocks are above that % full.
+
+in
+{
+
   node = {
     datasource = "vm";
     rules =
@@ -30,7 +37,7 @@
             description = "{{$labels.alias}}: Cardano average ping latency over 5 minutes has been above 250 milliseconds for the last 30 minutes.";
           };
         }
-        /**{
+        {
           alert = "chain_quality_degraded";
           expr = "quantile(0.2, (cardano_node_metrics_density_real / on(alias) cardano_node_genesis_activeSlotsCoeff * 100)) < ${chainDensityLow}";
           for = "5m";
@@ -41,7 +48,7 @@
             summary = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%).";
             description = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%).";
           };
-        }*/
+        }
         {
           alert = "blocks adoption delay too high";
           expr = "avg(quantile_over_time(0.95, cardano_node_metrics_blockadoption_forgeDelay_real[6h])) >= 4.5";
@@ -54,7 +61,7 @@
             description = "Node average of blocks adoption delay have been above 4.5s for more than 5% of blocks for more than 6 hours";
           };
         }
-        /** {
+        {
           alert = "blocks_utilization_too_high";
           expr = "100 * avg(avg_over_time(cardano_node_metrics_blockfetchclient_blocksize[6h]) / on(alias) (cardano_node_protocol_maxBlockBodySize + cardano_node_protocol_maxBlockHeaderSize)) > ${highBlockUtilization}";
           for = "5m";
@@ -65,7 +72,7 @@
             summary = "Blocks utilization above ${highBlockUtilization}% - follow process in description.";
             description = "Blocks utilization has been above ${highBlockUtilization}% on average for more than 6h. Follow process at https://docs.google.com/document/d/1H42XpVp5YKUfKTcfyV_YJP5nM2N5D9eU_0MvFbXXp0E";
           };
-        }*/
+        }
         {
           alert = "cardano_new_node_block_divergence";
           expr = "((abs(max(cardano_node_metrics_blockNum_int) - ignoring(alias, instance, job, role) group_right(instance) cardano_node_metrics_blockNum_int) > bool 2) - (abs(max(cardano_node_metrics_slotNum_int) - ignoring(alias, instance, job, role) group_right(instance) cardano_node_metrics_slotNum_int) < bool 60)) == 1";
@@ -102,7 +109,7 @@
             description = "{{$labels.alias}}: restart of node is needed to resolve this alert";
           };
         }
-        /**{
+        /** {
           alert = "too many slot leadership checks missed";
           expr = "rate(cardano_node_metrics_slotsMissedNum_int[5m]) * ${slotLength} > 0.5";
           for = "2m";
@@ -113,7 +120,7 @@
             summary = "{{$labels.alias}}: block producing node is failing to check for slot leadership for more than half of the slots.";
             description = "{{$labels.alias}}: block producing node is failing to check for slot leadership for more than half of the slots for more than 2 min.";
           };
-        }*/
+        } */
         {
           alert = "cardano_new_node_KES_expiration_metric_10day_notice";
           expr = "cardano_node_genesis_slotLength * cardano_node_genesis_slotsPerKESPeriod * on (alias) cardano_node_metrics_remainingKESPeriods_int < (10 * 24 * 3600) + 1";
@@ -246,90 +253,6 @@
             description = "{{$labels.alias}}: cardano-faucet has zero balance available for more than 5 minutes";
           };
         }
-      ]
-      /** ++ (builtins.concatMap ({
-          region,
-          regionLetter,
-        }: [
-          {
-            alert = "high_tcp_connections_${region}";
-            expr =
-              "avg(node_netstat_Tcp_CurrEstab{alias=~\"rel-${regionLetter}-.*\"}) "
-              + "- count(count(node_netstat_Tcp_CurrEstab{alias=~\"rel-${regionLetter}-.*\"}) by (alias)) > ${tcpHigh}";
-            for = "5m";
-            labels = {
-              severity = "page";
-            };
-            annotations = {
-              summary = "${region}: Average connection per nodes higher than ${tcpHigh} for more than 5 minutes.";
-              description = "${region}: Average connection per nodes higher than ${tcpHigh} for more than 5 minutes. Adding new nodes to that region might soon be required.";
-            };
-          }
-          {
-            alert = "critical_tcp_connections_${region}";
-            expr =
-              "avg(node_netstat_Tcp_CurrEstab{alias=~\"rel-${regionLetter}-.*\"}) "
-              + "- count(count(node_netstat_Tcp_CurrEstab{alias=~\"rel-${regionLetter}-.*\"}) by (alias)) > ${tcpCrit}";
-            for = "15m";
-            labels = {
-              severity = "page";
-            };
-            annotations = {
-              summary = "${region}: Average connection per nodes higher than ${tcpCrit} for more than 15 minutes.";
-              description = "${region}: Average connection per nodes higher than ${tcpCrit} for more than 15 minutes. Adding new nodes to that region IS required.";
-            };
-          }
-          {
-            alert = "high_egress_${region}";
-            expr = "avg(rate(node_network_transmit_bytes_total{alias=~\"rel-${regionLetter}-.*\",device!~\"lo\"}[20s]) * 8) > ${MbpsHigh} * 1000 * 1000";
-            for = "5m";
-            labels = {
-              severity = "page";
-            };
-            annotations = {
-              summary = "${region}: Average egress throughput is higher than ${MbpsHigh} Mbps for more than 5 minutes.";
-              description = "${region}: Average egress throughput is higher than ${MbpsHigh} Mbps for more than 5 minutes. Adding new nodes to that region might soon be required.";
-            };
-          }
-          {
-            alert = "critical_egress_${region}";
-            expr = "avg(rate(node_network_transmit_bytes_total{alias=~\"rel-${regionLetter}-.*\",device!~\"lo\"}[20s]) * 8) > ${MbpsCrit} * 1000 * 1000";
-            for = "15m";
-            labels = {
-              severity = "page";
-            };
-            annotations = {
-              summary = "${region}: Average egress throughput is higher than ${MbpsCrit} Mbps for more than 15 minutes.";
-              description = "${region}: Average egress throughput is higher than ${MbpsCrit} Mbps for more than 15 minutes. Adding new nodes to that region IS required.";
-            };
-          }
-        ])
-        [
-          {
-            region = "eu-central-1";
-            regionLetter = "a";
-          }
-          {
-            region = "us-east-2";
-            regionLetter = "b";
-          }
-          {
-            region = "ap-southeast-1";
-            regionLetter = "c";
-          }
-          {
-            region = "eu-west-2";
-            regionLetter = "d";
-          }
-          {
-            region = "us-west-1";
-            regionLetter = "e";
-          }
-          {
-            region = "ap-northeast-1";
-            regionLetter = "f";
-          }
-        ])*/;
-
+      ];
   };
 }

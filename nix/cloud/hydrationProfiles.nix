@@ -131,7 +131,7 @@ in {
         # Alerts
         {
           inherit
-            (cell.alerts)
+            (cells.cardano.alerts)
             node
             ;
           # Upstream alerts
@@ -150,7 +150,7 @@ in {
         # Dashboards
         {
           inherit
-            (cell.dashboards)
+            (cells.cardano.dashboards)
             application-metrics
             p2p
             performance
