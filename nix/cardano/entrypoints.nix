@@ -586,8 +586,11 @@ in {
 
   cardano-faucet = writeShellApplication {
     debugInputs = [packages.cardano-cli];
+    runtimeInputs = [ nixpkgs.cacert ];
     name = "entrypoint";
     text = ''
+      # shellcheck source=/dev/null
+      source ${nixpkgs.cacert}/nix-support/setup-hook
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
     '';
   };
