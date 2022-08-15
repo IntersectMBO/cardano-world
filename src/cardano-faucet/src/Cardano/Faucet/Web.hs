@@ -66,8 +66,8 @@ instance Accept HTML where
 instance MimeRender HTML Text where
   mimeRender _ = LT.encodeUtf8 . LT.fromStrict
 
-type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Post '[JSON] SendMoneyReply
-type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Get '[JSON] SendMoneyReply
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
 type Metrics = "metrics" :> Get '[PlainText] Text
 type DelegateStake = "delegate" :> Capture "poolid" PoolId :> Get '[JSON] DelegationReply
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
@@ -218,7 +218,7 @@ checkRecaptcha secret (Just token) = do
   case res of
     (Left _err) -> do
       pure False
-    (Right (SiteVerifyReply True _ts _host _error)) -> do
+    (Right (SiteVerifyReply _ts _host)) -> do
       pure True
     _ -> do
       pure False
@@ -288,9 +288,16 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Maybe Text
   -> SockAddr
   -> Maybe ForwardedFor
-  -> Servant.Handler SendMoneyReply
-handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mRecaptcha remoteip forwardedFor = do
-  print mRecaptcha
+  -> Maybe Text
+  -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mRecaptcha remoteip forwardedFor mOrigin = do
+  let
+    corsHeader :: SendMoneyReply -> Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply
+    corsHeader = case mOrigin of
+      Nothing -> noHeader
+      (Just origin) -> case (origin `elem` (fcfAllowedCorsOrigins fsConfig)) of
+        True -> addHeader origin
+        False -> noHeader
   let clientIP = pickIp forwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
@@ -325,10 +332,10 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} ad
     liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
     return $ SendMoneyReplySuccess $ SendMoneySent txid txin
   case eResult of
-    Right msg -> pure msg
+    Right msg -> pure $ corsHeader msg
     Left err -> do
       liftIO $ logError clientIP err
-      pure $ SendMoneyError err
+      pure $ corsHeader $ SendMoneyError err
 
 logError :: IPv4 -> FaucetWebError -> IO ()
 logError ip (FaucetWebErrorRateLimitExeeeded secs addr) = putStrLn $ format (sh % ": rate limit exeeded for " % t % " will reset in " % sh) ip (LT.fromStrict addr) secs
