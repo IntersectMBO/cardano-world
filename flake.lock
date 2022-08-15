@@ -873,16 +873,16 @@
         "utils": "utils_21"
       },
       "locked": {
-        "lastModified": 1658758630,
-        "narHash": "sha256-nPP60UgXXM0f1PgE4x+ZiPn9NhWyQtRISukGQec1uJg=",
+        "lastModified": 1660317184,
+        "narHash": "sha256-TnSQ6TeNKD8RyDWy3yH2RGWaxdEUUu/xTwaMEYhoDxI=",
         "owner": "input-output-hk",
         "repo": "cardano-db-sync",
-        "rev": "8733b71af3ada773755c5cb08d9c061eda11fb96",
+        "rev": "b32fb363a738eb0453ed6c84f2dfd7723c0640bd",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "13.0.2",
+        "ref": "13.0.4",
         "repo": "cardano-db-sync",
         "type": "github"
       }
