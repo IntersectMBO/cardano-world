@@ -84,6 +84,43 @@ in {
         };
       };
     };
+
+  db-sync-0 = let
+    jobname = "db-sync-0";
+  in
+    data-merge.merge (cardano.nomadCharts.cardano-db-sync (
+      constants.envs.preview
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+        scaling = 1;
+      }
+    )) {
+      job.${jobname}.group.db-sync.task = {
+        node = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DATA_DIR = persistanceMount + "/db-sync-0";
+            CONSUL_KV_PATH = "config/cardano/preview";
+            PUBLIC_ROOTS_SRV_DNS = "_preview-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
+        };
+        db-sync = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DB_NAME = "preview_dbsync";
+            DATA_DIR = persistanceMount + "/db-sync-0";
+            CONSUL_KV_PATH = "config/cardano/preview";
+            VAULT_KV_PATH = "kv/data/db-sync/preview";
+            MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          };
+        };
+      };
+    };
+
   faucet = let
     jobname = "faucet";
   in
