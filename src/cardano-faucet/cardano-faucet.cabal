@@ -69,6 +69,7 @@ library
                       , cardano-ledger-byron
                       , cardano-prelude
                       , containers
+                      , either
                       , formatting
                       , http-api-data
                       , http-client-tls

@@ -12,49 +12,38 @@
 
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), AddressAny, Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
 import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
 import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
-import Cardano.Faucet.Misc
-import Cardano.Faucet.TxUtils
-import Cardano.Faucet.Types
-import Cardano.Faucet.Utils
+import Cardano.Faucet.Misc (convertEra, parseAddress)
+import Cardano.Faucet.TxUtils (makeAndSignTx)
+import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..))
+import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
 import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (eitherDecode)
+import Data.ByteString.Lazy qualified as LBS
 import Data.HashMap.Strict qualified as HM
-import Data.IP
-import Data.List.Split
+import Data.IP (IPv4, fromHostAddress)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
+import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
-import Data.Time.Clock
+import Data.Time.Clock (UTCTime, getCurrentTime, addUTCTime, diffUTCTime)
 import Formatting ((%), format, sformat)
 import Formatting.ShortFormatters hiding (x, b, f, l)
 import Network.HTTP.Client.TLS (newTlsManagerWith, tlsManagerSettings)
+import Network.HTTP.Media.MediaType ((//), (/:))
 import Network.Socket (SockAddr(SockAddrInet))
+import Prelude qualified (id)
 import Servant
 import Servant.Client (ClientM, ClientError, client, runClientM, mkClientEnv, BaseUrl(BaseUrl), Scheme(Https))
-import qualified Data.ByteString.Char8 as BSC
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.Text.Lazy as LT
-import qualified Prelude (read, String, id)
-import Network.HTTP.Media.MediaType
 
 -- create recaptcha api keys at https://www.google.com/recaptcha/admin/create
 -- reCAPTCHA v2, "i am not a robot"
-
-newtype ForwardedFor = ForwardedFor [IPv4] deriving (Eq, Show)
-
-parseIpList :: Prelude.String -> ForwardedFor
-parseIpList input = ForwardedFor $ reverse $ map (Prelude.read) (splitOn "," input)
-
-instance FromHttpApiData ForwardedFor where
-  parseHeader = Right . parseIpList . BSC.unpack
-  parseUrlPiece = Right . parseIpList . T.unpack
 
 instance FromHttpApiData PoolId where
   parseUrlPiece input = either (Left . T.pack) (Right . Prelude.id) $ eitherDecode (LBS.fromStrict $ encodeUtf8 $ "\"" <> input <> "\"")
@@ -66,10 +55,10 @@ instance Accept HTML where
 instance MimeRender HTML Text where
   mimeRender _ = LT.encodeUtf8 . LT.fromStrict
 
-type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" Text :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
 type Metrics = "metrics" :> Get '[PlainText] Text
-type DelegateStake = "delegate" :> Capture "poolid" PoolId :> Get '[JSON] DelegationReply
+type DelegateStake = "delegate" :> Capture "poolid" PoolId :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
 type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
 type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
@@ -88,7 +77,7 @@ recaptchaApi = Proxy
 siteVerify :: SiteVerifyRequest -> ClientM SiteVerifyReply
 siteVerify = client recaptchaApi
 
-doSiteVerify :: Text -> Text -> IO (Either ClientError SiteVerifyReply)
+doSiteVerify :: SecretKey -> CaptchaToken -> IO (Either ClientError SiteVerifyReply)
 doSiteVerify secret token = do
   manager' <- newTlsManagerWith tlsManagerSettings
   runClientM (siteVerify $ SiteVerifyRequest secret token Nothing) (mkClientEnv manager' (BaseUrl Https "www.google.com" 443 ""))
@@ -99,120 +88,142 @@ server :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Server RootDir
-server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleGetSiteKey (fcfRecaptchaSiteKey $ fsConfig faucetState) :<|> (handleStaticFile indexHtml)
+server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
+  where
+    site_key_reply = sformat ("site_key = \"" % st % "\";") $ unSiteKey $ fcfRecaptchaSiteKey $ fsConfig faucetState
 
 handleStaticFile :: Text -> Servant.Handler Text
 handleStaticFile = pure
 
-getKeyToDelegate :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)]) -> PoolId -> STM DelegationAtomicResult
+-- takes a TMVar of used and unused stake kets
+-- atomically pops one off the unused list, adds it to the used list, and returns the popped key
+getKeyToDelegate :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)]) -> PoolId -> STM (SigningKey StakeExtendedKey, StakeCredential)
 getKeyToDelegate tmvar poolid = do
   (availableKeys, usedKeys) <- takeTMVar tmvar
   case (poolid `elem` map (\(_,_,p) -> p) usedKeys, availableKeys) of
     (True, _) -> do
-      putTMVar tmvar (availableKeys, usedKeys)
-      pure DelegationAtomicResultPoolAlreadyDelegated
+      throwSTM FaucetWebErrorAlreadyDelegated
     (False, []) -> do
-      putTMVar tmvar (availableKeys, usedKeys)
-      pure DelegationAtomicResultNoKeys
+      throwSTM FaucetWebErrorStakeKeyNotFound
     (False, (index, skey, vkey):rest) -> do
       putTMVar tmvar (rest, (index, 0, poolid):usedKeys)
-      pure $ DelegationAtomicResult (skey, vkey)
+      pure (skey, vkey)
 
-handleDelegateStake :: IsShelleyBasedEra era => CardanoEra era -> ShelleyBasedEra era -> FaucetState era -> PoolId -> Servant.Handler DelegationReply
-handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig} poolId = do
+-- checks if a given origin is in the whitelist, and if so, puts that origin in the header
+getCorsReply :: [Text] -> Maybe Text -> (a -> Headers '[Header "Access-Control-Allow-Origin" Text] a)
+getCorsReply whitelist mOrigin = case mOrigin of
+  Nothing -> noHeader
+  (Just origin) -> case (origin `elem` whitelist) of
+    True -> addHeader origin
+    False -> noHeader
+
+handleDelegateStake :: IsShelleyBasedEra era
+  => CardanoEra era
+  -> ShelleyBasedEra era
+  -> FaucetState era
+  -> PoolId
+  -> Maybe Text
+  -> Maybe CaptchaToken
+  -> SockAddr
+  -> Maybe ForwardedFor
+  -> Maybe Text
+  -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
+handleDelegateStake era sbe fs@FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+  let
+    clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     when (fcfMaxStakeKeyIndex fsConfig == Nothing) $ left $ FaucetWebErrorTodo "delegation disabled"
-    -- TODO, do the stake and utxo in the same atomic
-    res <- liftIO $ atomically $ getKeyToDelegate stakeTMVar poolId
+    mReply <- liftIO $ decideBetweenKeyAndCaptcha mApiKey mToken fsConfig
+    (key, limits) <- case mReply of
+      Just (_, ApiKeyValue _ _ _ _ False) -> left FaucetWebErrorKeyCantDelegate
+      Just x -> pure x
+      Nothing -> left FaucetWebErrorInvalidApiKey
+    now <- liftIO $ getCurrentTime
+    res <- liftIO $ atomically $ do
+      let
+        maybeBumpLimitAndGetKey = do
+          limitResult <- checkRateLimits now [ RateLimitAddressPool poolId, RateLimitAddressNetwork clientIP ] key fs limits
+          case limitResult of
+            RateLimitResultAllow -> do
+              -- the rate limits allow the action at the current time
+              -- get an unused stake key
+              stakeKey <- getKeyToDelegate stakeTMVar poolId
+              -- and get a txout to fund the delegation tx
+              txinout <- findUtxoOfSize utxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
+              pure $ Right (stakeKey, txinout)
+            RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseToBech32 poolId)
+      -- getKeyToDelegate and findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
+      catchSTM maybeBumpLimitAndGetKey $ pure . Left
     case res of
-      DelegationAtomicResultPoolAlreadyDelegated -> left $ FaucetWebErrorAlreadyDelegated
-      DelegationAtomicResultNoKeys -> left $ FaucetWebErrorTodo "no stake keys available"
-      DelegationAtomicResult (stake_skey, creds) -> do
+      Left err -> left err
+      Right ((stake_skey, creds), txinout) -> do
         let
           cert = makeStakeAddressDelegationCertificate creds poolId
           stake_witness = AStakeExtendedSigningKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
         addressAny <- withExceptT (FaucetWebErrorTodo . renderShelleyAddressCmdError) $ vkeyToAddr network vkey
-        txinout <- findUtxoOfSize utxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era
-        (signedTx, _txid) <- makeAndSignTx sbe txinout addressAny network [skey, stake_witness] (TxCertificates supported [cert] x)
+        (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey, stake_witness] (TxCertificates supported [cert] x)
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
         putStrLn $ format ("delegating stake key to pool " % sh) poolId
         liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
-        pure $ DelegationReplySuccess
+        pure $ DelegationReplySuccess txid
+  let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
     Left err -> do
-      pure $ DelegationReplyError err
+      pure $ corsHeader $ DelegationReplyError err
     Right result -> do
-      pure $ result
+      pure $ corsHeader $ result
 
-getRateLimits :: ApiKey -> FaucetConfigFile -> Maybe ApiKeyValue
-getRateLimits Recaptcha FaucetConfigFile{fcfRecaptchaLimits} = Just fcfRecaptchaLimits
-getRateLimits (ApiKey key) FaucetConfigFile{fcfApiKeys} = HM.lookup key fcfApiKeys
-
-insertUsage :: TMVar (Map ApiKey (Map (Either AddressAny IPv4) UTCTime)) -> ApiKey -> Either AddressAny IPv4 -> UTCTime -> STM ()
-insertUsage tmvar apikey addr now = do
+insertUsage :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime)) -> ApiKey -> UTCTime -> RateLimitAddress -> STM ()
+insertUsage tmvar apikey now addr = do
   mainMap <- takeTMVar tmvar
   let
-    apiKeyMap :: Map (Either AddressAny IPv4) UTCTime
+    apiKeyMap :: Map RateLimitAddress UTCTime
     apiKeyMap = fromMaybe mempty (Map.lookup apikey mainMap)
-    apiKeyMap' :: Map (Either AddressAny IPv4) UTCTime
+    apiKeyMap' :: Map RateLimitAddress UTCTime
     apiKeyMap' = Map.insert addr now apiKeyMap
     mainMap' = Map.insert apikey apiKeyMap' mainMap
   putTMVar tmvar mainMap'
 
-checkRateLimits :: IsCardanoEra era => AddressAny -> IPv4 -> ApiKey -> FaucetState era -> ExceptT FaucetWebError IO (Lovelace, [FaucetToken])
-checkRateLimits addr remoteip apikey FaucetState{fsConfig,fsRateLimitState} = do
-  now <- liftIO $ getCurrentTime
+-- check the rate limits for the given key, update the tmvar to record the usage of this key, and return if the action is allowed or not
+checkRateLimits :: IsCardanoEra era => UTCTime -> [RateLimitAddress] -> ApiKey -> FaucetState era -> ApiKeyValue -> STM RateLimitResult
+checkRateLimits now addresses apikey FaucetState{fsRateLimitState} ApiKeyValue{akvRateLimit} = do
+  mainMap <- readTMVar fsRateLimitState
   let
-    mRateLimits = getRateLimits apikey fsConfig
+    -- when many addresses where last used, for the current key
+    apiKeyMap :: Map RateLimitAddress UTCTime
+    apiKeyMap = fromMaybe mempty (Map.lookup apikey mainMap)
+    -- when an address was last used
+    getLastUsage :: RateLimitAddress -> Maybe UTCTime
+    getLastUsage addr' = Map.lookup addr' apiKeyMap
+    lastUsages :: [ Maybe UTCTime ]
+    lastUsages = map getLastUsage addresses
+    compareTimes :: Maybe UTCTime -> Maybe UTCTime -> Maybe UTCTime
+    compareTimes Nothing Nothing = Nothing
+    compareTimes (Just a) Nothing = Just a
+    compareTimes Nothing (Just b) = Just b
+    compareTimes (Just a) (Just b) = Just (if a > b then a else b)
+    -- when any of the addresses given, have last been used
+    lastUsage :: Maybe UTCTime
+    lastUsage = Cardano.Prelude.foldl' compareTimes Nothing lastUsages
     recordUsage :: STM ()
     recordUsage = do
-      insertUsage fsRateLimitState apikey (Left addr) now
-      insertUsage fsRateLimitState apikey (Right remoteip) now
-    -- Nothing means allow
-    -- Just x means you can do it in x time
-    checkRateLimitsInternal :: NominalDiffTime -> STM (Maybe NominalDiffTime)
-    checkRateLimitsInternal interval = do
-      mainMap <- readTMVar fsRateLimitState
-      let
-        apiKeyMap = fromMaybe mempty (Map.lookup apikey mainMap)
-        getLastUsage :: Either AddressAny IPv4 -> Maybe UTCTime
-        getLastUsage addr' = Map.lookup addr' apiKeyMap
-        lastUsages :: [ Maybe UTCTime]
-        lastUsages = [ getLastUsage (Left addr), getLastUsage (Right remoteip) ]
-        compareTimes :: Maybe UTCTime -> Maybe UTCTime -> Maybe UTCTime
-        compareTimes Nothing Nothing = Nothing
-        compareTimes (Just a) Nothing = Just a
-        compareTimes Nothing (Just b) = Just b
-        compareTimes (Just a) (Just b) = Just (if a > b then a else b)
-        lastUsage :: Maybe UTCTime
-        lastUsage = Cardano.Prelude.foldl' compareTimes Nothing lastUsages
-      disallow <- case lastUsage of
-        Nothing -> do
-          -- this addr has never been used on this api key
-          pure Nothing
-        Just lastUsed -> do
-          let
-            after = addUTCTime interval lastUsed
-          pure $ if now > after then Nothing else (Just $ after `diffUTCTime` now)
-      if (isNothing disallow) then recordUsage else pure ()
-      pure disallow
-  case mRateLimits of
+      mapM_ (insertUsage fsRateLimitState apikey now) addresses
+  (allowed, result) <- case lastUsage of
     Nothing -> do
-      -- api key not found in config
-      left $ FaucetWebErrorInvalidApiKey
-    Just (ApiKeyValue _ lovelace interval tokens) -> do
-      success <- liftIO $ atomically $ checkRateLimitsInternal interval
-      case success of
-        Nothing -> pure (lovelace,tokens)
-        Just time -> left $ FaucetWebErrorRateLimitExeeeded time (serialiseAddress addr)
+      -- this addr has never been used on this api key
+      pure (True, RateLimitResultAllow)
+    Just lastUsed -> do
+      let after = addUTCTime akvRateLimit lastUsed
+      pure $ if now > after then (True, RateLimitResultAllow) else (False, RateLimitResultDeny $ after `diffUTCTime` now)
+  when allowed recordUsage
+  pure result
 
-checkRecaptcha :: Text -> Maybe Text -> IO Bool
-checkRecaptcha _ Nothing = pure False
-checkRecaptcha secret (Just token) = do
+checkRecaptcha :: SecretKey -> CaptchaToken -> IO Bool
+checkRecaptcha secret token = do
   res <- doSiteVerify secret token
   print res
   case res of
@@ -271,13 +282,26 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
     pure result
 
 pickIp :: Maybe ForwardedFor -> SockAddr -> IPv4
-pickIp Nothing (SockAddrInet _port hostaddr) = fromHostAddress hostaddr
 pickIp (Just (ForwardedFor (a:_))) _ = a
+pickIp _ (SockAddrInet _port hostaddr) = fromHostAddress hostaddr
 pickIp _ _ = fromHostAddress 0x100007f -- 127.0.0.1
 
-handleGetSiteKey :: Text -> Servant.Handler Text
-handleGetSiteKey sitekey = do
-  pure $ sformat ("site_key = \"" % st % "\";") sitekey
+-- if a valid api key is given, return that key and its limits
+-- if the apikey is invalid, act like it didnt exist
+-- if a recaptcha token exists and is valid, return those limits
+-- if all keys are missing or invalid return Nothing
+decideBetweenKeyAndCaptcha :: Maybe Text -> Maybe CaptchaToken -> FaucetConfigFile -> IO (Maybe (ApiKey, ApiKeyValue))
+decideBetweenKeyAndCaptcha (Just apiKeyText) mToken config@FaucetConfigFile{fcfApiKeys} = case (apiKeyText `HM.lookup` fcfApiKeys) of
+  -- api key was not valid, just use recaptcha
+  -- TODO, should it give an error instead?
+  Nothing -> decideBetweenKeyAndCaptcha Nothing mToken config
+  Just limits -> pure $ Just (ApiKey apiKeyText, limits)
+decideBetweenKeyAndCaptcha Nothing (Just token) FaucetConfigFile{fcfRecaptchaSecretKey,fcfRecaptchaLimits} = do
+  valid <- checkRecaptcha fcfRecaptchaSecretKey token
+  case valid of
+    True -> pure $ Just (Recaptcha, fcfRecaptchaLimits)
+    False -> pure Nothing
+decideBetweenKeyAndCaptcha Nothing Nothing _ = pure Nothing
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -285,45 +309,35 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Maybe Text
-  -> Maybe Text
+  -> Maybe CaptchaToken
   -> SockAddr
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mRecaptcha remoteip forwardedFor mOrigin = do
-  let
-    corsHeader :: SendMoneyReply -> Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply
-    corsHeader = case mOrigin of
-      Nothing -> noHeader
-      (Just origin) -> case (origin `elem` (fcfAllowedCorsOrigins fsConfig)) of
-        True -> addHeader origin
-        False -> noHeader
-  let clientIP = pickIp forwardedFor remoteip
+handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mToken remoteip mForwardedFor mOrigin = do
+  let clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
-    apiKey <- do
-      case mApiKey of
-        -- TODO, should recaptcha be checked if an apikey is present?
-        Just key -> do
-          case (key `HM.lookup` (fcfApiKeys fsConfig)) of
-            Just _ -> pure $ ApiKey key
-            Nothing -> do
-              -- api key was not valid, just use recaptcha
-              -- TODO, should it give an error instead?
-              recaptcha <- liftIO $ checkRecaptcha (fcfRecaptchaSecretKey fsConfig) mRecaptcha
-              case recaptcha of
-                False -> do
-                  left FaucetWebErrorInvalidApiKey
-                True -> pure Recaptcha
-        Nothing -> do
-          recaptcha <- liftIO $ checkRecaptcha (fcfRecaptchaSecretKey fsConfig) mRecaptcha
-          case recaptcha of
-            False -> do
-              left FaucetWebErrorInvalidApiKey
-            True -> pure Recaptcha
+    mReply <- liftIO $ decideBetweenKeyAndCaptcha mApiKey mToken fsConfig
+    (key, limits) <- case mReply of
+      Just x -> pure x
+      Nothing -> left FaucetWebErrorInvalidApiKey
     -- ratelimits and utxo should be in a single atomically block
-    (lovelace,_tokens) <- checkRateLimits addressAny clientIP apiKey fs
-    txinout@(txin,_) <- findUtxoOfSize utxoTMVar $ Ada lovelace
+    now <- liftIO $ getCurrentTime
+    result <- liftIO $ atomically $ do
+      let
+        maybeBumpLimitAndGetUtxo = do
+          limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fs limits
+          case limitResult of
+            RateLimitResultAllow -> do
+              txinout <- findUtxoOfSize utxoTMVar $ Ada $ akvLovelace limits
+              pure $ Right txinout
+            RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseAddress addressAny)
+      -- findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
+      catchSTM maybeBumpLimitAndGetUtxo $ pure . Left
+    txinout@(txin, _) <- case result of
+      Left err -> left err
+      Right txinout -> pure txinout
     eraInMode <- convertEra era
     (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey] TxCertificatesNone
     putStrLn $ format (sh % ": sending funds to address " % st % " via txid " % sh) clientIP (serialiseAddress addressAny) txid
@@ -331,6 +345,7 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} ad
       prettyTx = friendlyTxBS era signedTx
     liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
     return $ SendMoneyReplySuccess $ SendMoneySent txid txin
+  let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
     Right msg -> pure $ corsHeader msg
     Left err -> do
