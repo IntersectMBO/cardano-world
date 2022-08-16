@@ -470,6 +470,9 @@ in {
       args+=("--socket-path" "$SOCKET_PATH")
       args+=("--state-dir" "$DB_DIR/db-sync")
       args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
+      if [ -n "''${DISABLE_LEDGER:-}" ]; then
+        args+=("--disable-ledger")
+      fi
 
 
       if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
