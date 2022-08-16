@@ -58,13 +58,13 @@ takeOneUtxo utxoTMVar value = do
       putTMVar utxoTMVar utxo
       pure Nothing
 
-findUtxoOfSize :: TMVar (Map TxIn (TxOut CtxUTxO era)) -> FaucetValue -> ExceptT FaucetWebError IO (TxIn, TxOut CtxUTxO era)
+findUtxoOfSize :: TMVar (Map TxIn (TxOut CtxUTxO era)) -> FaucetValue -> STM (TxIn, TxOut CtxUTxO era)
 findUtxoOfSize utxoTMVar value = do
   -- TODO, include fee
-  mTxinout <- liftIO $ atomically $ takeOneUtxo utxoTMVar value
+  mTxinout <- {- liftIO $ atomically $ -} takeOneUtxo utxoTMVar value
   case mTxinout of
     Just txinout -> pure txinout
-    Nothing -> left $ FaucetWebErrorUtxoNotFound value
+    Nothing -> throwSTM $ FaucetWebErrorUtxoNotFound value
 
 validateTxFee ::
      CardanoEra era

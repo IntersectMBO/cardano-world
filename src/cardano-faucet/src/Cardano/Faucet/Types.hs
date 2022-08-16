@@ -8,26 +8,50 @@
 
 module Cardano.Faucet.Types where
 
+import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey)
+import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake))
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
+import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential)
 import Cardano.CLI.Environment (EnvSocketError)
-import Cardano.CLI.Shelley.Key
+import Cardano.CLI.Shelley.Key (InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
 import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, SomeWitness, renderShelleyTxCmdError)
+import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:))
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?))
+import Data.ByteString.Char8 qualified as BSC
+import Data.Either.Combinators (mapRight)
 import Data.HashMap.Strict qualified as HM
-import Data.Time.Clock (UTCTime, NominalDiffTime)
-import Prelude (String, error, id)
-import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
-import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
-import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey)
-import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake))
-import qualified Data.Text as T
 import Data.IP (IPv4)
-import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential)
+import Data.List.Split (splitOn)
+import Data.Text qualified as T
+import Data.Time.Clock (UTCTime, NominalDiffTime)
+import Prelude (String, error, id, read)
+import Servant (FromHttpApiData(parseHeader, parseQueryParam, parseUrlPiece))
+import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 
+-- the sitekey, secretkey, and token from recaptcha
+newtype SiteKey = SiteKey { unSiteKey :: Text } deriving Show
+newtype SecretKey = SecretKey { unSecretKey :: Text } deriving Show
+newtype CaptchaToken = CaptchaToken Text
+
+instance FromHttpApiData CaptchaToken where
+  parseHeader bs = mapRight CaptchaToken (parseHeader bs)
+  parseQueryParam t = mapRight CaptchaToken (parseQueryParam t)
+
+-- the X-Forwarded-For header
+newtype ForwardedFor = ForwardedFor [IPv4] deriving (Eq, Show)
+
+parseIpList :: Prelude.String -> ForwardedFor
+parseIpList input = ForwardedFor $ reverse $ map (Prelude.read) (splitOn "," input)
+
+instance FromHttpApiData ForwardedFor where
+  parseHeader = Right . parseIpList . BSC.unpack
+  parseUrlPiece = Right . parseIpList . T.unpack
+
+-- errors not sent to users
 data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorSocketNotFound EnvSocketError
   | FaucetErrorLoadingKey (FileError InputDecodeError)
@@ -38,8 +62,20 @@ data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorShelleyAddr ShelleyAddressCmdError
   deriving Generic
 
+renderFaucetError :: FaucetError -> Text
+renderFaucetError (FaucetErrorTodo err) = renderShelleyTxCmdError err
+renderFaucetError (FaucetErrorSocketNotFound err) = show err
+renderFaucetError (FaucetErrorLoadingKey err) = show err
+renderFaucetError (FaucetErrorParsingConfig err) = show err
+renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"
+renderFaucetError (FaucetErrorBadMnemonic msg) = "bad mnemonic " <> msg
+renderFaucetError FaucetErrorBadIdx = "bad index"
+renderFaucetError (FaucetErrorShelleyAddr err) = show err
+
+-- errors that can be sent to the user
 data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorInvalidApiKey
+  | FaucetWebErrorKeyCantDelegate
   | FaucetWebErrorRateLimitExeeeded NominalDiffTime Text
   | FaucetWebErrorUtxoNotFound FaucetValue
   | FaucetWebErrorEraConversion
@@ -52,15 +88,19 @@ data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorAutoBalance Text
   | FaucetWebErrorBadIdx
   | FaucetWebErrorAlreadyDelegated
+  | FaucetWebErrorStakeKeyNotFound
   deriving (Generic, Show)
 
+instance Exception FaucetWebError
+
+instance ToJSON FaucetWebError where
+  toJSON = genericToJSON defaultOptions
+
+-- an api key
+-- Recaptcha is a special key, that can only be obtained by answering a recaptcha prompt
 data ApiKey = Recaptcha | ApiKey Text deriving (Ord, Eq)
 
-data DelegationAtomicResult = DelegationAtomicResultPoolAlreadyDelegated
-  | DelegationAtomicResultNoKeys
-  | DelegationAtomicResult (SigningKey StakeExtendedKey, StakeCredential)
-  deriving Show
-
+-- the state of the entire faucet
 data IsCardanoEra era => FaucetState era = FaucetState
   { utxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
   , stakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
@@ -70,10 +110,17 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , vkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
-  , fsRateLimitState :: TMVar (Map ApiKey (Map (Either AddressAny IPv4) UTCTime))
+  , fsRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsBucketSizes :: [Lovelace]
   }
 
+-- the result of checking a rate limit
+data RateLimitResult = RateLimitResultAllow | RateLimitResultDeny NominalDiffTime
+
+-- the key for rate limits
+data RateLimitAddress = RateLimitAddressCardano AddressAny | RateLimitAddressNetwork IPv4 | RateLimitAddressPool PoolId deriving (Eq, Ord)
+
+-- send-money success reply
 data SendMoneySent = SendMoneySent
   { txid :: TxId
   , txin :: TxIn
@@ -85,19 +132,41 @@ data StakeKeyState = StakeKeyRegistered Word32 (SigningKey StakeExtendedKey) Sta
   | StakeKeyDelegated Word32 Lovelace PoolId
   | StakeKeyNotRegistered Word32 deriving Show
 
+-- the full reply type for /send-money
 data SendMoneyReply = SendMoneyReplySuccess SendMoneySent
   | SendMoneyError FaucetWebError
 
-data DelegationReply = DelegationReplySuccess
-  |DelegationReplyError FaucetWebError
+instance ToJSON SendMoneyReply where
+  toJSON (SendMoneyReplySuccess (SendMoneySent{txid,txin})) = object [ "txid" .= txid, "txin" .= txin ]
+  toJSON (SendMoneyError err) = object [ "error" .= err ]
 
+-- the full reply type for /delegate
+data DelegationReply = DelegationReplySuccess TxId
+  | DelegationReplyError FaucetWebError
+
+instance ToJSON DelegationReply where
+  toJSON (DelegationReplySuccess txid) = object [ "success" .= True, "txid" .= txid ]
+  toJSON (DelegationReplyError err) = object [ "error" .= err ]
+
+-- a complete description of an api key
 data ApiKeyValue = ApiKeyValue
   { akvApiKey :: Text
   , akvLovelace :: Lovelace
   , akvRateLimit :: NominalDiffTime
   , akvTokens :: [FaucetToken]
+  , akvCanDelegate :: Bool
   } deriving (Generic, Show)
 
+instance FromJSON ApiKeyValue where
+  parseJSON = withObject "ApiKeyValue" $ \v -> do
+    akvApiKey <- v .: "api_key"
+    akvLovelace <- v .: "lovelace"
+    akvRateLimit <- v .: "rate_limit"
+    akvTokens <- fromMaybe [] <$> v .:? "tokens"
+    akvCanDelegate <- fromMaybe False <$> v .:? "delegate"
+    pure $ ApiKeyValue{..}
+
+-- the complete config file
 data FaucetConfigFile = FaucetConfigFile
   { fcfMnemonic :: [Text]
   , fcfApiKeys :: HM.HashMap Text ApiKeyValue
@@ -106,8 +175,8 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfMaxStakeKeyIndex :: Maybe Word32
   , fcfDebug :: Bool
   , fcfDelegationUtxoSize :: Integer
-  , fcfRecaptchaSiteKey :: Text
-  , fcfRecaptchaSecretKey :: Text
+  , fcfRecaptchaSiteKey :: SiteKey
+  , fcfRecaptchaSecretKey :: SecretKey
   , fcfAllowedCorsOrigins :: [Text]
   } deriving (Generic, Show)
 
@@ -121,11 +190,12 @@ instance FromJSON FaucetConfigFile where
     fcfMaxStakeKeyIndex <- o .: "max_stake_key_index"
     fcfDebug <- o .: "debug"
     fcfDelegationUtxoSize <- o .: "delegation_utxo_size"
-    fcfRecaptchaSiteKey <- o .: "recaptcha_site_key"
-    fcfRecaptchaSecretKey <- o .: "recaptcha_secret_key"
+    fcfRecaptchaSiteKey <- SiteKey <$> o .: "recaptcha_site_key"
+    fcfRecaptchaSecretKey <- SecretKey <$> o .: "recaptcha_secret_key"
     fcfAllowedCorsOrigins <- o .: "allowed_cors_origins"
     pure FaucetConfigFile{..}
 
+-- a value with only ada, or a value containing a mix of assets
 data FaucetValue = Ada Lovelace
   | FaucetValueMultiAsset [(AssetId, Quantity)] deriving (Show, Eq, Ord)
 
@@ -139,53 +209,23 @@ instance ToJSON FaucetValue where
 
 data UtxoStats = UtxoStats (Map FaucetValue Int) deriving Show
 
+-- a request to recaptcha
 data SiteVerifyRequest = SiteVerifyRequest
-  { svrSecret :: Text
-  , svrResponse :: Text
+  { svrSecret :: SecretKey
+  , svrResponse :: CaptchaToken
   , svrRemoteIP :: Maybe Text
   }
 
-data SiteVerifyReply = SiteVerifyReply Text Text
-  | SiteVerifyError [Text]
-  deriving (Generic, Show)
-
-instance ToJSON FaucetWebError where
-  toJSON = genericToJSON defaultOptions
-
-instance ToJSON SendMoneyReply where
-  toJSON (SendMoneyReplySuccess (SendMoneySent{txid,txin})) = object [ "txid" .= txid, "txin" .= txin ]
-  toJSON (SendMoneyError err) = object [ "error" .= err ]
-
-instance ToJSON DelegationReply where
-  toJSON (DelegationReplySuccess) = object [ "success" .= True]
-  toJSON (DelegationReplyError err) = object [ "error" .= err ]
-
-tokenToValue :: FaucetToken -> Value
-tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
-tokenToValue (FaucetToken (AdaAssetId, q)) = object [ "lovelace" .= q ]
-
-data FaucetToken = FaucetToken (AssetId, Quantity) deriving Show
-
-instance FromJSON FaucetToken where
-  parseJSON = withObject "FaucetToken" $ \v -> do
-    policyid <- v .: "policy_id"
-    quantity <- v .: "quantity"
-    token <- v .: "token"
-    pure $ FaucetToken (AssetId policyid token,quantity)
-
-instance FromJSON ApiKeyValue where
-  parseJSON = withObject "ApiKeyValue" $ \v -> do
-    akvApiKey <- v .: "api_key"
-    akvLovelace <- v .: "lovelace"
-    akvRateLimit <- v .: "rate_limit"
-    akvTokens <- v .: "tokens"
-    pure $ ApiKeyValue{..}
-
 instance ToForm SiteVerifyRequest where
-  toForm (SiteVerifyRequest secret token mRemoteIp) = fromEntriesByKey foo
+  toForm (SiteVerifyRequest (SecretKey secret) (CaptchaToken token) mRemoteIp) = fromEntriesByKey foo
     where
       foo :: [(Text, [Text])]
       foo = [ ("secret", [secret]), ("response", [token]) ] ++ maybe [] (\x -> [("remoteip",[x])]) mRemoteIp
+
+-- a reply from recaptcha
+data SiteVerifyReply = SiteVerifyReply Text Text
+  | SiteVerifyError [Text]
+  deriving (Generic, Show)
 
 -- example replies:
 -- { "success": false, "error-codes": [ "timeout-or-duplicate" ]}
@@ -201,15 +241,18 @@ instance FromJSON SiteVerifyReply where
         errors <- o .: "error-codes"
         pure $ SiteVerifyError errors
 
-renderFaucetError :: FaucetError -> Text
-renderFaucetError (FaucetErrorTodo err) = renderShelleyTxCmdError err
-renderFaucetError (FaucetErrorSocketNotFound err) = show err
-renderFaucetError (FaucetErrorLoadingKey err) = show err
-renderFaucetError (FaucetErrorParsingConfig err) = show err
-renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"
-renderFaucetError (FaucetErrorBadMnemonic msg) = "bad mnemonic " <> msg
-renderFaucetError FaucetErrorBadIdx = "bad index"
-renderFaucetError (FaucetErrorShelleyAddr err) = show err
+data FaucetToken = FaucetToken (AssetId, Quantity) deriving Show
+
+tokenToValue :: FaucetToken -> Value
+tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
+tokenToValue (FaucetToken (AdaAssetId, q)) = object [ "lovelace" .= q ]
+
+instance FromJSON FaucetToken where
+  parseJSON = withObject "FaucetToken" $ \v -> do
+    policyid <- v .: "policy_id"
+    quantity <- v .: "quantity"
+    token <- v .: "token"
+    pure $ FaucetToken (AssetId policyid token,quantity)
 
 -- TODO, find a better way to do this
 jsonOptions :: Options
@@ -243,7 +286,6 @@ accountKeyToPaymentKey acctK index = do
 
 accountKeyToStakeKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
 accountKeyToStakeKey acctK index = deriveAddressPrivateKey acctK Stake (maybe (error "bad stake index") Prelude.id $ indexFromWord32 index)
-
 
 vkeyToAddr :: NetworkId -> SomeAddressVerificationKey -> ExceptT ShelleyAddressCmdError IO AddressAny
 vkeyToAddr nw (AByronVerificationKey vk) = return (AddressByron (makeByronAddress nw vk))
@@ -298,5 +340,3 @@ test = do
   case eResult of
     Left err -> print $ renderFaucetError err
     Right msg -> print msg
-    --(Right shortmw) = mkSomeMnemonic @'[15] ["network","empty","cause","mean","expire","private","finger","accident","session","problem","absurd","banner","stage","void","what"]
-    --rootK = Shelley $ genMasterKeyFromMnemonicShelley mw sndFactor
