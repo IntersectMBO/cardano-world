@@ -17,7 +17,7 @@ import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertifica
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
 import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
-import Cardano.Faucet.Misc (convertEra, parseAddress)
+import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue)
 import Cardano.Faucet.TxUtils (makeAndSignTx)
 import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..))
 import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
@@ -26,7 +26,6 @@ import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVa
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (eitherDecode)
 import Data.ByteString.Lazy qualified as LBS
-import Data.HashMap.Strict qualified as HM
 import Data.IP (IPv4, fromHostAddress)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
@@ -260,13 +259,17 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       stake <- readTMVar stakeTMVar
       pure (u,stake)
     let
+      -- how many utxo exist at each value
+      stats :: Map FaucetValue Int
       (UtxoStats stats) = computeUtxoStats utxo
+      -- utxo that are entirely missing but required by something
+      missingUtxo :: Map FaucetValue Int
+      missingUtxo = Map.difference (Map.fromList $ map (\l -> (Ada l,0)) fsBucketSizes) stats
       isRequiredSize :: Lovelace -> Maybe (Text, MetricValue)
       isRequiredSize v = if (elem v fsBucketSizes) then Just ("is_valid",MetricValueInt 1) else Nothing
       isForDelegation v = if (v == Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)) then Just ("for_delegation",MetricValueInt 1) else Nothing
       toStats :: FaucetValue -> Int -> Metric
-      -- TODO, tag the delegation size
-      toStats ((Ada l@(Lovelace v))) count = Metric (Map.fromList $ catMaybes $ [Just ("lovelace",MetricValueInt v), isRequiredSize l, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
+      toStats ((Ada l@(Lovelace v))) count = Metric (Map.fromList $ catMaybes $ [Just ("lovelace",MetricValueInt v), Just ("ada",MetricValueFloat $ (fromIntegral v) / 1000000), isRequiredSize l, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
       toStats (FaucetValueMultiAsset _) count = Metric mempty "bucket_todo" (MetricValueInt $ fromIntegral count)
       stakeUnusedToMetric :: Metric
       stakeUnusedToMetric = Metric mempty "faucet_delegation_available" (MetricValueInt $ fromIntegral $ length stakeUnused)
@@ -275,7 +278,7 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       stakeRewardsMetric :: [Metric]
       stakeRewardsMetric = map (\(index, Lovelace reward, pool) -> Metric (Map.fromList [("index", MetricValueInt $ fromIntegral index), ("pool", MetricValueStr $ serialiseToBech32 pool)]) "faucet_delegation_rewards" (MetricValueInt reward)) stakeUsed
       utxoMetrics :: [Metric]
-      utxoMetrics = Map.foldlWithKey (\rows value count -> (toStats value count):rows) [] stats
+      utxoMetrics = Map.foldlWithKey (\rows value count -> (toStats value count):rows) [] (stats <> missingUtxo)
       metrics :: [Metric]
       metrics = utxoMetrics <> [ stakeUnusedToMetric, stakeUsedToMetric ] <> stakeRewardsMetric
       result = Cardano.Prelude.unlines $ Cardano.Prelude.map toMetric metrics
