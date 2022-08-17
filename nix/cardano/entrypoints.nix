@@ -376,7 +376,7 @@ in {
       ${prelude}
       DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
 
-      mkdir -m 1777 /tmp
+      [ ! -d /tmp ] && mkdir -m 1777 /tmp
 
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
