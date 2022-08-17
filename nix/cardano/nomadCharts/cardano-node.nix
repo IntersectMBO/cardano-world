@@ -15,6 +15,7 @@ in
     namespace,
     datacenters ? ["eu-central-1" "eu-west-1" "us-east-2"],
     domain,
+    extraVector ? {},
     nodeClass,
     scaling,
   }: let
@@ -77,6 +78,7 @@ in
           (vector.nomadTask.default {
             inherit namespace;
             endpoints = ["http://127.0.0.1:12798/metrics"]; # prometheus metrics for cardano-node
+            extra = extraVector;
           })
           {
             count = scaling;

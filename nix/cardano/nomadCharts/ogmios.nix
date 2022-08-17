@@ -14,6 +14,7 @@ in
     namespace,
     datacenters ? ["eu-central-1" "eu-west-1" "us-east-2"],
     domain,
+    extraVector ? {},
     nodeClass,
     scaling,
   } @ args: let
@@ -88,6 +89,7 @@ in
               # prometheus metrics for cardano-node
               "http://127.0.0.1:12798/metrics"
             ];
+            extra = extraVector;
           })
           (
             merge node
