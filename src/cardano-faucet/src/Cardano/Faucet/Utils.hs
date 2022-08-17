@@ -24,7 +24,7 @@ computeUtxoStats utxo = do
     convertValue (TxOut _ value _ _) = getValue value
     --folder :: UtxoStats -> FaucetValue -> UtxoStats
     --folder (UtxoStats m) v = UtxoStats $ Map.insert v ((fromMaybe 0 $ Map.lookup v m) + 1) m
-  UtxoStats $ Map.fromList $ countLength $ map convertValue $ Map.elems utxo
+  UtxoStats $ Map.fromList $ countLength $ sort $ map convertValue $ Map.elems utxo
   --foldl' folder (UtxoStats mempty) $ concat $ map convertValue $ Map.elems utxo
 
 countDuplicates :: Ord a => [a] -> [(a, Int)]
