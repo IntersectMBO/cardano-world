@@ -3,6 +3,7 @@ index-state: 2022-07-01T00:00:00Z
 
 packages:
     src/cardano-faucet
+    src/db-sync-query
 
 constraints:
     hedgehog >= 1.0
@@ -265,3 +266,5 @@ package comonad
 
 package cardano-faucet
   --ghc-options: -Werror
+
+package db-sync-query

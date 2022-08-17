@@ -1,0 +1,28 @@
+name: db-sync-query
+version: 0.1.0
+github: input-output-hk/db-sync-query
+license: MIT
+license-file: LICENSE
+synopsis: Query DB Sync Blocks
+author: Parthiv Seetharaman
+maintainer: parthivs@myrdd.info
+category: Distribution, Nix
+
+
+ghc-options:
+  - -Wall
+
+dependencies:
+  - postgresql-simple
+  - modern-uri
+  - HTTP
+  - network
+  - network-uri
+  - base == 4.*
+  - text == 1.2.*
+
+executables:
+  db-sync-query:
+    main: Main.hs
+    default-extensions:
+      - OverloadedStrings

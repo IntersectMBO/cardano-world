@@ -35,6 +35,20 @@ in {
     ];
     config.User = "1000:1000";
   };
+  db-sync-query = buildDebugImage entrypoints.db-sync-query {
+    name = "registry.ci.iog.io/db-sync-query";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = entrypoints.db-sync-query.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.db-sync-query];})
+    ];
+    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc];
+    config.Cmd = [
+      "${entrypoints.db-sync-query}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
+
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
     name = "registry.ci.iog.io/cardano-wallet";
     maxLayers = 25;

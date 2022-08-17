@@ -495,6 +495,44 @@ in {
       fi
     '';
   };
+  db-sync-query = writeShellApplication {
+    debugInputs = [packages.db-sync-query];
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
+    name = "entrypoint";
+    text = ''
+      [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
+      [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
+      [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
+
+      [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
+      [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+
+      export  VAULT_CACERT="$WORKLOAD_CACERT"
+      export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+      export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+
+      cmd=(
+        "curl"
+        "$VAULT_ADDR/v1/$VAULT_KV_PATH"
+        "--header" "X-Vault-Token: $VAULT_TOKEN"
+        "--header" "Content-Type: application/json"
+      )
+
+      json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
+
+      [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+      [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
+
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+
+      DB_USER=$(echo "$json"|jq -e -r '."pgUser"') \
+      DB_PASS=$(echo "$json"|jq -e -r '."pgPass"') \
+      DB_HOST=$PSQL_HOST0 \
+      DB_PORT=$PSQL_PORT0 \
+      exec ${packages.db-sync-query}/bin/db-sync-query
+    '';
+  };
 
   cardano-wallet = writeShellApplication {
     runtimeInputs = prelude-runtime ++ [packages.cardano-cli];
