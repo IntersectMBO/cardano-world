@@ -198,7 +198,7 @@ instance FromJSON FaucetConfigFile where
 -- TODO, maybe replace with the cardano Value type?
 data FaucetValue = Ada Lovelace
   | FaucetValueMultiAsset Lovelace FaucetToken
-  | FaucetValueManyTokens deriving (Show, Eq, Ord)
+  | FaucetValueManyTokens Lovelace deriving (Show, Eq, Ord)
 
 --tokenToValue :: FaucetToken -> Value
 --tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
@@ -207,6 +207,7 @@ data FaucetValue = Ada Lovelace
 instance ToJSON FaucetValue where
   toJSON (Ada lovelace) = object [ "lovelace" .= lovelace ]
   toJSON (FaucetValueMultiAsset _ _) = String "unsupported"
+  toJSON (FaucetValueManyTokens _) = String "unsupported"
 
 data UtxoStats = UtxoStats (Map FaucetValue Int) deriving Show
 

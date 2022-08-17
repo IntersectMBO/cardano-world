@@ -3,21 +3,32 @@
     <script src="/get-site-key"></script>
     <script>
       function onLoadCallback() {
-        grecaptcha.render("widget", { sitekey: site_key });
+        grecaptcha.render("payment", { sitekey: site_key });
+        grecaptcha.render("delegate", { sitekey: site_key });
       }
     </script>
-    <script src="https://www.google.com/recaptcha/api.js?onload=onLoadCallback&render=explicit" async defer></script>
+    <script
+      src="https://www.google.com/recaptcha/api.js?onload=onLoadCallback&render=explicit"
+      async
+      defer
+    ></script>
   </head>
   <body>
     <form action="/send-money" method="get">
-      <div id=widget></div>
-      <select name=type>
+      <div id="payment"></div>
+      <select name="type">
         <option value="default">10 ada</option>
-        <option value="test">10 ada + 10 tokens</option>
-      </select><br/>
-      address(required): <input type=text name="address" size=50 /><br/>
-      api key(optional): <input type=text name="api_key" /><br/>
-      <input type=submit>
+        <!--<option value="test">10 ada + 10 tokens</option>--></select
+      ><br />
+      address(required): <input type="text" name="address" size="50" /><br />
+      api key(optional): <input type="text" name="api_key" /><br />
+      <input type="submit" />
+    </form>
+    <form action="/delegate" method="get">
+      <div id="delegate"></div>
+      pool(required): <input type="text" name="poolid" size="50" /><br />
+      api key(optional): <input type="text" name="api_key" /><br />
+      <input type="submit" />
     </form>
   </body>
 </html>

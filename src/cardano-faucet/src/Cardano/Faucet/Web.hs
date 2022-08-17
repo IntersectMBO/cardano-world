@@ -15,13 +15,13 @@
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
 import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
-import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32)
+import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName))
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
 import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
 import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace)
 import Cardano.Faucet.TxUtils (makeAndSignTx)
-import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..))
+import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..), FaucetToken(FaucetToken))
 import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
 import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
@@ -31,6 +31,7 @@ import Data.ByteString.Lazy qualified as LBS
 import Data.IP (IPv4, fromHostAddress)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
+import Data.Text.Encoding qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
 import Data.Time.Clock (UTCTime, getCurrentTime, addUTCTime, diffUTCTime)
@@ -277,9 +278,13 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       valueAttribute fv = [Just ("lovelace", MetricValueInt l), Just ("ada",MetricValueFloat $ (fromIntegral l) / 1000000)]
         where
           Lovelace l = faucetValueToLovelace fv
+      tokenAttributes :: FaucetToken -> [Maybe (Text, MetricValue)]
+      tokenAttributes (FaucetToken (AssetId (PolicyId scripthash) (AssetName tokenname), _quant)) = [Just ("policyid", MetricValueStr $ serialiseToRawBytesHexText scripthash), Just ("tokenname", MetricValueStr $ T.decodeLatin1 tokenname)]
+      tokenAttributes _ = []
       toStats :: FaucetValue -> Int -> Metric
       toStats fv@((Ada l)) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [isRequiredSize fv, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
-      toStats fv@(FaucetValueMultiAsset _) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [ isRequiredSize fv ]) "bucket_todo" (MetricValueInt $ fromIntegral count)
+      toStats fv@(FaucetValueMultiAsset _ll token) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [ isRequiredSize fv ] <> tokenAttributes token) "bucket_todo" (MetricValueInt $ fromIntegral count)
+      toStats fv@(FaucetValueManyTokens _) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv) "faucet_utxo_too_many_tokens" (MetricValueInt $ fromIntegral count)
       stakeUnusedToMetric :: Metric
       stakeUnusedToMetric = Metric mempty "faucet_delegation_available" (MetricValueInt $ fromIntegral $ length stakeUnused)
       stakeUsedToMetric :: Metric

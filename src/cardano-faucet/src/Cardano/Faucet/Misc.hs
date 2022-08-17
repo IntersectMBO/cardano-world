@@ -2,7 +2,8 @@
 
 module Cardano.Faucet.Misc where
 
-import Cardano.Api (ConsensusModeParams(CardanoModeParams), CardanoMode, EpochSlots(EpochSlots), AddressAny, parseAddressAny, TxOutValue(TxOutAdaOnly, TxOutValue), CardanoEra, EraInMode, toEraInMode, ConsensusMode(CardanoMode),AssetId(AdaAssetId, AssetId), quantityToLovelace, Quantity, valueToList, Lovelace, lovelaceToQuantity)
+import Cardano.Api (ConsensusModeParams(CardanoModeParams), CardanoMode, EpochSlots(EpochSlots), AddressAny, parseAddressAny, TxOutValue(TxOutAdaOnly, TxOutValue), CardanoEra, EraInMode, toEraInMode, ConsensusMode(CardanoMode),AssetId(AdaAssetId), Quantity, valueToList)
+import Cardano.Api.Shelley (Lovelace, selectLovelace, AssetId(AssetId))
 import Cardano.Faucet.Types
 import Cardano.Prelude
 import Control.Monad.Trans.Except.Extra (left)
@@ -11,22 +12,29 @@ import Text.Parsec
 
 getValue :: TxOutValue era -> FaucetValue
 getValue (TxOutAdaOnly _ ll) = Ada ll
-getValue (TxOutValue _ val) = convertValue $ valueToList val
+getValue (TxOutValue _ val) = convertRemaining remaining
   where
-    convertValue :: [(AssetId, Quantity)] -> FaucetValue
-    convertValue [(AdaAssetId, q)] = Ada $ quantityToLovelace q
-    convertValue other = FaucetValueMultiAsset (map FaucetToken other)
+    ll :: Lovelace
+    ll = selectLovelace val
+    isntAda :: (AssetId, Quantity) -> Bool
+    isntAda (AdaAssetId, _) = False
+    isntAda (AssetId _ _, _) = True
+    remaining :: [(AssetId, Quantity)]
+    remaining = filter isntAda (valueToList val)
+    convertRemaining :: [(AssetId, Quantity)] -> FaucetValue
+    convertRemaining [t] = FaucetValueMultiAsset ll (FaucetToken t)
+    convertRemaining [] = Ada ll
+    convertRemaining _ = FaucetValueManyTokens ll
 
 toFaucetValue :: ApiKeyValue -> FaucetValue
 toFaucetValue (ApiKeyValue _ lovelace _ Nothing _) = Ada lovelace
-toFaucetValue (ApiKeyValue _ lovelace _ t _) = FaucetValueMultiAsset (FaucetToken (AdaAssetId, lovelaceToQuantity lovelace):catMaybes [ t ])
+toFaucetValue (ApiKeyValue _ ll _ (Just t) _) = FaucetValueMultiAsset ll t
 
+-- returns just the lovelace component and ignores tokens
 faucetValueToLovelace :: FaucetValue -> Lovelace
-faucetValueToLovelace (Ada l) = l
-faucetValueToLovelace (FaucetValueMultiAsset tokenList) = quantityToLovelace $ foldl' fn 0 tokenList
-  where
-    fn s (FaucetToken (AdaAssetId, q)) = s + q
-    fn s (FaucetToken (AssetId _ _, _)) = s
+faucetValueToLovelace (Ada ll) = ll
+faucetValueToLovelace (FaucetValueMultiAsset ll _token) = ll
+faucetValueToLovelace (FaucetValueManyTokens ll) = ll
 
 parseAddress :: Text -> ExceptT FaucetWebError IO AddressAny
 parseAddress addr = case parse (parseAddressAny <* eof) "" (T.unpack addr) of
