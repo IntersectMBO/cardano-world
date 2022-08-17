@@ -27,6 +27,7 @@ in
     };
   };
   config = {
+    evalSystem = "x86_64-linux";
     name = lib.mkDefault "cardano-world";
     src = lib.mkDefault (haskellLib.cleanSourceWith {
       src = src.outPath;
@@ -126,27 +127,18 @@ in
           });
         })
         ({ pkgs, options, ... }: {
-          # make sure that libsodium DLLs are available for windows binaries,
-          # stamp executables with the git revision, add shell completion, strip/rewrite:
+          # strip binaries, add shell completion:
+          dontStrip = false;
           packages = lib.mapAttrs
             (name: exes: {
               components.exes = lib.genAttrs exes (exe: {
-                postInstall = ''
-                  ${lib.optionalString (pkgs.stdenv.hostPlatform.isMusl) ''
-                    ${pkgs.buildPackages.binutils-unwrapped}/bin/*strip $out/bin/*
-                  ''}
-                  ${lib.optionalString (pkgs.stdenv.hostPlatform.isDarwin) ''
-                    export PATH=$PATH:${lib.makeBinPath [ pkgs.haskellBuildUtils pkgs.buildPackages.binutils pkgs.buildPackages.nix ]}
-                    ${pkgs.haskellBuildUtils}/bin/rewrite-libs $out/bin $out/bin/*
-                  ''}
-                   ${lib.optionalString (!pkgs.stdenv.hostPlatform.isWindows
-                    && lib.elem exe ["cardano-node" "cardano-cli" "cardano-topology" "locli"]) ''
-                    BASH_COMPLETIONS=$out/share/bash-completion/completions
-                    ZSH_COMPLETIONS=$out/share/zsh/site-functions
-                    mkdir -p $BASH_COMPLETIONS $ZSH_COMPLETIONS
-                    $out/bin/${exe} --bash-completion-script ${exe} > $BASH_COMPLETIONS/${exe}
-                    $out/bin/${exe} --zsh-completion-script ${exe} > $ZSH_COMPLETIONS/_${exe}
-                  ''}
+                postInstall = lib.optionalString (!pkgs.stdenv.hostPlatform.isWindows
+                  && lib.elem exe ["cardano-node" "cardano-cli" "cardano-topology" "locli"]) ''
+                  BASH_COMPLETIONS=$out/share/bash-completion/completions
+                  ZSH_COMPLETIONS=$out/share/zsh/site-functions
+                  mkdir -p $BASH_COMPLETIONS $ZSH_COMPLETIONS
+                  $out/bin/${exe} --bash-completion-script ${exe} > $BASH_COMPLETIONS/${exe}
+                  $out/bin/${exe} --zsh-completion-script ${exe} > $ZSH_COMPLETIONS/_${exe}
                 '';
               });
             })
