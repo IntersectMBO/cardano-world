@@ -23,9 +23,9 @@ import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?))
 import Data.ByteString.Char8 qualified as BSC
 import Data.Either.Combinators (mapRight)
-import Data.HashMap.Strict qualified as HM
 import Data.IP (IPv4)
 import Data.List.Split (splitOn)
+import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 import Data.Time.Clock (UTCTime, NominalDiffTime)
 import Prelude (String, error, id, read)
@@ -79,11 +79,9 @@ data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorRateLimitExeeeded NominalDiffTime Text
   | FaucetWebErrorUtxoNotFound FaucetValue
   | FaucetWebErrorEraConversion
-  | FaucetWebErrorSocketNotFound Text
   | FaucetWebErrorTodo Text
   | FaucetWebErrorFeatureMismatch AnyCardanoEra Text
   | FaucetWebErrorConsensusModeMismatchTxBalance Text AnyCardanoEra
-  | FaucetWebErrorAcquireFailure Text
   | FaucetWebErrorEraMismatch Text
   | FaucetWebErrorAutoBalance Text
   | FaucetWebErrorBadIdx
@@ -97,8 +95,8 @@ instance ToJSON FaucetWebError where
   toJSON = genericToJSON defaultOptions
 
 -- an api key
--- Recaptcha is a special key, that can only be obtained by answering a recaptcha prompt
-data ApiKey = Recaptcha | ApiKey Text deriving (Ord, Eq)
+-- Recaptcha is a special key, that can only be obtained by answering a recaptcha prompt, and has an optional type=x in the URL
+data ApiKey = Recaptcha Text | ApiKey Text deriving (Ord, Eq)
 
 -- the state of the entire faucet
 data IsCardanoEra era => FaucetState era = FaucetState
@@ -111,7 +109,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
   , fsRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
-  , fsBucketSizes :: [Lovelace]
+  , fsBucketSizes :: [FaucetValue]
   }
 
 -- the result of checking a rate limit
@@ -124,6 +122,7 @@ data RateLimitAddress = RateLimitAddressCardano AddressAny | RateLimitAddressNet
 data SendMoneySent = SendMoneySent
   { txid :: TxId
   , txin :: TxIn
+  , amount :: FaucetValue
   }
 
 data StakeKeyIntermediateState = StakeKeyIntermediateStateNotRegistered Word32 | StakeKeyIntermediateStateRegistered (Word32, SigningKey StakeExtendedKey, StakeCredential, Lovelace)
@@ -137,7 +136,7 @@ data SendMoneyReply = SendMoneyReplySuccess SendMoneySent
   | SendMoneyError FaucetWebError
 
 instance ToJSON SendMoneyReply where
-  toJSON (SendMoneyReplySuccess (SendMoneySent{txid,txin})) = object [ "txid" .= txid, "txin" .= txin ]
+  toJSON (SendMoneyReplySuccess (SendMoneySent{txid,txin,amount})) = object [ "txid" .= txid, "txin" .= txin, "amount" .= amount ]
   toJSON (SendMoneyError err) = object [ "error" .= err ]
 
 -- the full reply type for /delegate
@@ -153,7 +152,7 @@ data ApiKeyValue = ApiKeyValue
   { akvApiKey :: Text
   , akvLovelace :: Lovelace
   , akvRateLimit :: NominalDiffTime
-  , akvTokens :: [FaucetToken]
+  , akvTokens :: Maybe FaucetToken
   , akvCanDelegate :: Bool
   } deriving (Generic, Show)
 
@@ -162,15 +161,15 @@ instance FromJSON ApiKeyValue where
     akvApiKey <- v .: "api_key"
     akvLovelace <- v .: "lovelace"
     akvRateLimit <- v .: "rate_limit"
-    akvTokens <- fromMaybe [] <$> v .:? "tokens"
+    akvTokens <- v .:? "tokens"
     akvCanDelegate <- fromMaybe False <$> v .:? "delegate"
     pure $ ApiKeyValue{..}
 
 -- the complete config file
 data FaucetConfigFile = FaucetConfigFile
   { fcfMnemonic :: [Text]
-  , fcfApiKeys :: HM.HashMap Text ApiKeyValue
-  , fcfRecaptchaLimits :: ApiKeyValue
+  , fcfApiKeys :: Map Text ApiKeyValue
+  , fcfRecaptchaLimits :: Map Text ApiKeyValue
   , fcfNetwork :: NetworkId
   , fcfMaxStakeKeyIndex :: Maybe Word32
   , fcfDebug :: Bool
@@ -184,7 +183,7 @@ instance FromJSON FaucetConfigFile where
   parseJSON = withObject "FaucetConfigFile" $ \o -> do
     fcfMnemonic <- o .: "mnemonic"
     apiKeyList <- o .: "api_keys"
-    let fcfApiKeys = HM.fromList $ map (\key@ApiKeyValue{akvApiKey} -> (akvApiKey, key)) apiKeyList
+    let fcfApiKeys = Map.fromList $ map (\key@ApiKeyValue{akvApiKey} -> (akvApiKey, key)) apiKeyList
     fcfRecaptchaLimits <- o .: "recaptcha_limits"
     fcfNetwork <- o .: "network"
     fcfMaxStakeKeyIndex <- o .: "max_stake_key_index"
@@ -196,16 +195,18 @@ instance FromJSON FaucetConfigFile where
     pure FaucetConfigFile{..}
 
 -- a value with only ada, or a value containing a mix of assets
+-- TODO, maybe replace with the cardano Value type?
 data FaucetValue = Ada Lovelace
-  | FaucetValueMultiAsset [(AssetId, Quantity)] deriving (Show, Eq, Ord)
+  | FaucetValueMultiAsset Lovelace FaucetToken
+  | FaucetValueManyTokens deriving (Show, Eq, Ord)
 
-faucetValueToLovelace :: FaucetValue -> Lovelace
-faucetValueToLovelace (Ada l) = l
-faucetValueToLovelace _ = error "unfinished"
+--tokenToValue :: FaucetToken -> Value
+--tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
+--tokenToValue (FaucetToken (AdaAssetId, q)) = object [ "lovelace" .= q ]
 
 instance ToJSON FaucetValue where
   toJSON (Ada lovelace) = object [ "lovelace" .= lovelace ]
-  toJSON (FaucetValueMultiAsset _) = String "unsupported"
+  toJSON (FaucetValueMultiAsset _ _) = String "unsupported"
 
 data UtxoStats = UtxoStats (Map FaucetValue Int) deriving Show
 
@@ -241,11 +242,7 @@ instance FromJSON SiteVerifyReply where
         errors <- o .: "error-codes"
         pure $ SiteVerifyError errors
 
-data FaucetToken = FaucetToken (AssetId, Quantity) deriving Show
-
-tokenToValue :: FaucetToken -> Value
-tokenToValue (FaucetToken (AssetId policyid token, q)) = object [ "policyid" .= policyid, "token" .= token, "quantity" .= q ]
-tokenToValue (FaucetToken (AdaAssetId, q)) = object [ "lovelace" .= q ]
+data FaucetToken = FaucetToken (AssetId, Quantity) deriving (Show, Eq, Ord)
 
 instance FromJSON FaucetToken where
   parseJSON = withObject "FaucetToken" $ \v -> do
@@ -253,6 +250,10 @@ instance FromJSON FaucetToken where
     quantity <- v .: "quantity"
     token <- v .: "token"
     pure $ FaucetToken (AssetId policyid token,quantity)
+
+instance ToJSON FaucetToken where
+  toJSON (FaucetToken (AssetId policyid token, quant)) = object [ "policy_id" .= policyid, "quantity" .= quant, "token" .= token ]
+  toJSON (FaucetToken (AdaAssetId, quant)) = object [ "assetid" .= ("ada" :: Text), "quantity" .= quant ]
 
 -- TODO, find a better way to do this
 jsonOptions :: Options

@@ -10,7 +10,7 @@ import Cardano.Api (TxIn, TxOut(TxOut), CtxUTxO, Lovelace, CardanoEra, TxFee, tx
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.Faucet.Misc
 import Cardano.Faucet.Types
-import Cardano.Prelude
+import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (TMVar, takeTMVar, putTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Map.Strict qualified as Map

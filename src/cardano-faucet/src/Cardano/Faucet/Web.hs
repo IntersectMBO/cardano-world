@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,7 +19,7 @@ import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertifica
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
 import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
-import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue)
+import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace)
 import Cardano.Faucet.TxUtils (makeAndSignTx)
 import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..))
 import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
@@ -54,16 +56,19 @@ instance Accept HTML where
 instance MimeRender HTML Text where
   mimeRender _ = LT.encodeUtf8 . LT.fromStrict
 
-type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+#define ApiKeyProtected QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text
+
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
 type Metrics = "metrics" :> Get '[PlainText] Text
-type DelegateStake = "delegate" :> Capture "poolid" PoolId :> QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
+type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
+type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
 type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
 type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
 
 -- faucet root dir
-type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStake :<|> GetSiteKey :<|> GetBasicFaucet
+type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStakeUrl :<|> DelegateStakeQuery :<|> GetSiteKey :<|> GetBasicFaucet
 -- recaptcha root dir
 type CaptchaRootDir = SiteVerify
 
@@ -87,7 +92,7 @@ server :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Server RootDir
-server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
+server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
   where
     site_key_reply = sformat ("site_key = \"" % st % "\";") $ unSiteKey $ fcfRecaptchaSiteKey $ fsConfig faucetState
 
@@ -132,7 +137,7 @@ handleDelegateStake era sbe fs@FaucetState{skey,vkey,network,utxoTMVar,queue,sta
     clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     when (fcfMaxStakeKeyIndex fsConfig == Nothing) $ left $ FaucetWebErrorTodo "delegation disabled"
-    mReply <- liftIO $ decideBetweenKeyAndCaptcha mApiKey mToken fsConfig
+    mReply <- liftIO $ decideBetweenKeyAndCaptcha Nothing mApiKey mToken fsConfig
     (key, limits) <- case mReply of
       Just (_, ApiKeyValue _ _ _ _ False) -> left FaucetWebErrorKeyCantDelegate
       Just x -> pure x
@@ -264,13 +269,17 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       (UtxoStats stats) = computeUtxoStats utxo
       -- utxo that are entirely missing but required by something
       missingUtxo :: Map FaucetValue Int
-      missingUtxo = Map.difference (Map.fromList $ map (\l -> (Ada l,0)) fsBucketSizes) stats
-      isRequiredSize :: Lovelace -> Maybe (Text, MetricValue)
+      missingUtxo = Map.difference (Map.fromList $ map (\fv -> (fv,0)) fsBucketSizes) stats
+      isRequiredSize :: FaucetValue -> Maybe (Text, MetricValue)
       isRequiredSize v = if (elem v fsBucketSizes) then Just ("is_valid",MetricValueInt 1) else Nothing
       isForDelegation v = if (v == Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)) then Just ("for_delegation",MetricValueInt 1) else Nothing
+      valueAttribute :: FaucetValue -> [Maybe (Text, MetricValue)]
+      valueAttribute fv = [Just ("lovelace", MetricValueInt l), Just ("ada",MetricValueFloat $ (fromIntegral l) / 1000000)]
+        where
+          Lovelace l = faucetValueToLovelace fv
       toStats :: FaucetValue -> Int -> Metric
-      toStats ((Ada l@(Lovelace v))) count = Metric (Map.fromList $ catMaybes $ [Just ("lovelace",MetricValueInt v), Just ("ada",MetricValueFloat $ (fromIntegral v) / 1000000), isRequiredSize l, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
-      toStats (FaucetValueMultiAsset _) count = Metric mempty "bucket_todo" (MetricValueInt $ fromIntegral count)
+      toStats fv@((Ada l)) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [isRequiredSize fv, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
+      toStats fv@(FaucetValueMultiAsset _) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [ isRequiredSize fv ]) "bucket_todo" (MetricValueInt $ fromIntegral count)
       stakeUnusedToMetric :: Metric
       stakeUnusedToMetric = Metric mempty "faucet_delegation_available" (MetricValueInt $ fromIntegral $ length stakeUnused)
       stakeUsedToMetric :: Metric
@@ -293,18 +302,20 @@ pickIp _ _ = fromHostAddress 0x100007f -- 127.0.0.1
 -- if the apikey is invalid, act like it didnt exist
 -- if a recaptcha token exists and is valid, return those limits
 -- if all keys are missing or invalid return Nothing
-decideBetweenKeyAndCaptcha :: Maybe Text -> Maybe CaptchaToken -> FaucetConfigFile -> IO (Maybe (ApiKey, ApiKeyValue))
-decideBetweenKeyAndCaptcha (Just apiKeyText) mToken config@FaucetConfigFile{fcfApiKeys} = case (apiKeyText `HM.lookup` fcfApiKeys) of
+decideBetweenKeyAndCaptcha :: Maybe Text -> Maybe Text -> Maybe CaptchaToken -> FaucetConfigFile -> IO (Maybe (ApiKey, ApiKeyValue))
+decideBetweenKeyAndCaptcha mType (Just apiKeyText) mToken config@FaucetConfigFile{fcfApiKeys} = case (apiKeyText `Map.lookup` fcfApiKeys) of
   -- api key was not valid, just use recaptcha
   -- TODO, should it give an error instead?
-  Nothing -> decideBetweenKeyAndCaptcha Nothing mToken config
+  Nothing -> decideBetweenKeyAndCaptcha mType Nothing mToken config
   Just limits -> pure $ Just (ApiKey apiKeyText, limits)
-decideBetweenKeyAndCaptcha Nothing (Just token) FaucetConfigFile{fcfRecaptchaSecretKey,fcfRecaptchaLimits} = do
+decideBetweenKeyAndCaptcha mType Nothing (Just token) FaucetConfigFile{fcfRecaptchaSecretKey,fcfRecaptchaLimits} = do
+  let
+    captchaType = fromMaybe "default" mType
   valid <- checkRecaptcha fcfRecaptchaSecretKey token
-  case valid of
-    True -> pure $ Just (Recaptcha, fcfRecaptchaLimits)
-    False -> pure Nothing
-decideBetweenKeyAndCaptcha Nothing Nothing _ = pure Nothing
+  case (valid, captchaType `Map.lookup` fcfRecaptchaLimits) of
+    (True, Just limits) -> pure $ Just (Recaptcha captchaType, limits)
+    _ -> pure Nothing
+decideBetweenKeyAndCaptcha _ Nothing Nothing _ = pure Nothing
 
 handleSendMoney :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -312,20 +323,20 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Maybe Text
+  -> Maybe Text
   -> Maybe CaptchaToken
   -> SockAddr
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
-    mReply <- liftIO $ decideBetweenKeyAndCaptcha mApiKey mToken fsConfig
+    mReply <- liftIO $ decideBetweenKeyAndCaptcha mType mApiKey mToken fsConfig
     (key, limits) <- case mReply of
       Just x -> pure x
       Nothing -> left FaucetWebErrorInvalidApiKey
-    -- ratelimits and utxo should be in a single atomically block
     now <- liftIO $ getCurrentTime
     result <- liftIO $ atomically $ do
       let
@@ -333,7 +344,7 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} ad
           limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fs limits
           case limitResult of
             RateLimitResultAllow -> do
-              txinout <- findUtxoOfSize utxoTMVar $ Ada $ akvLovelace limits
+              txinout <- findUtxoOfSize utxoTMVar $ toFaucetValue limits
               pure $ Right txinout
             RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseAddress addressAny)
       -- findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
@@ -347,7 +358,7 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} ad
     let
       prettyTx = friendlyTxBS era signedTx
     liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
-    return $ SendMoneyReplySuccess $ SendMoneySent txid txin
+    return $ SendMoneyReplySuccess $ SendMoneySent txid txin $ toFaucetValue limits
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
     Right msg -> pure $ corsHeader msg
