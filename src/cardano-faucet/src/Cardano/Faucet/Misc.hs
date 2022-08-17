@@ -2,7 +2,7 @@
 
 module Cardano.Faucet.Misc where
 
-import Cardano.Api (ConsensusModeParams(CardanoModeParams), CardanoMode, EpochSlots(EpochSlots), AddressAny, parseAddressAny, TxOutValue(TxOutAdaOnly, TxOutValue), CardanoEra, EraInMode, toEraInMode, ConsensusMode(CardanoMode),AssetId(AdaAssetId), quantityToLovelace, Quantity, valueToList)
+import Cardano.Api (ConsensusModeParams(CardanoModeParams), CardanoMode, EpochSlots(EpochSlots), AddressAny, parseAddressAny, TxOutValue(TxOutAdaOnly, TxOutValue), CardanoEra, EraInMode, toEraInMode, ConsensusMode(CardanoMode),AssetId(AdaAssetId, AssetId), quantityToLovelace, Quantity, valueToList, Lovelace, lovelaceToQuantity)
 import Cardano.Faucet.Types
 import Cardano.Prelude
 import Control.Monad.Trans.Except.Extra (left)
@@ -15,7 +15,18 @@ getValue (TxOutValue _ val) = convertValue $ valueToList val
   where
     convertValue :: [(AssetId, Quantity)] -> FaucetValue
     convertValue [(AdaAssetId, q)] = Ada $ quantityToLovelace q
-    convertValue other = FaucetValueMultiAsset other
+    convertValue other = FaucetValueMultiAsset (map FaucetToken other)
+
+toFaucetValue :: ApiKeyValue -> FaucetValue
+toFaucetValue (ApiKeyValue _ lovelace _ Nothing _) = Ada lovelace
+toFaucetValue (ApiKeyValue _ lovelace _ t _) = FaucetValueMultiAsset (FaucetToken (AdaAssetId, lovelaceToQuantity lovelace):catMaybes [ t ])
+
+faucetValueToLovelace :: FaucetValue -> Lovelace
+faucetValueToLovelace (Ada l) = l
+faucetValueToLovelace (FaucetValueMultiAsset tokenList) = quantityToLovelace $ foldl' fn 0 tokenList
+  where
+    fn s (FaucetToken (AdaAssetId, q)) = s + q
+    fn s (FaucetToken (AssetId _ _, _)) = s
 
 parseAddress :: Text -> ExceptT FaucetWebError IO AddressAny
 parseAddress addr = case parse (parseAddressAny <* eof) "" (T.unpack addr) of

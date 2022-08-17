@@ -14,6 +14,8 @@
 
 module Cardano.Faucet (main, populateStakes) where
 
+import Cardano.Address.Derivation (Depth(AccountK), XPrv)
+import Cardano.Address.Style.Shelley (getKey, Shelley)
 import Cardano.Api (TxInMode, CardanoMode, AddressAny, CardanoEra, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
 import Cardano.Api.Byron ()
 import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey)
@@ -29,26 +31,23 @@ import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO)
 import Control.Monad.Trans.Except.Exit (orDie)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.HashMap.Strict qualified as HM
 import Data.List.Utils (uniq)
-import Data.Set qualified as Set
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Map.Merge.Lazy as Map
+import Data.Set qualified as Set
 import Data.Text qualified as T
+import Formatting ((%), format)
+import Formatting.ShortFormatters hiding (x, b, f, l)
 import Network.Wai.Handler.Warp
 import Ouroboros.Consensus.HardFork.Combinator.AcrossEras (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Client qualified as Net.Query
 import Ouroboros.Network.Protocol.LocalStateQuery.Type ()
 import Ouroboros.Network.Protocol.LocalTxSubmission.Client qualified as Net.Tx
+import Paths_cardano_faucet (getDataFileName)
 import Prelude qualified
 import Servant
 import System.Environment (lookupEnv)
-import Cardano.Address.Style.Shelley (getKey, Shelley)
 import System.IO (hSetBuffering, BufferMode(LineBuffering))
-import Cardano.Address.Derivation (Depth(AccountK), XPrv)
-import Formatting ((%), format)
-import Formatting.ShortFormatters hiding (x, b, f, l)
-import Paths_cardano_faucet (getDataFileName)
 
 app :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -72,12 +71,11 @@ startApiServer era sbe faucetState port = do
   index_html <- readFile index_path
   runSettings settings (app era sbe faucetState index_html)
 
-findAllSizes :: FaucetConfigFile -> [Lovelace]
-findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values ++ [v]
+findAllSizes :: FaucetConfigFile -> [FaucetValue]
+findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values
   where
-    v = akvLovelace fcfRecaptchaLimits
-    values :: [Lovelace]
-    values = map akvLovelace $ HM.elems fcfApiKeys
+    values :: [FaucetValue]
+    values = map toFaucetValue $ (Map.elems fcfApiKeys) ++ (Map.elems fcfRecaptchaLimits)
 
 deriveSingleKey :: NetworkId -> Shelley 'AccountK XPrv -> Word32 -> (SigningKey StakeExtendedKey, StakeCredential, StakeAddress)
 deriveSingleKey net acctK stakeIndex = (stake_skey, y, x)
@@ -197,8 +195,7 @@ main = do
                 , fsRateLimitState = rateLimitTmvar
                 , fsBucketSizes = findAllSizes config
                 }
-            putStrLn @Text "lovelace values for api keys"
-            print $ fsBucketSizes faucetState
+            putStrLn $ format ("lovelace values for api keys " % sh) $ fsBucketSizes faucetState
             addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr (network faucetState) (vkey faucetState)
             putStrLn $ "faucet address: " <> serialiseAddress addressAny
             case cardanoEraStyle era3 of

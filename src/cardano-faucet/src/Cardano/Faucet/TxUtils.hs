@@ -8,9 +8,9 @@ import Cardano.Api (Lovelace(Lovelace), IsShelleyBasedEra, ShelleyBasedEra, Netw
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.Api.Shelley (lovelaceToValue, makeTransactionBody)
 import Cardano.CLI.Types
-import Cardano.Faucet.Types (FaucetWebError(..), FaucetValue, faucetValueToLovelace)
+import Cardano.Faucet.Types (FaucetWebError(..), FaucetValue)
 import Cardano.Faucet.Utils
-import Cardano.Faucet.Misc
+import Cardano.Faucet.Misc (getValue, faucetValueToLovelace)
 import Cardano.Prelude hiding ((%))
 import Control.Monad.Trans.Except.Extra (firstExceptT, left, hoistEither)
 
