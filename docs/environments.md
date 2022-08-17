@@ -12,7 +12,7 @@ These are shared with the community for early involvment before a release candid
 
 Recieves updates for official releases, release candidates and occasionally custom tags that aren't candidates for release
 
-Upgrade Stragegy: Deploy all nodes with every request
+Upgrade Strategy: Deploy all nodes with every request
 
 Changes Requested by: Release Manager
 Approvals Required: SRE Director or SRE Resident Manager
@@ -39,7 +39,7 @@ Usage: Testing all new functionality. Ideally automatically deployed off of mast
 Ideally, stays long running to build up history, although the nature of early testing can potentially
 break it. In the past we have disaster recoveried it since we control all the keys.
 
-Upgrade Stragegy: Deploy all nodes with every request
+Upgrade Strategy: Deploy all nodes with every request
 
 Changes Requested by: QA Team
 Approvals Required: SRE Director or SRE Resident Manager
@@ -65,7 +65,7 @@ Ideally stays long running. Only if an issue is found after it forks that's brea
 
 Epoch length of 1 day. Development flags allowed in configuration files.
 
-Upgrade Stragegy:
+Upgrade Strategy:
 
 - Release Candidates - 1/3 of nodes
 - Official Releases - 2/3 of nodes
@@ -94,7 +94,7 @@ Usage: Testing release candidates and mainnet releases. Forks at approximately s
 
 Long running. Since this parallels mainnet, if a bug occurs here, it needs fixed properly and can not be respun.
 
-Upgrade Stragegy:
+Upgrade Strategy:
 
 - Release Candidates - 1/3 of nodes
 - Official Releases - 2/3 of nodes
