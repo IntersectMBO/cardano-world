@@ -108,7 +108,8 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , vkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
-  , fsRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
+  , fsSendMoneyRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
+  , fsDelegationRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsBucketSizes :: [FaucetValue]
   }
 

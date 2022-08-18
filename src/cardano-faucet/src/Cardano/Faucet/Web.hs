@@ -133,7 +133,7 @@ handleDelegateStake :: IsShelleyBasedEra era
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-handleDelegateStake era sbe fs@FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig,fsDelegationRateLimitState} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
   let
     clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
@@ -147,7 +147,7 @@ handleDelegateStake era sbe fs@FaucetState{skey,vkey,network,utxoTMVar,queue,sta
     res <- liftIO $ atomically $ do
       let
         maybeBumpLimitAndGetKey = do
-          limitResult <- checkRateLimits now [ RateLimitAddressPool poolId, RateLimitAddressNetwork clientIP ] key fs limits
+          limitResult <- checkRateLimits now [ RateLimitAddressPool poolId, RateLimitAddressNetwork clientIP ] key fsDelegationRateLimitState limits
           case limitResult of
             RateLimitResultAllow -> do
               -- the rate limits allow the action at the current time
@@ -194,9 +194,9 @@ insertUsage tmvar apikey now addr = do
   putTMVar tmvar mainMap'
 
 -- check the rate limits for the given key, update the tmvar to record the usage of this key, and return if the action is allowed or not
-checkRateLimits :: IsCardanoEra era => UTCTime -> [RateLimitAddress] -> ApiKey -> FaucetState era -> ApiKeyValue -> STM RateLimitResult
-checkRateLimits now addresses apikey FaucetState{fsRateLimitState} ApiKeyValue{akvRateLimit} = do
-  mainMap <- readTMVar fsRateLimitState
+checkRateLimits :: UTCTime -> [RateLimitAddress] -> ApiKey -> TMVar (Map ApiKey (Map RateLimitAddress UTCTime)) -> ApiKeyValue -> STM RateLimitResult
+checkRateLimits now addresses apikey limitState ApiKeyValue{akvRateLimit} = do
+  mainMap <- readTMVar limitState
   let
     -- when many addresses where last used, for the current key
     apiKeyMap :: Map RateLimitAddress UTCTime
@@ -216,7 +216,7 @@ checkRateLimits now addresses apikey FaucetState{fsRateLimitState} ApiKeyValue{a
     lastUsage = Cardano.Prelude.foldl' compareTimes Nothing lastUsages
     recordUsage :: STM ()
     recordUsage = do
-      mapM_ (insertUsage fsRateLimitState apikey now) addresses
+      mapM_ (insertUsage limitState apikey now) addresses
   (allowed, result) <- case lastUsage of
     Nothing -> do
       -- this addr has never been used on this api key
@@ -334,7 +334,7 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
@@ -346,7 +346,7 @@ handleSendMoney era sbe fs@FaucetState{network,utxoTMVar,skey,queue,fsConfig} ad
     result <- liftIO $ atomically $ do
       let
         maybeBumpLimitAndGetUtxo = do
-          limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fs limits
+          limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fsSendMoneyRateLimitState limits
           case limitResult of
             RateLimitResultAllow -> do
               txinout <- findUtxoOfSize utxoTMVar $ toFaucetValue limits

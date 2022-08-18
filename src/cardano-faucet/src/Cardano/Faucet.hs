@@ -181,7 +181,8 @@ main = do
           runQueryThen (QueryCurrentEra CardanoModeIsMultiEra) $ \(AnyCardanoEra era3) -> do
             tmvar <- newEmptyTMVarIO
             stakeTmvar <- newEmptyTMVarIO
-            rateLimitTmvar <- newTMVarIO mempty
+            sendMoneyRateLimitTmvar <- newTMVarIO mempty
+            delegationRateLimitTmvar <- newTMVarIO mempty
             let
               faucetState = FaucetState
                 { utxoTMVar = tmvar
@@ -192,7 +193,8 @@ main = do
                 , vkey = APaymentExtendedVerificationKey pay_vkey
                 , fsAcctKey = acctK
                 , fsConfig = config
-                , fsRateLimitState = rateLimitTmvar
+                , fsSendMoneyRateLimitState = sendMoneyRateLimitTmvar
+                , fsDelegationRateLimitState = delegationRateLimitTmvar
                 , fsBucketSizes = findAllSizes config
                 }
             putStrLn $ format ("lovelace values for api keys " % sh) $ fsBucketSizes faucetState
