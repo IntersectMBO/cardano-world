@@ -133,7 +133,7 @@ handleDelegateStake :: IsShelleyBasedEra era
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig,fsDelegationRateLimitState} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleDelegateStake era sbe FaucetState{fsPaymentSkey,fsPaymentVkey,fsNetwork,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
   let
     clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
@@ -152,9 +152,9 @@ handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeT
             RateLimitResultAllow -> do
               -- the rate limits allow the action at the current time
               -- get an unused stake key
-              stakeKey <- getKeyToDelegate stakeTMVar poolId
+              stakeKey <- getKeyToDelegate fsStakeTMVar poolId
               -- and get a txout to fund the delegation tx
-              txinout <- findUtxoOfSize utxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
+              txinout <- findUtxoOfSize fsUtxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
               pure $ Right (stakeKey, txinout)
             RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseToBech32 poolId)
       -- getKeyToDelegate and findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
@@ -166,14 +166,14 @@ handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeT
           cert = makeStakeAddressDelegationCertificate creds poolId
           stake_witness = AStakeExtendedSigningKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
-        addressAny <- withExceptT (FaucetWebErrorTodo . renderShelleyAddressCmdError) $ vkeyToAddr network vkey
+        ownAddress <- withExceptT (FaucetWebErrorTodo . renderShelleyAddressCmdError) $ vkeyToAddr fsNetwork fsPaymentVkey
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era
-        (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey, stake_witness] (TxCertificates supported [cert] x)
+        (signedTx, txid) <- makeAndSignTx sbe txinout ownAddress fsNetwork [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x)
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
         putStrLn $ format ("delegating stake key to pool " % sh) poolId
-        liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
+        liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
         pure $ DelegationReplySuccess txid
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
@@ -258,11 +258,11 @@ toMetric :: Metric -> Text
 toMetric (Metric attribs key val) = key <> (attributesToString attribs) <> " " <> valToString val
 
 handleMetrics :: IsCardanoEra era => FaucetState era -> Servant.Handler Text
-handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
+handleMetrics FaucetState{fsUtxoTMVar,fsBucketSizes,fsConfig,fsStakeTMVar} = do
   liftIO $ do
     (utxo, (stakeUnused, stakeUsed)) <- atomically $ do
-      u <- readTMVar utxoTMVar
-      stake <- readTMVar stakeTMVar
+      u <- readTMVar fsUtxoTMVar
+      stake <- readTMVar fsStakeTMVar
       pure (u,stake)
     let
       -- how many utxo exist at each value
@@ -334,7 +334,7 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era sbe FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
@@ -349,7 +349,7 @@ handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSend
           limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fsSendMoneyRateLimitState limits
           case limitResult of
             RateLimitResultAllow -> do
-              txinout <- findUtxoOfSize utxoTMVar $ toFaucetValue limits
+              txinout <- findUtxoOfSize fsUtxoTMVar $ toFaucetValue limits
               pure $ Right txinout
             RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseAddress addressAny)
       -- findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
@@ -358,11 +358,11 @@ handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSend
       Left err -> left err
       Right txinout -> pure txinout
     eraInMode <- convertEra era
-    (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey] TxCertificatesNone
+    (signedTx, txid) <- makeAndSignTx sbe txinout addressAny fsNetwork [fsPaymentSkey] TxCertificatesNone
     putStrLn $ format (sh % ": sending funds to address " % st % " via txid " % sh) clientIP (serialiseAddress addressAny) txid
     let
       prettyTx = friendlyTxBS era signedTx
-    liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
+    liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
     return $ SendMoneyReplySuccess $ SendMoneySent txid txin $ toFaucetValue limits
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of

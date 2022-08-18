@@ -100,12 +100,12 @@ data ApiKey = Recaptcha Text | ApiKey Text deriving (Ord, Eq)
 
 -- the state of the entire faucet
 data IsCardanoEra era => FaucetState era = FaucetState
-  { utxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
-  , stakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
-  , network :: NetworkId
-  , queue :: TQueue (TxInMode CardanoMode, ByteString)
-  , skey :: SomeWitness
-  , vkey :: SomeAddressVerificationKey
+  { fsUtxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
+  , fsStakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
+  , fsNetwork :: NetworkId
+  , fsTxQueue :: TQueue (TxInMode CardanoMode, ByteString)
+  , fsPaymentSkey :: SomeWitness
+  , fsPaymentVkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
   , fsSendMoneyRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
