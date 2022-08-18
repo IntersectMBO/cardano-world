@@ -323,7 +323,7 @@ in {
           --pool-cost 500000000 \
           --pool-margin 1 \
           --pool-owner-stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
-          --pool-pledge 100000000000000 \
+          --pool-pledge 1000000000000 \
           --single-host-pool-relay "$POOL_RELAY" \
           --pool-relay-port "$POOL_RELAY_PORT" \
           --pool-reward-account-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-0-reward-stake.vkey \
@@ -340,7 +340,7 @@ in {
       for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
       do
         STAKE_POOL_ADDR=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey --testnet-magic "$TESTNET_MAGIC")
-        BUILD_TX_ARGS+=("--tx-out" "$STAKE_POOL_ADDR+100000000000000")
+        BUILD_TX_ARGS+=("--tx-out" "$STAKE_POOL_ADDR+1000000000000")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-owner-registration.cert")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-registration.cert")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-owner-delegation.cert")

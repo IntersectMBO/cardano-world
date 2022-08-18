@@ -39,5 +39,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    mixed = {
+      namespace = "mixed";
+      domain = "mixed.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }

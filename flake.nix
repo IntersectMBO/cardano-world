@@ -98,6 +98,7 @@
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
+        (inputs.std.data "namespaces/mixed")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
@@ -160,6 +161,7 @@
       vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
+      mixed = mkNomadJobs cloud."namespaces/mixed";
     })
     # 3) hydra jobs
     (
