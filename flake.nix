@@ -2,6 +2,12 @@
   description = "Cardano World";
 
   inputs.nix-inclusive.url = "github:input-output-hk/nix-inclusive";
+
+  inputs.flake-compat = {
+    url = "github:edolstra/flake-compat";
+    flake = false;
+  };
+
   inputs = {
     std = {
       url = "github:divnix/std";
