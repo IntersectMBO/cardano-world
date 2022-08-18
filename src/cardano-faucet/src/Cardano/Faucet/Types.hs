@@ -8,8 +8,8 @@
 
 module Cardano.Faucet.Types where
 
-import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey)
-import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake))
+import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey, Index, DerivationType(Hardened, Soft))
+import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
 import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential)
 import Cardano.CLI.Environment (EnvSocketError)
@@ -28,7 +28,7 @@ import Data.List.Split (splitOn)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 import Data.Time.Clock (UTCTime, NominalDiffTime)
-import Prelude (String, error, id, read)
+import Prelude (String, error, read)
 import Servant (FromHttpApiData(parseHeader, parseQueryParam, parseUrlPiece))
 import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 
@@ -111,6 +111,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , fsSendMoneyRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsDelegationRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsBucketSizes :: [FaucetValue]
+  , fsOwnAddress :: AddressAny
   }
 
 -- the result of checking a rate limit
@@ -277,18 +278,23 @@ mnemonicToRootKey mnemonic = do
   mw <- either (left . FaucetErrorBadMnemonic . T.pack . getMkSomeMnemonicError) pure $ mkSomeMnemonic @'[24] mnemonic
   pure $ genMasterKeyFromMnemonic mw mempty
 
-rootKeytoAcctKey :: Monad m => Shelley 'RootK XPrv -> Word32 -> ExceptT FaucetError m (Shelley 'AccountK XPrv)
-rootKeytoAcctKey rootK index = do
-  accIx <- maybe (left FaucetErrorBadIdx) pure $ indexFromWord32 index
-  pure $ deriveAccountPrivateKey rootK accIx
+convertHardenedIndex :: Word32 -> Index 'Hardened depth
+convertHardenedIndex idx = fromMaybe (error "bad stake index") $ indexFromWord32 idx
 
-accountKeyToPaymentKey :: Monad m => Shelley 'AccountK XPrv -> Word32 -> ExceptT FaucetError m (Shelley 'PaymentK XPrv)
-accountKeyToPaymentKey acctK index = do
-  addIx <- maybe (left FaucetErrorBadIdx) pure $ indexFromWord32 index
-  pure $ deriveAddressPrivateKey acctK UTxOExternal addIx
+convertSoftIndex :: Word32 -> Index 'Soft depth
+convertSoftIndex idx = fromMaybe (error "bad stake index") $ indexFromWord32 idx
+
+rootKeytoAcctKey :: Shelley 'RootK XPrv -> Word32 -> Shelley 'AccountK XPrv
+rootKeytoAcctKey rootK index = deriveAccountPrivateKey rootK $ convertHardenedIndex index
+
+accountKeyToPaymentKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
+accountKeyToPaymentKey acctK index = deriveAddressPrivateKey acctK UTxOExternal $ convertSoftIndex index
+
+rootKeyToPolicyKey :: Shelley 'RootK XPrv -> Word32 -> Shelley 'PolicyK XPrv
+rootKeyToPolicyKey acctK index = derivePolicyPrivateKey acctK $ convertHardenedIndex index
 
 accountKeyToStakeKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
-accountKeyToStakeKey acctK index = deriveAddressPrivateKey acctK Stake (maybe (error "bad stake index") Prelude.id $ indexFromWord32 index)
+accountKeyToStakeKey acctK index = deriveAddressPrivateKey acctK Stake $ convertSoftIndex index
 
 vkeyToAddr :: NetworkId -> SomeAddressVerificationKey -> ExceptT ShelleyAddressCmdError IO AddressAny
 vkeyToAddr nw (AByronVerificationKey vk) = return (AddressByron (makeByronAddress nw vk))
@@ -306,9 +312,9 @@ test = do
     config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
     print config
     rootK <- mnemonicToRootKey $ fcfMnemonic config
-    acctK <- rootKeytoAcctKey rootK 0x80000000
+    let acctK = rootKeytoAcctKey rootK 0x80000000
 
-    _addrK <- accountKeyToPaymentKey acctK 0x14
+    let _addrK = accountKeyToPaymentKey acctK 0x14
     pure ()
     {-
     stakeK <- accountKeyToStakeKey acctK 0x1

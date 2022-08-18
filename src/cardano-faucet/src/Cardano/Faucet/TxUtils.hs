@@ -4,7 +4,7 @@
 
 module Cardano.Faucet.TxUtils where
 
-import Cardano.Api (Lovelace(Lovelace), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(TxMintNone), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx)
+import Cardano.Api (Lovelace(Lovelace), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue, TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx)
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.Api.Shelley (lovelaceToValue, makeTransactionBody)
 import Cardano.CLI.Types
@@ -19,8 +19,9 @@ txBuild :: IsShelleyBasedEra era
   -> (TxIn, TxOut CtxUTxO era)
   -> TxOutChangeAddress
   -> TxCertificates BuildTx era
+  -> TxMintValue BuildTx era
   -> ExceptT FaucetWebError IO (TxBody era)
-txBuild sbe (txin, txout) (TxOutChangeAddress changeAddr) certs = do
+txBuild sbe (txin, txout) (TxOutChangeAddress changeAddr) certs minting = do
   let
     --localNodeConnInfo = LocalNodeConnectInfo cModeParams networkId sockPath
     era = shelleyBasedToCardanoEra sbe
@@ -47,7 +48,7 @@ txBuild sbe (txin, txout) (TxOutChangeAddress changeAddr) certs = do
     <*> pure TxWithdrawalsNone
     <*> pure certs
     <*> pure TxUpdateProposalNone
-    <*> pure TxMintNone
+    <*> pure minting
     <*> pure TxScriptValidityNone
 
   case makeTransactionBody txBodyContent of
@@ -120,11 +121,12 @@ makeAndSignTx :: IsShelleyBasedEra era
   -> NetworkId
   -> [SomeWitness]
   -> TxCertificates BuildTx era
+  -> TxMintValue BuildTx era
   -> ExceptT FaucetWebError IO (Tx era, TxId)
-makeAndSignTx sbe txinout addressAny network skeys certs = do
+makeAndSignTx sbe txinout addressAny network skeys certs minting = do
   -- instead of having to specify an output that is exactly equal to input-fees
   -- i specify no outputs, and set the change addr to the end-user
-  unsignedTx <- txBuild sbe txinout (TxOutChangeAddress addressAny) certs
+  unsignedTx <- txBuild sbe txinout (TxOutChangeAddress addressAny) certs minting
   let
     txid :: TxId
     txid = getTxId unsignedTx

@@ -3,6 +3,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -17,9 +18,9 @@ module Cardano.Faucet (main, populateStakes) where
 
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
-import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, ShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
+import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
 import Cardano.Api.Byron ()
-import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, shelleyBasedToCardanoEra)
+import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra)
 import Cardano.CLI.Environment (readEnvSocketPath)
 import Cardano.CLI.Shelley.Run.Address
 import Cardano.CLI.Shelley.Run.Transaction
@@ -52,25 +53,23 @@ import System.IO (hSetBuffering, BufferMode(LineBuffering))
 
 app :: IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Text
   -> Application
-app era sbe faucetState indexHtml = serve userAPI $ server era sbe faucetState indexHtml
+app era faucetState indexHtml = serve userAPI $ server era faucetState indexHtml
 
 startApiServer :: IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Port
   -> IO ()
-startApiServer era sbe faucetState port = do
+startApiServer era faucetState port = do
   let
     settings = setTimeout 600 $ setPort port $ defaultSettings
   index_path <- getDataFileName "index.html"
   print index_path
   index_html <- readFile index_path
-  runSettings settings (app era sbe faucetState index_html)
+  runSettings settings (app era faucetState index_html)
 
 findAllSizes :: FaucetConfigFile -> [FaucetValue]
 findAllSizes FaucetConfigFile{fcfRecaptchaLimits,fcfApiKeys} = uniq $ values
@@ -108,8 +107,8 @@ populateStakes = do
     bar <- unmaybe configFilePath
     config <- parseConfig bar
     rootK <- mnemonicToRootKey $ fcfMnemonic config
-    acctK <- rootKeytoAcctKey rootK 0x80000000
     let
+      acctK = rootKeytoAcctKey rootK 0x80000000
       net = fcfNetwork config
     print $ map (deriveSingleKey net acctK) [0..10]
     pure ()
@@ -137,9 +136,9 @@ main = do
     bar <- unmaybe configFilePath
     fsConfig <- parseConfig bar
     rootK <- mnemonicToRootKey $ fcfMnemonic fsConfig
-    fsAcctKey <- rootKeytoAcctKey rootK 0x80000000
-    addrK <- accountKeyToPaymentKey fsAcctKey 0x14
     let
+      fsAcctKey = rootKeytoAcctKey rootK 0x80000000
+      addrK = accountKeyToPaymentKey fsAcctKey 0x14
       pay_skey = PaymentExtendedSigningKey $ getKey addrK
       pay_vkey = getVerificationKey pay_skey
       fsNetwork = fcfNetwork fsConfig
@@ -159,73 +158,82 @@ main = do
             Net.Query.recvMsgResult = \result -> do
               queryDone result
           }
-      getUtxoQuery :: AddressAny -> ShelleyBasedEra era2 -> Maybe (EraInMode era2 mode) ->  QueryInMode mode (Either EraMismatch (UTxO era2))
-      getUtxoQuery _address _sbe Nothing = Prelude.error "not handled"
-      getUtxoQuery address sbe (Just eInMode) = QueryInEra eInMode query
+      getUtxoQuery :: forall era2 mode . IsShelleyBasedEra era2 => AddressAny -> Maybe (EraInMode era2 mode) ->  QueryInMode mode (Either EraMismatch (UTxO era2))
+      getUtxoQuery _address Nothing = Prelude.error "not handled"
+      getUtxoQuery address (Just eInMode) = QueryInEra eInMode query
         where
+          sbe = shelleyBasedEra @era2
           qfilter :: QueryUTxOFilter
           qfilter = QueryUTxOByAddress $ Set.singleton address
           query   = QueryInShelleyBasedEra sbe (QueryUTxO qfilter)
 
-      queryManyStakeAddr :: ShelleyBasedEra era -> Maybe (EraInMode era mode) -> [StakeCredential] -> QueryInMode mode (Either EraMismatch (Map StakeAddress Lovelace, Map StakeAddress PoolId))
-      queryManyStakeAddr _sbe Nothing _ = Prelude.error "not handled"
-      queryManyStakeAddr sbe (Just eInMode) creds = QueryInEra eInMode (QueryInShelleyBasedEra sbe (QueryStakeAddresses (Set.fromList creds) fsNetwork))
+      queryManyStakeAddr :: forall era mode . IsShelleyBasedEra era => Maybe (EraInMode era mode) -> [StakeCredential] -> QueryInMode mode (Either EraMismatch (Map StakeAddress Lovelace, Map StakeAddress PoolId))
+      queryManyStakeAddr Nothing _ = Prelude.error "not handled"
+      queryManyStakeAddr (Just eInMode) creds = QueryInEra eInMode (QueryInShelleyBasedEra sbe (QueryStakeAddresses (Set.fromList creds) fsNetwork))
+        where
+          sbe = shelleyBasedEra @era
 
       finish = do
         void . forever $ threadDelay 43200 {- day in seconds -}
         pure $ Net.Query.SendMsgRelease $
           pure $ Net.Query.SendMsgDone ()
 
-      newQueryClient :: SomeAddressVerificationKey
+      withEra :: AnyCardanoEra -> (forall era. IsShelleyBasedEra era => CardanoEra era -> a) -> a
+      withEra (AnyCardanoEra ByronEra) _ = Prelude.error "byron not supported"
+      withEra (AnyCardanoEra AllegraEra) action = action AllegraEra
+      withEra (AnyCardanoEra AlonzoEra) action = action AlonzoEra
+      withEra (AnyCardanoEra BabbageEra) action = action BabbageEra
+      withEra (AnyCardanoEra MaryEra) action = action MaryEra
+      withEra (AnyCardanoEra ShelleyEra) action = action ShelleyEra
+
+      _newQueryClient :: SomeAddressVerificationKey
         -> LocalStateQueryExpr block point (QueryInMode CardanoMode) r IO ()
-      newQueryClient fsPaymentVkey = do
-        AnyCardanoEra era3 <- determineEraExpr defaultCModeParams
-        sbe <- case cardanoEraStyle era3 of
-          ShelleyBasedEra sbe -> pure sbe
-        let
-          era = shelleyBasedToCardanoEra sbe
-        eInMode <- case toEraInMode era CardanoMode of
-          Just result -> pure result
-        --AnyCardanoEra era3 <- queryExpr $ QueryCurrentEra CardanoModeIsMultiEra
-        --utxotmvar <- liftIO $ newEmptyTMVarIO
-        (fsUtxoTMVar,fsStakeTMVar,fsSendMoneyRateLimitState,fsDelegationRateLimitState) <- liftIO $ (,,,) <$> newEmptyTMVarIO <*> newEmptyTMVarIO <*> newTMVarIO mempty <*> newTMVarIO mempty
-        let
-          fsPaymentSkey = APaymentExtendedSigningKey pay_skey
-          fsBucketSizes = findAllSizes fsConfig
-          faucetState = FaucetState{..}
-        ownAddress <- liftIO $ orDie (T.pack . Prelude.show) $ vkeyToAddr fsNetwork fsPaymentVkey
-        putStrLn $ "faucet address: " <> serialiseAddress ownAddress
-
-        _child <- liftIO $ forkIO $ startApiServer era3 sbe faucetState port
-
-        eUtxoResult <- queryExpr $ getUtxoQuery ownAddress sbe (Just eInMode)
-        case eUtxoResult of
-          Right result -> do
-            let stats = computeUtxoStats (unUTxO result)
-            print stats
-            liftIO $ atomically $ putTMVar fsUtxoTMVar (unUTxO result)
-            putStrLn @Text "utxo set initialized"
-        case fcfMaxStakeKeyIndex fsConfig of
-          Just count -> do
-            let
-              manyStakeKeys :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
-              manyStakeKeys = createManyStakeKeys fsAcctKey fsNetwork count
-              x :: [StakeCredential]
-              x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
-            eResult <- queryExpr (queryManyStakeAddr sbe (toEraInMode era3 CardanoMode) x)
-            print eResult
-            -- TODO, copy stake processing up
-            case eResult of
-              Right result -> do
-                let (notRegistered, notDelegated, delegated) = sortStakeKeys result manyStakeKeys
-                case fcfDebug fsConfig of
-                  True -> do
-                    putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
-                    putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
-                    putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
-                  False -> do
-                    putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-                liftIO $ atomically $ putTMVar fsStakeTMVar (notDelegated, map (\(idx,reward,pool) -> (idx,reward,pool)) delegated)
+      _newQueryClient fsPaymentVkey = do
+        era5 <- determineEraExpr defaultCModeParams
+        withEra era5 $ \era6 -> do
+          --sbe <- case cardanoEraStyle era6 of
+          --  ShelleyBasedEra sbe -> pure sbe
+          (fsUtxoTMVar,fsStakeTMVar,fsSendMoneyRateLimitState,fsDelegationRateLimitState) <- liftIO $ (,,,) <$> newEmptyTMVarIO <*> newEmptyTMVarIO <*> newTMVarIO mempty <*> newTMVarIO mempty
+          fsOwnAddress <- liftIO $ orDie (T.pack . Prelude.show) $ vkeyToAddr fsNetwork fsPaymentVkey
+          putStrLn $ "faucet address: " <> serialiseAddress fsOwnAddress
+          let
+            fsPaymentSkey = APaymentExtendedSigningKey pay_skey
+            fsBucketSizes = findAllSizes fsConfig
+            faucetState = FaucetState{..}
+          _child <- liftIO $ forkIO $ startApiServer era6 faucetState port
+          eUtxoResult <- queryExpr $ getUtxoQuery fsOwnAddress $ toEraInMode era6 CardanoMode
+          case eUtxoResult of
+            Right result -> do
+              let stats = computeUtxoStats (unUTxO result)
+              print stats
+              liftIO $ atomically $ putTMVar fsUtxoTMVar (unUTxO result)
+              putStrLn @Text "utxo set initialized"
+            Left err -> print err
+          case fcfMaxStakeKeyIndex fsConfig of
+            Just count -> do
+              let
+                manyStakeKeys :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
+                manyStakeKeys = createManyStakeKeys fsAcctKey fsNetwork count
+                x :: [StakeCredential]
+                x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
+              eResult <- queryExpr (queryManyStakeAddr (toEraInMode era6 CardanoMode) x)
+              print eResult
+              -- TODO, copy stake processing up
+              case eResult of
+                Right result -> do
+                  let
+                    (notRegistered, notDelegated, delegated) = sortStakeKeys result manyStakeKeys
+                  case fcfDebug fsConfig of
+                    True -> do
+                      putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
+                      putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
+                      putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
+                    False -> do
+                      putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
+                  liftIO $ atomically $ putTMVar fsStakeTMVar (notDelegated, map (\(idx,reward,pool) -> (idx,reward,pool)) delegated)
+                Left err -> print err
+            Nothing -> pure ()
+          pure ()
         pure ()
       sortStakeKeys :: (Map StakeAddress Lovelace, Map StakeAddress PoolId) -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) -> ([Word32],[(Word32, SigningKey StakeExtendedKey, StakeCredential)],[(Word32, Lovelace, PoolId)])
       sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
@@ -284,17 +292,18 @@ main = do
             fsSendMoneyRateLimitState <- newTMVarIO mempty
             fsDelegationRateLimitState <- newTMVarIO mempty
             let
-              fsPaymentSkey = APaymentExtendedSigningKey pay_skey
               fsPaymentVkey = APaymentExtendedVerificationKey pay_vkey
+            fsOwnAddress <- orDie (T.pack . Prelude.show) $ vkeyToAddr fsNetwork fsPaymentVkey
+            let
+              fsPaymentSkey = APaymentExtendedSigningKey pay_skey
               fsBucketSizes = findAllSizes fsConfig
               faucetState = FaucetState{..}
             putStrLn $ format ("lovelace values for api keys " % sh) $ fsBucketSizes
-            addressAny <- orDie (T.pack . Prelude.show) $ vkeyToAddr fsNetwork fsPaymentVkey
-            putStrLn $ "faucet address: " <> serialiseAddress addressAny
+            putStrLn $ "faucet address: " <> serialiseAddress fsOwnAddress
             case cardanoEraStyle era3 of
-              ShelleyBasedEra sbe -> do
-                _child <- forkIO $ startApiServer era3 sbe faucetState port
-                runQueryThen (getUtxoQuery addressAny sbe (toEraInMode era3 CardanoMode)) $ \case
+              ShelleyBasedEra _ -> do
+                _child <- forkIO $ startApiServer era3 faucetState port
+                runQueryThen (getUtxoQuery fsOwnAddress (toEraInMode era3 CardanoMode)) $ \case
                   Right result -> do
                     let
                       --reduceTxo :: TxOut ctx era -> (Lovelace, TxOut ctx era)
@@ -315,7 +324,7 @@ main = do
                           manyStakeKeys = createManyStakeKeys fsAcctKey fsNetwork count
                           x :: [StakeCredential]
                           x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
-                        runQueryThen (queryManyStakeAddr sbe (toEraInMode era3 CardanoMode) x) $ \case
+                        runQueryThen (queryManyStakeAddr (toEraInMode era3 CardanoMode) x) $ \case
                           Right stakeKeyResults -> do
                             let (notRegistered,notDelegated,delegated) = sortStakeKeys stakeKeyResults manyStakeKeys
 

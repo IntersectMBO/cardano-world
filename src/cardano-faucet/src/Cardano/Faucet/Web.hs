@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -14,14 +15,13 @@
 
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
-import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName))
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey(PaymentExtendedSigningKey), PaymentExtendedKey)
+import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, Quantity, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), hashScript, Script(SimpleScript), simpleScriptVersion, SimpleScriptOrReferenceInput(SScript), SimpleScriptV2, scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), SimpleScriptVersion, shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
 import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
 import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace)
 import Cardano.Faucet.TxUtils (makeAndSignTx)
-import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..), FaucetToken(FaucetToken))
+import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), SendMoneySent(..), FaucetToken(FaucetToken), rootKeyToPolicyKey)
 import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
 import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
@@ -43,6 +43,8 @@ import Network.Socket (SockAddr(SockAddrInet))
 import Prelude qualified (id)
 import Servant
 import Servant.Client (ClientM, ClientError, client, runClientM, mkClientEnv, BaseUrl(BaseUrl), Scheme(Https))
+import Cardano.Address.Style.Shelley (Shelley, getKey)
+import Cardano.Address.Derivation (Depth(RootK, PolicyK), XPrv)
 
 -- create recaptcha api keys at https://www.google.com/recaptcha/admin/create
 -- reCAPTCHA v2, "i am not a robot"
@@ -57,13 +59,13 @@ instance Accept HTML where
 instance MimeRender HTML Text where
   mimeRender _ = LT.encodeUtf8 . LT.fromStrict
 
-#define ApiKeyProtected QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text
+type ApiKeyProtected rest = QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> rest
 
-type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected (Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply))
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply))
 type Metrics = "metrics" :> Get '[PlainText] Text
-type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
+type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
+type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
 type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
 type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
@@ -89,11 +91,10 @@ doSiteVerify secret token = do
 
 server :: IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Text
   -> Server RootDir
-server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
+server era faucetState indexHtml = handleSendMoney era faucetState :<|> handleSendMoney era faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era faucetState :<|> handleDelegateStake era faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
   where
     site_key_reply = sformat ("site_key = \"" % st % "\";") $ unSiteKey $ fcfRecaptchaSiteKey $ fsConfig faucetState
 
@@ -122,9 +123,49 @@ getCorsReply whitelist mOrigin = case mOrigin of
     True -> addHeader origin
     False -> noHeader
 
-handleDelegateStake :: IsShelleyBasedEra era
-  => CardanoEra era
+mintFreshTokens :: IsShelleyBasedEra era => Shelley 'RootK XPrv
+  -> Word32
   -> ShelleyBasedEra era
+  -> CardanoEra era
+  -> FaucetState era
+  -> AddressAny
+  -> PolicyId
+  -> AssetName
+  -> Quantity
+  -> ExceptT FaucetWebError IO (Tx era, TxId)
+mintFreshTokens rootK index sbe era FaucetState{fsUtxoTMVar,fsConfig,fsNetwork,fsPaymentSkey} destinationAddress policyid tokenname count = do
+  let
+    policyKey :: Shelley 'PolicyK XPrv
+    policyKey = rootKeyToPolicyKey rootK index
+    policy_skey :: SigningKey PaymentExtendedKey
+    policy_skey = PaymentExtendedSigningKey $ getKey policyKey
+    policy_vkey :: VerificationKey PaymentExtendedKey
+    policy_vkey = getVerificationKey policy_skey
+    simplescript :: SimpleScript SimpleScriptV2
+    simplescript = RequireSignature $ verificationKeyHash $ castVerificationKey policy_vkey
+    script :: Script SimpleScriptV2
+    script = SimpleScript simpleScriptVersion simplescript
+    _scriptHash = hashScript script
+    x :: SimpleScriptVersion SimpleScriptV2
+    x = simpleScriptVersion
+  txinout <- liftIO $ atomically $ do
+    txinout <- findUtxoOfSize fsUtxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
+    pure txinout
+  supported <- either (\_ -> left $ FaucetWebErrorTodo "asset error") pure $ multiAssetSupportedInEra era
+  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage x) of
+    Just yes -> pure yes
+    Nothing -> left $ FaucetWebErrorTodo "scripts not supported"
+  let
+    val = valueFromList [(AssetId policyid tokenname, count)]
+    --witnessesProvidedMap :: Map PolicyId (ScriptWitness WitCtxMint era)
+    witnessesProvidedMap = Map.fromList [(policyid, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript simplescript))]
+    y = BuildTxWith $ witnessesProvidedMap
+    mint = TxMintValue supported val y
+  (signedTx, txid) <- makeAndSignTx sbe txinout destinationAddress fsNetwork [fsPaymentSkey] TxCertificatesNone mint
+  pure (signedTx, txid)
+
+handleDelegateStake :: forall era. IsShelleyBasedEra era
+  => CardanoEra era
   -> FaucetState era
   -> PoolId
   -> Maybe Text
@@ -133,9 +174,10 @@ handleDelegateStake :: IsShelleyBasedEra era
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-handleDelegateStake era sbe FaucetState{fsPaymentSkey,fsPaymentVkey,fsNetwork,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleDelegateStake era FaucetState{fsPaymentSkey,fsNetwork,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState,fsOwnAddress} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
   let
     clientIP = pickIp mForwardedFor remoteip
+    sbe = shelleyBasedEra @era
   eResult <- liftIO $ runExceptT $ do
     when (fcfMaxStakeKeyIndex fsConfig == Nothing) $ left $ FaucetWebErrorTodo "delegation disabled"
     mReply <- liftIO $ decideBetweenKeyAndCaptcha Nothing mApiKey mToken fsConfig
@@ -166,9 +208,8 @@ handleDelegateStake era sbe FaucetState{fsPaymentSkey,fsPaymentVkey,fsNetwork,fs
           cert = makeStakeAddressDelegationCertificate creds poolId
           stake_witness = AStakeExtendedSigningKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
-        ownAddress <- withExceptT (FaucetWebErrorTodo . renderShelleyAddressCmdError) $ vkeyToAddr fsNetwork fsPaymentVkey
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era
-        (signedTx, txid) <- makeAndSignTx sbe txinout ownAddress fsNetwork [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x)
+        (signedTx, txid) <- makeAndSignTx sbe txinout fsOwnAddress fsNetwork [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x) TxMintNone
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
@@ -322,9 +363,8 @@ decideBetweenKeyAndCaptcha mType Nothing (Just token) FaucetConfigFile{fcfRecapt
     _ -> pure Nothing
 decideBetweenKeyAndCaptcha _ Nothing Nothing _ = pure Nothing
 
-handleSendMoney :: IsShelleyBasedEra era =>
+handleSendMoney :: forall era. IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Text
   -> Maybe Text
@@ -334,8 +374,9 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
+  let sbe = shelleyBasedEra @era
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
     mReply <- liftIO $ decideBetweenKeyAndCaptcha mType mApiKey mToken fsConfig
@@ -358,7 +399,7 @@ handleSendMoney era sbe FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueu
       Left err -> left err
       Right txinout -> pure txinout
     eraInMode <- convertEra era
-    (signedTx, txid) <- makeAndSignTx sbe txinout addressAny fsNetwork [fsPaymentSkey] TxCertificatesNone
+    (signedTx, txid) <- makeAndSignTx sbe txinout addressAny fsNetwork [fsPaymentSkey] TxCertificatesNone TxMintNone
     putStrLn $ format (sh % ": sending funds to address " % st % " via txid " % sh) clientIP (serialiseAddress addressAny) txid
     let
       prettyTx = friendlyTxBS era signedTx
