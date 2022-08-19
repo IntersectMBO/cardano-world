@@ -5,11 +5,11 @@
 
 {
   ##### Locations #####
-  AlonzoGenesisFile = "alonzo-genesis.json";
+  AlonzoGenesisFile = ./mixed + "/alonzo-genesis.json";
   AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
-  ByronGenesisFile = "byron-genesis.json";
+  ByronGenesisFile = ./mixed + "/byron-genesis.json";
   ByronGenesisHash = "c29b55983f90f708307b19b2b1b87990c20de18acf86eca55590b481626960a9";
-  ShelleyGenesisFile = "shelley-genesis.json";
+  ShelleyGenesisFile = ./mixed + "/shelley-genesis.json";
   ShelleyGenesisHash = "271e0a61c24ce26eb3340d6ab9ab67d6d010dddea604d7856c9b75cf85b2dabf";
 
   ##### Core protocol parameters #####
