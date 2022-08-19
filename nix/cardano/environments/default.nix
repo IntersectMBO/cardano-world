@@ -219,7 +219,7 @@
       ];
       submitApiConfig = mkSubmitApiConfig "mixed" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "mixed" nodeConfig;
-      usePeersFromLedgerAfterSlot = 322000;
+      usePeersFromLedgerAfterSlot = 52000;
     };
 
     # used for SRE development
