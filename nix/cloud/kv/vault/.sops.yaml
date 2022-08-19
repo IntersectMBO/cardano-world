@@ -28,3 +28,5 @@ creation_rules:
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: faucet/preview*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
+  - path_regex: faucet/mixed*
+    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"

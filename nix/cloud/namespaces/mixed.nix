@@ -119,7 +119,7 @@ in {
           };
         };
       };
-    };
+    };*/
 
   faucet = let
     jobname = "faucet";
@@ -146,5 +146,5 @@ in {
         cardano-faucet = {
         };
       };
-    };*/
+    };
 }
