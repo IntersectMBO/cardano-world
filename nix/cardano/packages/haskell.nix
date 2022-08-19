@@ -27,7 +27,6 @@ in
     };
   };
   config = {
-    evalSystem = "x86_64-linux";
     name = lib.mkDefault "cardano-world";
     src = lib.mkDefault (haskellLib.cleanSourceWith {
       src = src.outPath;
