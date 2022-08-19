@@ -371,6 +371,21 @@ in {
     '';
   };
 
+  tx-generator = writeShellApplication {
+    runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];
+    debugInputs = [packages.tx-generator];
+    name = "entrypoint";
+    text = ''
+      [ -z "''${TX_GEN_CONFIG:-}" ] && echo "TX_GEN_CONFIG env var must be set -- aborting" && exit 1
+      args+=("json_highlevel")
+      args+=("$TX_GEN_CONFIG")
+      [ -z "''${HOME:-}" ] && echo "HOME env var must be set -- aborting" && exit 1
+      mkdir -p "$HOME"
+      cd "$HOME"
+      exec ${packages.tx-generator}/bin/tx-generator "''${args[@]}"
+    '';
+  };
+
   cardano-db-sync = writeShellApplication {
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps ++ [nixpkgs.postgresql_12];
     debugInputs = [

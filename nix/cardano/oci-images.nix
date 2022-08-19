@@ -35,6 +35,19 @@ in {
     ];
     config.User = "1000:1000";
   };
+  tx-generator = buildDebugImage entrypoints.tx-generator {
+    name = "registry.ci.iog.io/tx-generator";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = entrypoints.tx-generator.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.tx-generator];})
+    ];
+    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc];
+    config.Cmd = [
+      "${entrypoints.tx-generator}/bin/entrypoint"
+    ];
+    config.User = "1000:1000";
+  };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
     maxLayers = 25;

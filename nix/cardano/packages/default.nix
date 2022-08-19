@@ -109,7 +109,7 @@ let
 in
 {
   inherit project nodeProject ogmiosProject; # TODO REMOVE
-  inherit (nodeProject.exes) cardano-node cardano-tracer cardano-cli cardano-submit-api;
+  inherit (nodeProject.exes) cardano-node cardano-tracer tx-generator cardano-cli cardano-submit-api;
   inherit (nodeProject.hsPkgs.bech32.components.exes) bech32;
   inherit (nodeProject.hsPkgs.network-mux.components.exes) cardano-ping;
   inherit (project.exes) cardano-new-faucet;
