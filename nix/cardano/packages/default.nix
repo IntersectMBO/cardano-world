@@ -72,6 +72,7 @@ let
   }).extend (final: prev: {
     release = nixpkgs.callPackage ./binary-release.nix {
       inherit (final.pkgs) stdenv;
+      inherit (final.pkgs.buildPackages) haskellBuildUtils;
       exes =
         lib.attrValues final.exes
         ++ [

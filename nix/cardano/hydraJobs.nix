@@ -11,7 +11,7 @@ let
   baseJobs = {
     world = {
       inherit (project) exes checks benchmarks;
-      profiled = lib.genAttrs [ "cardano-new-faucet" ] (n:
+      profiled = lib.genAttrs (lib.optionals (!hostPlatform.isDarwin) [ "cardano-new-faucet" ]) (n:
         project.exes.${n}.passthru.profiled
       );
       internal = {
@@ -19,8 +19,8 @@ let
       };
     };
     node = {
-      inherit (nodeProject) exes checks benchmarks;
-      profiled = lib.genAttrs [ "cardano-node" "tx-generator" "locli" ] (n:
+      inherit (nodeProject) exes checks benchmarks release;
+      profiled = lib.genAttrs ([ "locli" ] ++ lib.optionals (!hostPlatform.isDarwin) [ "cardano-node" "tx-generator" ]) (n:
         nodeProject.exes.${n}.passthru.profiled
       );
       internal = {
@@ -82,9 +82,13 @@ let
         };
       };
     };
-    macos = lib.optionalAttrs hostPlatform.isMacOS {
-      x86 = lib.optionalAttrs hostPlatform.isx86_64 baseJobs;
-      arm = lib.optionalAttrs hostPlatform.isAarch64 baseJobs;
+    macos = lib.optionalAttrs hostPlatform.isDarwin {
+      x86 = lib.optionalAttrs hostPlatform.isx86_64 (baseJobs // {
+        cardano-node-macos = nodeProject.release;
+      });
+      arm = lib.optionalAttrs hostPlatform.isAarch64 (baseJobs // {
+        cardano-node-macos = nodeProject.release;
+      });
     };
   };
   nonRequiredPaths = map lib.hasPrefix [ ];

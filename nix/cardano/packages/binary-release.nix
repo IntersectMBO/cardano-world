@@ -9,28 +9,32 @@
 { stdenv
 , lib
 , runCommand
+, haskellBuildUtils
+, bintools
+, nix
 , zip
 , version
 , exes
 , copyEnvsTemplate
 , environments
+, name ? "cardano-node-${version}"
 }:
-
-let
-  name = "cardano-world-${version}";
-
-in
 runCommand name
 {
-  buildInputs = [ zip ];
+  buildInputs = [ haskellBuildUtils bintools nix zip ];
 } ''
   mkdir -p $out release
   cd release
 
   cp -n --remove-destination -v ${lib.concatMapStringsSep " " (exe: "${exe}/bin/*") exes} ./
+  chmod -R +w .
+
+  ${lib.optionalString stdenv.hostPlatform.isDarwin (lib.concatMapStrings (exe: ''
+    rewrite-libs . ${exe}/bin/*
+  '') exes)}
+
   DATA_DIR="$(pwd)"
   ${copyEnvsTemplate { inherit (environments) mainnet testnet; }}
-  chmod -R +w .
 
   ${if stdenv.hostPlatform.isWindows
     then "zip -r $out/${name}.zip ."
