@@ -212,6 +212,7 @@ in {
           # env.DEBUG_SLEEP = 6000;
           env = {
             DB_NAME = "vasil_dev_dbsync";
+            ENVIRONMENT = "vasil-dev";
             DATA_DIR = persistanceMount + "/db-sync-0";
             CONSUL_KV_PATH = "config/cardano/vasil-dev";
             VAULT_KV_PATH = "kv/data/db-sync/vasil-dev";

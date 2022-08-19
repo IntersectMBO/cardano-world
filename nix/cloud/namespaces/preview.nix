@@ -102,6 +102,7 @@ in {
           # env.DEBUG_SLEEP = 6000;
           env = {
             DATA_DIR = persistanceMount + "/db-sync-0";
+            ENVIRONMENT = "preview";
             CONSUL_KV_PATH = "config/cardano/preview";
             PUBLIC_ROOTS_SRV_DNS = "_preview-node._tcp.service.consul";
             EDGE_NODE = "1";

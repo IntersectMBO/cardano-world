@@ -112,6 +112,7 @@ in {
           # env.DEBUG_SLEEP = 6000;
           env = {
             DB_NAME = "preprod_dbsync";
+            ENVIRONMENT = "preprod";
             DATA_DIR = persistanceMount + "/db-sync-0";
             CONSUL_KV_PATH = "config/cardano/preprod";
             VAULT_KV_PATH = "kv/data/db-sync/preprod";
