@@ -283,7 +283,7 @@ in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
-    debugInputs = [packages.cardano-cli packages.cardano-node];
+    debugInputs = [packages.cardano-cli packages.cardano-node packages.cardano-ping];
     text = ''
 
       # in nomad: producer is always the node with index 0
