@@ -25,6 +25,7 @@ in {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
           env = {
+            ENVIRONMENT="mainnet";
             DATA_DIR = persistanceMount + "/db-sync-0";
             CONSUL_KV_PATH = "config/cardano/mainnet";
             PUBLIC_ROOTS_SRV_DNS = "_mainnet-node._tcp.service.consul";
