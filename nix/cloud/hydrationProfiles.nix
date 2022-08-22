@@ -34,6 +34,7 @@ in {
     services = {
       nomad.namespaces = {
         infra.description = "Shared Services for The Cardano World";
+        mainnet.description = "Cardano Main Network";
         shelley-qa.description = "Cardano Shelley Internal QA";
         vasil-dev.description = "Cardano Vasil HF Development Testnet";
         preprod.description = "Cardano Pre-Production Environment";
@@ -48,6 +49,10 @@ in {
       # ... operator role policies
       locals.policies = {
         consul.developer = {
+          service_prefix."mainnet-" = {
+            policy = "write";
+            intentions = "write";
+          };
           service_prefix."shelley-qa-" = {
             policy = "write";
             intentions = "write";
@@ -76,6 +81,17 @@ in {
         };
 
         nomad.developer = {
+          namespace.mainnet = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           namespace.shelley-qa = {
             policy = "write";
             capabilities = [
@@ -131,6 +147,7 @@ in {
               "alloc-lifecycle"
             ];
           };
+          host_volume."mainnet-*".policy = "write";
           host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
           host_volume."preprod-*".policy = "write";

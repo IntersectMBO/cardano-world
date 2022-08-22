@@ -94,6 +94,7 @@
         (inputs.std.data "constants")
         (inputs.std.data "environments")
         (inputs.std.data "namespaces/infra")
+        (inputs.std.data "namespaces/mainnet")
         (inputs.std.data "namespaces/vasil-dev")
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
@@ -157,6 +158,7 @@
         );
     in {
       infra = mkNomadJobs cloud."namespaces/infra";
+      mainnet = mkNomadJobs cloud."namespaces/mainnet";
       vasil-qa = mkNomadJobs cloud."namespaces/vasil-qa";
       vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
       preprod = mkNomadJobs cloud."namespaces/preprod";

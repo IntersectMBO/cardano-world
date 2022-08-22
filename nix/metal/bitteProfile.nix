@@ -86,6 +86,16 @@ in {
                 ++ [
                   (
                     bittelib.mkNomadHostVolumesConfig
+                    ["mainnet-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["mainnet-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
                     ["shelley-qa-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )

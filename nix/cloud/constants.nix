@@ -15,6 +15,13 @@ in {
       nodeClass = "infra";
       scaling = 3;
     };
+    mainnet = {
+      namespace = "mainnet";
+      domain = "mainnet.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
+
     shelley-qa = {
       namespace = "shelley-qa";
       domain = "shelley-qa.${baseDomain}";
