@@ -56,7 +56,8 @@
 	"recaptcha_site_key": "ENC[AES256_GCM,data:ldXxu3mmi1El6CSYP/oEPe6bC/KMY5/VDslrrF3BNQ04l+3tW1cDDg==,iv:eUF7zgB1dh32LTuZX2uzQU41IbhT9tpTeROraYv/ACc=,tag:uaxD/3qORMVHm+Z/lu3b5Q==,type:str]",
 	"recaptcha_secret_key": "ENC[AES256_GCM,data:1wETN5Xw2MNNDLskN1S/GXoaNlsxBGtEYNlLjZ6VwecycBDqkMtK5g==,iv:cplpe4xkEtVi3dQXcO/CF3aFOXejLz3OtpCce6Kjlic=,tag:V6/98WYW55CBi7huRNe4hA==,type:str]",
 	"allowed_cors_origins": [
-		"ENC[AES256_GCM,data:l0nmkZYTcdDS6rXUJ3jxKuXzg+UoYTsW,iv:HTyp5U96QGpj0IpzVfgdyY7NaKnRUNR8+LowzNRtgeg=,tag:PI7hIAiqHREU4z9RH7RyOQ==,type:str]"
+		"ENC[AES256_GCM,data:l0nmkZYTcdDS6rXUJ3jxKuXzg+UoYTsW,iv:HTyp5U96QGpj0IpzVfgdyY7NaKnRUNR8+LowzNRtgeg=,tag:PI7hIAiqHREU4z9RH7RyOQ==,type:str]",
+		"ENC[AES256_GCM,data:Vawb9YsEv8JiZ6AK/XMxo2DUxtyYeZJQyV8XY9C1mSAdtqGsVIdBQFOTRsU=,iv:nnVk54DLocLEr1DErUoxs9er5GxnTPBYQpzynCPQsFI=,tag:JjyqZhxwjzrkN5M50B8y9A==,type:str]"
 	],
 	"sops": {
 		"kms": null,
@@ -72,8 +73,8 @@
 			}
 		],
 		"age": null,
-		"lastmodified": "2022-08-17T23:32:36Z",
-		"mac": "ENC[AES256_GCM,data:z4kqAByHQ5FkCOTMkkcUpXv5Wd5P07mlntM1ga7jIa4um5yZkoowXzLRrZqzD8AGebjO9Vh4Ey4gBNPIm4pSGY6O8fOtq3IY+hNqqYI2rEqfCmFOOqbl5LOCbiPzVAaJg5IxV4hczPPWNcl7+ULZX8cBB11tpzDoMpVVIm8AvjA=,iv:jOACqsb58q2NNOr2V7woghFg0IeOUO/Awy5uo6I1dsc=,tag:qKFF7FGBQuBMRb8hPy5JVA==,type:str]",
+		"lastmodified": "2022-08-23T12:14:07Z",
+		"mac": "ENC[AES256_GCM,data:SH2MTaF1HDvcb4EDlLcrpNOOcr8ZQSUUmns1XHipRL1yX8Kaqk2kjgFDIEnjPXy6uo34VM0sppx7ku7ZpIrytFqLVmr8LZTssfhMihDP/Zcrrp4ZMqQqsoD4AvlJgKBkZIAS2PnVcTV0R/hWTwHbrmzDigcXLRiW9488UCMI5Jc=,iv:amITMyx10tn/JDVJhS3do9D1vKAdrPiI2vtQQcR4k3Y=,tag:iPLD8FgMR/pTKL3ao0jArQ==,type:str]",
 		"pgp": null,
 		"unencrypted_suffix": "_unencrypted",
 		"version": "3.7.2"
