@@ -22,3 +22,9 @@ dist-newstyle/
 
 # ...
 workbench
+
+# nixago: ignore-linked-files
+adrgen.config.yml
+lefthook.yml
+treefmt.toml
+.conform.yaml
