@@ -28,6 +28,14 @@
       std.devshellProfiles.default
       bitte.devshellModule
     ];
+    nixago = [
+      (std.nixago.conform {configData = {inherit (inputs) cells;};})
+      cell.nixago.treefmt
+      cell.nixago.editorconfig
+      cell.nixago.mdbook
+      std.nixago.lefthook
+      std.nixago.adrgen
+    ];
     bitte = {
       domain = "world.dev.cardano.org";
       cluster = "cardano";
@@ -65,7 +73,6 @@ in {
       cardanoWorld
       capsules.base
       capsules.cloud
-      capsules.hooks
       capsules.metal
       capsules.integrations
       capsules.tools

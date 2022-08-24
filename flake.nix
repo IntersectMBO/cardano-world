@@ -11,7 +11,7 @@
   inputs = {
     std = {
       url = "github:divnix/std";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # inputs.nixpkgs.follows = "nixpkgs"; # doesn't have `conform` yet
     };
     n2c.url = "github:nlewo/nix2container";
     haskell-nix = {
@@ -103,6 +103,7 @@
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
+        (inputs.std.nixago "nixago")
         (inputs.std.functions "bitteProfile")
         (inputs.std.functions "devshellProfiles")
         (inputs.std.functions "hydrationProfiles")

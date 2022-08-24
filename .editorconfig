@@ -1,65 +1,60 @@
-# Editor configuration, see http://editorconfig.org
-root = true
-
 [*]
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-charset = utf-8
-indent_style = space
-indent_size = 2
-
-[LICENSES/**]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-charset = unset
-indent_style = unset
-indent_size = unset
+charset=utf-8
+end_of_line=lf
+indent_size=2
+indent_style=space
+insert_final_newline=true
+trim_trailing_whitespace=true
 
 [*-genesis.json]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-charset = unset
-indent_style = unset
-indent_size = unset
+charset=unset
+end_of_line=unset
+indent_size=unset
+indent_style=unset
+insert_final_newline=unset
+trim_trailing_whitespace=unset
 
-[nix/metal/encrypted/*]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-charset = unset
-indent_style = unset
-indent_size = unset
-
-# Ignore diffs/patches
-[*.{diff,patch}]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-indent_size = unset
-
-[{secrets/**,**.enc,**.enc.*}]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-charset = unset
-indent_style = unset
-indent_size = unset
-
-[*.py]
-indent_size = 4
+[*.hs]
+charset=utf-8
+end_of_line=lf
+indent_size=2
+indent_style=space
+insert_final_newline=true
+trim_trailing_whitespace=true
 
 [*.md]
-max_line_length = off
-trim_trailing_whitespace = false
+max_line_length=off
+trim_trailing_whitespace=false
 
-[nix/cardano/packages/materialized/**]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-charset = unset
-indent_style = unset
-indent_size = unset
+[*.{diff,patch}]
+end_of_line=unset
+indent_size=unset
+insert_final_newline=unset
+trim_trailing_whitespace=unset
 
+[Makefile]
+indent_style=tab
+
+[nix/metal/encrypted/*]
+charset=unset
+end_of_line=unset
+indent_size=unset
+indent_style=unset
+insert_final_newline=unset
+trim_trailing_whitespace=unset
+
+[{LICENSES/**,LICENSE}]
+charset=unset
+end_of_line=unset
+indent_size=unset
+indent_style=unset
+insert_final_newline=unset
+trim_trailing_whitespace=unset
+
+[{secrets/**,**.enc,**.enc.*}]
+charset=unset
+end_of_line=unset
+indent_size=unset
+indent_style=unset
+insert_final_newline=unset
+trim_trailing_whitespace=unset
