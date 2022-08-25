@@ -57,7 +57,7 @@
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35.3";
+      url = "github:input-output-hk/cardano-node/master";
       flake = false;
     };
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
