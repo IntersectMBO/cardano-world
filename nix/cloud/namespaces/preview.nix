@@ -148,4 +148,50 @@ in {
         };
       };
     };
+
+  cardano-graphql = let
+    jobname = "cardano-graphql";
+  in
+    data-merge.merge (cardano.nomadCharts.cardano-graphql (
+      constants.envs.preview
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+        scaling = 1;
+      }
+    )) {
+      job.${jobname}.group.cardano-graphql.task = {
+        node = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            ENVIRONMENT = "preview";
+            DATA_DIR = persistanceMount + "/db-sync-0";
+            CONSUL_KV_PATH = "config/cardano/preview";
+            PUBLIC_ROOTS_SRV_DNS = "_preview-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
+        };
+        cardano-graphql = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DB_NAME = "preview_dbsync";
+            CONSUL_KV_PATH = "config/cardano/preview";
+            VAULT_KV_PATH = "kv/data/db-sync/preview";
+            MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          };
+        };
+        graphql-engine = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DB_NAME = "preview_dbsync";
+            CONSUL_KV_PATH = "config/cardano/preview";
+            VAULT_KV_PATH = "kv/data/db-sync/preview";
+            MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          };
+        };
+      };
+    };
 }

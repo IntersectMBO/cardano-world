@@ -11,6 +11,7 @@ in {
       (bitte-cells.patroni.hydrationProfiles.hydrate-cluster ["infra"])
       (cells.cardano.hydrationProfiles.workload-policies-cardano)
       (cells.cardano.hydrationProfiles.workload-policies-ogmios)
+      (cells.cardano.hydrationProfiles.workload-policies-graphql)
       (cells.cardano.hydrationProfiles.workload-policies-db-sync)
       (cells.cardano.hydrationProfiles.workload-policies-faucet)
       (cells.cardano.hydrationProfiles.workload-policies-wallet)

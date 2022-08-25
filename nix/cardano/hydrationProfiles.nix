@@ -59,6 +59,35 @@
     };
   };
 
+  # Graphql
+  workload-policies-graphql = {
+    tf.hydrate-cluster.configuration.locals.policies = {
+      consul.graphql = {
+        # graphql also needs to read the cardano config
+        key_prefix."config/cardano" = {
+          policy = "read";
+          intentions = "deny";
+        };
+        session_prefix."" = {
+          policy = "write";
+          intentions = "deny";
+        };
+      };
+      vault.graphql = {
+        path."consul/creds/graphql".capabilities = ["read"];
+      };
+    };
+    # FIXME: consolidate policy reconciliation loop with TF
+    # PROBLEM: requires bootstrapper reconciliation loop
+    # clients need the capability to impersonate the `graphql` role
+    services.vault.policies.client = {
+      path."consul/creds/graphql".capabilities = ["read"];
+      path."auth/token/create/graphql".capabilities = ["update"];
+      path."auth/token/roles/graphql".capabilities = ["read"];
+    };
+  };
+
+
   # Db Sync
   workload-policies-db-sync = {
     tf.hydrate-cluster.configuration.locals.policies = {
