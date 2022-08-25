@@ -166,16 +166,23 @@ in {
           # env.DEBUG_SLEEP = 6000;
           env = {
             ENVIRONMENT = "preview";
-            DATA_DIR = persistanceMount + "/db-sync-0";
+            DATA_DIR = persistanceMount + "/graphql";
             CONSUL_KV_PATH = "config/cardano/preview";
             PUBLIC_ROOTS_SRV_DNS = "_preview-node._tcp.service.consul";
             EDGE_NODE = "1";
+          };
+        };
+        ogmios = {
+          env = {
+            DATA_DIR = persistanceMount + "/graphql";
+            CONSUL_KV_PATH = "config/cardano/preview";
           };
         };
         cardano-graphql = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
           env = {
+            DATA_DIR = persistanceMount + "/graphql";
             DB_NAME = "preview_dbsync";
             CONSUL_KV_PATH = "config/cardano/preview";
             VAULT_KV_PATH = "kv/data/db-sync/preview";
@@ -186,6 +193,7 @@ in {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
           env = {
+            DATA_DIR = persistanceMount + "/graphql";
             DB_NAME = "preview_dbsync";
             CONSUL_KV_PATH = "config/cardano/preview";
             VAULT_KV_PATH = "kv/data/db-sync/preview";
