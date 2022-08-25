@@ -561,7 +561,7 @@ in {
     text = ''
 
       ${prelude}
-      LISTEN_ADDRESS=''${LISTEN_ADDRESS:127.0.0.1}
+      LISTEN_ADDRESS=''${LISTEN_ADDRESS:-127.0.0.1}
       PORT=''${PORT:-8070}
 
       # Build args array
@@ -579,7 +579,8 @@ in {
     text = ''
 
       ${prelude}
-      HOST=''${HOST:127.0.0.1}
+
+      HOST=''${HOST:-127.0.0.1}
       PORT=''${PORT:-1337}
 
       # Build args array
@@ -604,7 +605,7 @@ in {
   };
 
   cardano-graphql = writeShellApplication {
-    runtimeInputs = prelude-runtime;
+    runtimeInputs = prelude-runtime ++ [packages.cardano-graphql];
     name = "entrypoint";
     text = ''
       eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
@@ -612,8 +613,8 @@ in {
       # PSQL_HOST0=domain
       # PSQL_PORT0=port
 
-      export DB_HOST=''${DB_HOST:-PSQL_HOST0}
-      export DB_PORT=''${DB_PORT:-PSQL_PORT0}
+      DB_HOST=''${DB_HOST:-$PSQL_HOST0}
+      DB_PORT=''${DB_PORT:-$PSQL_PORT0}
       [ -z "''${DB_USER_FILE:-}" ] && echo "DB_USER_FILE env var must be set -- aborting" && exit 1
       [ -z "''${DB_PASS_FILE:-}" ] && echo "DB_PASS_FILE env var must be set -- aborting" && exit 1
       [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
@@ -632,7 +633,7 @@ in {
 
       ${prelude}
 
-      expor HASURA_CLI_PATH="${packages.hasura-cli}/bin/hasura"
+      export HASURA_CLI_PATH="${packages.hasura-cli}/bin/hasura"
       export CARDANO_NODE_CONFIG_PATH="$NODE_CONFIG"
 
       # Env Vars with defaults that can be overridden
@@ -642,11 +643,11 @@ in {
       TRACING=''${TRACING:-true}
       ALLOW_INTROSPECTION=''${ALLOW_INTROSPECTION:-false}
       CACHE_ENABLED=''${CACHE_ENABLED:-true}
+      METADATA_SERVER_URI=''${METADATA_SERVER_URI:-https://tokens.cardano.org}
+      LISTEN_ADDRESS=''${LISTEN_ADDRESS:-127.0.0.1}
 
       # Other Optional env vars
       # ALLOWED_ORIGINS
-      # LISTEN_ADDRESS
-      # METADATA_SERVER_URI
       # POLLING_INTERVAL_ADA_SUPPLY
       # ASSET_METADATA_UPDATE_INTERVAL
       # QUERY_DEPTH_LIMIT
@@ -658,7 +659,7 @@ in {
   };
 
   graphql-engine = writeShellApplication {
-    runtimeInputs = [];
+    runtimeInputs = prelude-runtime ++ [packages.graphql-engine];
     name = "entrypoint";
     text = ''
 
@@ -668,16 +669,16 @@ in {
       # PSQL_PORT0=port
 
       # keep db config variables consistent with db-sync
-      export DB_HOST=''${DB_HOST:-PSQL_HOST0}
-      export DB_PORT=''${DB_PORT:-PSQL_PORT0}
+      DB_HOST=''${DB_HOST:-$PSQL_HOST0}
+      DB_PORT=''${DB_PORT:-$PSQL_PORT0}
       [ -z "''${DB_USER_FILE:-}" ] && echo "DB_USER_FILE env var must be set -- aborting" && exit 1
       [ -z "''${DB_PASS_FILE:-}" ] && echo "DB_PASS_FILE env var must be set -- aborting" && exit 1
       [ -z "''${DB_NAME:-}" ] && echo "DB_NAME env var must be set -- aborting" && exit 1
       [ -z "''${HASURA_PORT:-}" ] && echo "HASURA_PORT env var must be set -- aborting" && exit 1
 
       args=()
-      args+=("-u" "$(cat DB_USER_FILE)")
-      args+=("--password" "$(cat DB_PASS_FILE)")
+      args+=("-u" "$(cat "$DB_USER_FILE")")
+      args+=("--password" "$(cat "$DB_PASS_FILE")")
       args+=("--host" "$DB_HOST")
       args+=("-d" "$DB_NAME")
       args+=("--port" "$DB_PORT")

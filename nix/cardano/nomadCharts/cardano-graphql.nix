@@ -75,21 +75,25 @@ in
         group.cardano-graphql = let
           template =
             _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
-              ++ [
-                {
-                  change_mode = "restart";
-                  data = "{{- with secret \"kv/data/db-sync/${namespace}\" }}{{ .Data.data.pgPass | toJSONPretty }}{{ end -}}";
-                  destination = "/secrets/pgpass";
-                }
-                {
-                  change_mode = "restart";
-                  data = "{{- with secret \"kv/data/db-sync/${namespace}\" }}{{ .Data.data.pgUser | toJSONPretty }}{{ end -}}";
-                  destination = "/secrets/pguser";
-                }
-              ];
+            ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;}
+            ++ [
+              {
+                change_mode = "restart";
+                data = "{{- with secret \"kv/data/db-sync/${namespace}\" }}{{ .Data.data.pgPass }}{{ end -}}";
+                destination = "/secrets/pgpass";
+              }
+              {
+                change_mode = "restart";
+                data = "{{- with secret \"kv/data/db-sync/${namespace}\" }}{{ .Data.data.pgUser }}{{ end -}}";
+                destination = "/secrets/pguser";
+              }
+            ];
           secretsEnv = {
             DB_USER_FILE = "/secrets/pguser";
             DB_PASS_FILE = "/secrets/pgpass";
+            WORKLOAD_CACERT = "/secrets/tls/ca.pem";
+            WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
+            WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
           };
 
           # work-around: we need to get rid of vector first
@@ -160,7 +164,7 @@ in
                     vault = {
                       change_mode = "noop";
                       env = true;
-                      policies = ["db-sync"];
+                      policies = ["graphql"];
                     };
                   };
                   cardano-graphql = {
@@ -172,9 +176,6 @@ in
                       OGMIOS_PORT = 1337;
                     };
 
-                    # env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
-                    # env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
-                    # env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
                     config.image = ociNamer oci-images.cardano-graphql;
                     config.ports = ["http"];
                     user = "0:0";
@@ -186,7 +187,7 @@ in
                     vault = {
                       change_mode = "noop";
                       env = true;
-                      policies = ["db-sync"];
+                      policies = ["graphql"];
                     };
                   };
                 };
