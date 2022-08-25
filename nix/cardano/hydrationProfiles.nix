@@ -75,6 +75,10 @@
       };
       vault.graphql = {
         path."consul/creds/graphql".capabilities = ["read"];
+
+        # Access for db-sync database credentials
+        path."kv/data/db-sync/*".capabilities = ["read" "list"];
+        path."kv/metadata/db-sync/*".capabilities = ["read" "list"];
       };
     };
     # FIXME: consolidate policy reconciliation loop with TF
