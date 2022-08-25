@@ -907,15 +907,16 @@
     "cardano-graphql": {
       "flake": false,
       "locked": {
-        "lastModified": 1657201429,
-        "narHash": "sha256-kx8Pe5HllnJceQHsBDB4hHcEQNSiq8D+OFFkRuuUFQE=",
+        "lastModified": 1661183252,
+        "narHash": "sha256-bdod59bBA5MlIOmzuzmSoQVV+6pBan1raSeVgA4DFb4=",
         "owner": "input-output-hk",
         "repo": "cardano-graphql",
-        "rev": "ffb40028f51e23983c2ae27693bbdcd152208d9d",
+        "rev": "ba116c93dffab2e28f41b71823eb480a322ffdb9",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "7.0.0",
         "repo": "cardano-graphql",
         "type": "github"
       }

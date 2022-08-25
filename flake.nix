@@ -66,7 +66,7 @@
       flake = false;
     };
     cardano-graphql = {
-      url = "github:input-output-hk/cardano-graphql";
+      url = "github:input-output-hk/cardano-graphql/7.0.0";
       flake = false;
     };
     cardano-explorer-app = {

@@ -106,6 +106,11 @@ let
       }
     ];
   };
+
+  graphqlPkgs = import (cardano-graphql + "/nix/pkgs.nix") {
+    inherit (nixpkgs) system;
+    sourcesOverride.nixpkgs = nixpkgs.path;
+  };
 in
 {
   inherit project nodeProject ogmiosProject; # TODO REMOVE
@@ -117,9 +122,8 @@ in
   inherit (cardano-wallet.packages) cardano-address;
   inherit (cardano-db-sync.packages) cardano-db-sync;
   inherit (ogmiosProject.hsPkgs.ogmios.components.exes) ogmios;
-  cardano-graphql = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.cardano-graphql;
-  graphql-engine = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.graphql-engine;
-  hasura-cli = (import (cardano-graphql + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.hasura-cli;
+  inherit (graphqlPkgs.packages) cardano-graphql graphql-engine hasura-cli;
+
   cardano-explorer-app =
     let
       # TODO fix the ugliness to make this work
