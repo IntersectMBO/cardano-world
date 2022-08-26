@@ -27,6 +27,7 @@
   TargetNumberOfEstablishedPeers = 50;
   TargetNumberOfKnownPeers = 100;
   TargetNumberOfRootPeers = 100;
+  TestEnableDevelopmentNetworkProtocols = true;
 
   ##### Update system parameters #####
 
