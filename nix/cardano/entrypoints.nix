@@ -292,7 +292,9 @@ in {
 
       ${prelude}
 
-      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
+      if [ -z "''${DB_DIR:-}" ]; then
+        DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}/node"
+      fi
 
       # the legacy service discovery implementation
       ${legacy-srv-discovery}
@@ -307,12 +309,12 @@ in {
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
-        extract_snapshot_tgz_to "$DB_DIR/node" 1
+        extract_snapshot_tgz_to "$DB_DIR" 1
       fi
 
       # Build args array
       args+=("--config" "$NODE_CONFIG")
-      args+=("--database-path" "$DB_DIR/node")
+      args+=("--database-path" "$DB_DIR")
       [ -n "''${HOST_ADDR:-}" ] && args+=("--host-addr" "$HOST_ADDR")
       [ -n "''${HOST_IPV6_ADDR:-}" ] && args+=("--host-ipv6-addr" "$HOST_IPV6_ADDR")
       [ -n "''${PORT:-}" ] && args+=("--port" "$PORT")
