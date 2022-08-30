@@ -63,7 +63,7 @@
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     ogmios = {
-      url = "github:CardanoSolutions/ogmios/v5.5.2";
+      url = "github:CardanoSolutions/ogmios/v5.5.5";
       flake = false;
     };
     cardano-graphql = {
