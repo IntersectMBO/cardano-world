@@ -95,7 +95,6 @@ def getLargestUtxoForAddress(address):
     lovelace = 0
     txin = None
     for k,v in utxo.items():
-      print(k)
       if(len(v['value']) == 1 and v['value']['lovelace'] > lovelace):
         lovelace =v['value']['lovelace']
         txin = (k,lovelace)
