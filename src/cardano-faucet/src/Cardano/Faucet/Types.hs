@@ -60,6 +60,7 @@ data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorBadMnemonic Text
   | FaucetErrorBadIdx
   | FaucetErrorShelleyAddr ShelleyAddressCmdError
+  | FaucetErrorTodo2 Text
   deriving Generic
 
 renderFaucetError :: FaucetError -> Text
@@ -71,6 +72,7 @@ renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"
 renderFaucetError (FaucetErrorBadMnemonic msg) = "bad mnemonic " <> msg
 renderFaucetError FaucetErrorBadIdx = "bad index"
 renderFaucetError (FaucetErrorShelleyAddr err) = show err
+renderFaucetError (FaucetErrorTodo2 err) = show err
 
 -- errors that can be sent to the user
 data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
@@ -104,6 +106,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , fsStakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
   , fsNetwork :: NetworkId
   , fsTxQueue :: TQueue (TxInMode CardanoMode, ByteString)
+  , fsRootKey :: Shelley 'RootK XPrv
   , fsPaymentSkey :: SomeWitness
   , fsPaymentVkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
@@ -278,11 +281,11 @@ mnemonicToRootKey mnemonic = do
   mw <- either (left . FaucetErrorBadMnemonic . T.pack . getMkSomeMnemonicError) pure $ mkSomeMnemonic @'[24] mnemonic
   pure $ genMasterKeyFromMnemonic mw mempty
 
-convertHardenedIndex :: Word32 -> Index 'Hardened depth
-convertHardenedIndex idx = fromMaybe (error "bad stake index") $ indexFromWord32 idx
+convertHardenedIndex :: HasCallStack => Word32 -> Index 'Hardened depth
+convertHardenedIndex idx = fromMaybe (error "bad hardened index") $ indexFromWord32 idx
 
 convertSoftIndex :: Word32 -> Index 'Soft depth
-convertSoftIndex idx = fromMaybe (error "bad stake index") $ indexFromWord32 idx
+convertSoftIndex idx = fromMaybe (error "bad soft index") $ indexFromWord32 idx
 
 rootKeytoAcctKey :: Shelley 'RootK XPrv -> Word32 -> Shelley 'AccountK XPrv
 rootKeytoAcctKey rootK index = deriveAccountPrivateKey rootK $ convertHardenedIndex index
@@ -290,7 +293,7 @@ rootKeytoAcctKey rootK index = deriveAccountPrivateKey rootK $ convertHardenedIn
 accountKeyToPaymentKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
 accountKeyToPaymentKey acctK index = deriveAddressPrivateKey acctK UTxOExternal $ convertSoftIndex index
 
-rootKeyToPolicyKey :: Shelley 'RootK XPrv -> Word32 -> Shelley 'PolicyK XPrv
+rootKeyToPolicyKey :: HasCallStack => Shelley 'RootK XPrv -> Word32 -> Shelley 'PolicyK XPrv
 rootKeyToPolicyKey acctK index = derivePolicyPrivateKey acctK $ convertHardenedIndex index
 
 accountKeyToStakeKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv

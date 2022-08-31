@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -15,10 +14,10 @@
 
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey(PaymentExtendedSigningKey), PaymentExtendedKey)
-import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, Quantity, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), hashScript, Script(SimpleScript), simpleScriptVersion, SimpleScriptOrReferenceInput(SScript), SimpleScriptV2, scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), SimpleScriptVersion, shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey)
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey(PaymentExtendedSigningKey), PaymentExtendedKey)
+import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, Quantity, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), hashScript, Script(SimpleScript), simpleScriptVersion, SimpleScriptOrReferenceInput(SScript), SimpleScriptV2, scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), SimpleScriptVersion, shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey, Quantity(Quantity), scriptPolicyId)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
+import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(..))
 import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace)
 import Cardano.Faucet.TxUtils (makeAndSignTx)
 import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), SendMoneySent(..), FaucetToken(FaucetToken), rootKeyToPolicyKey)
@@ -44,9 +43,9 @@ import Prelude qualified (id)
 import Servant
 import Servant.Client (ClientM, ClientError, client, runClientM, mkClientEnv, BaseUrl(BaseUrl), Scheme(Https))
 import Cardano.Address.Style.Shelley (Shelley, getKey)
-import Cardano.Address.Derivation (Depth(RootK, PolicyK), XPrv)
+import Cardano.Address.Derivation (Depth(PolicyK), XPrv)
 
--- create recaptcha api keys at https://www.google.com/recaptcha/admin/create
+-- create recaptcha api keys at https://www.google.com/recaptcha/admin
 -- reCAPTCHA v2, "i am not a robot"
 
 instance FromHttpApiData PoolId where
@@ -66,12 +65,13 @@ type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> 
 type Metrics = "metrics" :> Get '[PlainText] Text
 type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
 type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
+type MintCoins = "mint" :> QueryParam' '[Required] "address" Text :> Get '[JSON] (Either FaucetWebError ())
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
 type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
 type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
 
 -- faucet root dir
-type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStakeUrl :<|> DelegateStakeQuery :<|> GetSiteKey :<|> GetBasicFaucet
+type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStakeUrl :<|> DelegateStakeQuery :<|> GetSiteKey :<|> GetBasicFaucet :<|> MintCoins
 -- recaptcha root dir
 type CaptchaRootDir = SiteVerify
 
@@ -94,7 +94,7 @@ server :: IsShelleyBasedEra era =>
   -> FaucetState era
   -> Text
   -> Server RootDir
-server era faucetState indexHtml = handleSendMoney era faucetState :<|> handleSendMoney era faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era faucetState :<|> handleDelegateStake era faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
+server era faucetState indexHtml = handleSendMoney era faucetState :<|> handleSendMoney era faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era faucetState :<|> handleDelegateStake era faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml) :<|> handleMintCoins era faucetState
   where
     site_key_reply = sformat ("site_key = \"" % st % "\";") $ unSiteKey $ fcfRecaptchaSiteKey $ fsConfig faucetState
 
@@ -123,20 +123,71 @@ getCorsReply whitelist mOrigin = case mOrigin of
     True -> addHeader origin
     False -> noHeader
 
-mintFreshTokens :: IsShelleyBasedEra era => Shelley 'RootK XPrv
-  -> Word32
-  -> ShelleyBasedEra era
-  -> CardanoEra era
+handleMintCoins :: IsShelleyBasedEra era => CardanoEra era -> FaucetState era -> Text -> Servant.Handler (Either FaucetWebError ())
+handleMintCoins era fs@FaucetState{fsTxQueue} addr = do
+  eResult <- liftIO $ runExceptT $ do
+    addressAny <- parseAddress addr
+    print addressAny
+    result@(signedTx, _txid) <- mintFreshTokens era fs 0x80000000 addressAny (AssetName "Testtoken") (Quantity 100)
+    let prettyTx = friendlyTxBS era signedTx
+    print result
+    putStrLn prettyTx
+    eraInMode <- convertEra era
+    liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
+    pure ()
+  pure eResult
+
+{-test :: IO ()
+test = do
+  eResult <- runExceptT $ do
+    config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
+    rootK <- mnemonicToRootKey $ fcfMnemonic config
+    fsUtxoTMVar <- liftIO $ newEmptyTMVarIO
+    addressAny <- withExceptT (FaucetErrorTodo2 . show) $ parseAddress "addr_test1vq4p02j5rf5w69kldld0t9wt6fe2efvfhcxsk4qdhwm2pnglr5yaj"
+    let
+      addr :: AddressInEra undefined
+      addr = anyAddressInShelleyBasedEra addressAny
+      txid = fromMaybe undefined $ decode "8452cb2be57a8389f20e4c48bfb6e3ce9b7c2e655b9675f96025339af905c0c3"
+      txout :: TxOut CtxUTxO era
+      txout = TxOut addr _ _ _
+      fakeUtxo :: Map TxIn (TxOut CtxUTxO era)
+      fakeUtxo = Map.singleton (TxIn txid $ TxIx 0) txout
+      fs = FaucetState
+        { fsRootKey = rootK
+        , fsUtxoTMVar = fsUtxoTMVar
+        , fsStakeTMVar = Prelude.error "stake mvar"
+        , fsNetwork = Testnet $ NetworkMagic 9
+        , fsTxQueue = Prelude.error "tx queue"
+        , fsPaymentSkey = Prelude.error "skey"
+        , fsPaymentVkey = Prelude.error "vkey"
+        , fsAcctKey = Prelude.error "acct key"
+        , fsConfig = config
+        , fsSendMoneyRateLimitState = undefined
+        , fsDelegationRateLimitState = undefined
+        , fsBucketSizes = Prelude.error "bucket size"
+        , fsOwnAddress = Prelude.error "own addr"
+        }
+    liftIO $ atomically $ putTMVar fsUtxoTMVar fakeUtxo
+    res <- withExceptT (FaucetErrorTodo2 . show) $ mintFreshTokens ShelleyEra fs 0x80000000 addressAny (AssetName "Testtoken") (Quantity 100)
+    print res
+    pure ()
+  case eResult of
+    Left err -> print $ renderFaucetError err
+    Right res -> print res-}
+
+mintFreshTokens :: forall era . IsShelleyBasedEra era
+  => CardanoEra era
   -> FaucetState era
+  -> Word32
   -> AddressAny
-  -> PolicyId
   -> AssetName
   -> Quantity
   -> ExceptT FaucetWebError IO (Tx era, TxId)
-mintFreshTokens rootK index sbe era FaucetState{fsUtxoTMVar,fsConfig,fsNetwork,fsPaymentSkey} destinationAddress policyid tokenname count = do
+mintFreshTokens era FaucetState{fsUtxoTMVar,fsConfig,fsNetwork,fsPaymentSkey,fsRootKey} index destinationAddress tokenname count = do
   let
+    sbe = shelleyBasedEra @era
     policyKey :: Shelley 'PolicyK XPrv
-    policyKey = rootKeyToPolicyKey rootK index
+    policyKey = rootKeyToPolicyKey fsRootKey index
     policy_skey :: SigningKey PaymentExtendedKey
     policy_skey = PaymentExtendedSigningKey $ getKey policyKey
     policy_vkey :: VerificationKey PaymentExtendedKey
@@ -145,6 +196,7 @@ mintFreshTokens rootK index sbe era FaucetState{fsUtxoTMVar,fsConfig,fsNetwork,f
     simplescript = RequireSignature $ verificationKeyHash $ castVerificationKey policy_vkey
     script :: Script SimpleScriptV2
     script = SimpleScript simpleScriptVersion simplescript
+    policyid = scriptPolicyId script
     _scriptHash = hashScript script
     x :: SimpleScriptVersion SimpleScriptV2
     x = simpleScriptVersion
@@ -161,7 +213,7 @@ mintFreshTokens rootK index sbe era FaucetState{fsUtxoTMVar,fsConfig,fsNetwork,f
     witnessesProvidedMap = Map.fromList [(policyid, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript simplescript))]
     y = BuildTxWith $ witnessesProvidedMap
     mint = TxMintValue supported val y
-  (signedTx, txid) <- makeAndSignTx sbe txinout destinationAddress fsNetwork [fsPaymentSkey] TxCertificatesNone mint
+  (signedTx, txid) <- makeAndSignTx sbe txinout destinationAddress fsNetwork [fsPaymentSkey, APaymentExtendedSigningKey policy_skey] TxCertificatesNone mint
   pure (signedTx, txid)
 
 handleDelegateStake :: forall era. IsShelleyBasedEra era

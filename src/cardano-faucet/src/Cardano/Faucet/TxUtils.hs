@@ -4,15 +4,19 @@
 
 module Cardano.Faucet.TxUtils where
 
-import Cardano.Api (Lovelace(Lovelace), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue, TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx)
+import Cardano.Api (Lovelace(Lovelace), IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(..), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx)
 import Cardano.CLI.Shelley.Run.Transaction
-import Cardano.Api.Shelley (lovelaceToValue, makeTransactionBody)
+import Cardano.Api.Shelley (lovelaceToValue, makeTransactionBody, Value)
 import Cardano.CLI.Types
 import Cardano.Faucet.Types (FaucetWebError(..), FaucetValue)
 import Cardano.Faucet.Utils
 import Cardano.Faucet.Misc (getValue, faucetValueToLovelace)
 import Cardano.Prelude hiding ((%))
 import Control.Monad.Trans.Except.Extra (firstExceptT, left, hoistEither)
+
+getMintedValue :: TxMintValue BuildTx era -> Value
+getMintedValue (TxMintValue _ val _) = val
+getMintedValue (TxMintNone) = mempty
 
 txBuild :: IsShelleyBasedEra era
   => ShelleyBasedEra era
@@ -30,13 +34,18 @@ txBuild sbe (txin, txout) (TxOutChangeAddress changeAddr) certs minting = do
     unwrap (TxOut _ val _ _) = getValue val
     value :: Lovelace
     value = faucetValueToLovelace $ unwrap txout
+    change :: Lovelace
     change = value - fixedFee
+    mintedValue = getMintedValue minting
+    -- TODO, add minted tokens
+    changeValue :: Value
+    changeValue = (lovelaceToValue change) <> mintedValue
 
   txBodyContent <- TxBodyContent
     <$> pure [(txin, BuildTxWith $ KeyWitness KeyWitnessForSpending)]
     <*> pure TxInsCollateralNone
     <*> pure TxInsReferenceNone
-    <*> mapM (\x -> withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ toTxOutInAnyEra era x) [ (TxOutAnyEra changeAddr (lovelaceToValue change) TxOutDatumByNone ReferenceScriptAnyEraNone) ]
+    <*> mapM (\x -> withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ toTxOutInAnyEra era x) [ (TxOutAnyEra changeAddr changeValue TxOutDatumByNone ReferenceScriptAnyEraNone) ]
     <*> pure TxTotalCollateralNone
     <*> pure TxReturnCollateralNone
     <*> validateTxFee era (Just fixedFee)
