@@ -289,6 +289,7 @@ in {
       # in nomad: producer is always the node with index 0
       producer=0
       [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && [ -z "''${EDGE_NODE:-}" ] && producer=1
+      [ "''${EDGE_NODE:-}" -eq "1" ] && LEDGER_SLOT=-1
 
       ${prelude}
 
