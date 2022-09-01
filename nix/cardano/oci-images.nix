@@ -16,7 +16,7 @@ in {
       (n2c.buildLayer {deps = entrypoints.cardano-node.runtimeInputs;})
       (n2c.buildLayer {deps = [packages.cardano-node];})
     ];
-    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc];
+    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc packages.cardano-node packages.cardano-cli];
     config.Cmd = [
       "${entrypoints.cardano-node}/bin/entrypoint"
     ];
