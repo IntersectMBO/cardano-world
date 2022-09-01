@@ -63,7 +63,7 @@ in
       # *all* dependencies are provided by Nix.
       exactDeps = true;
 
-      withHoogle = false;
+      withHoogle = true;
     };
     modules =
       let

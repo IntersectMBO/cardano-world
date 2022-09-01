@@ -14,7 +14,7 @@
 
 {- HLINT ignore "Use let" -}
 
-module Cardano.Faucet (main, populateStakes) where
+module Cardano.Faucet (main) where
 
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
@@ -94,8 +94,8 @@ createManyStakeKeys acctK net count = Map.fromList $ map f indexRange
       where
         (skey, vkey, address) = deriveSingleKey net acctK x
 
-populateStakes :: IO ()
-populateStakes = do
+_populateStakes :: IO ()
+_populateStakes = do
   eResult <- runExceptT $ do
     configFilePath <- liftIO $ lookupEnv "CONFIG_FILE";
     bar <- unmaybe configFilePath
@@ -109,7 +109,6 @@ populateStakes = do
   case eResult of
     Right _ -> pure ()
     Left err -> putStrLn $ renderFaucetError err
-  pure ()
 
 unmaybe :: Maybe Prelude.String -> ExceptT FaucetError IO Prelude.String
 unmaybe (Just path) = pure path
@@ -142,20 +141,6 @@ runQueryThen query queryDone = do
 sortStakeKeys :: (Map StakeAddress Lovelace, Map StakeAddress PoolId) -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) -> ([Word32],[(Word32, SigningKey StakeExtendedKey, StakeCredential)],[(Word32, Lovelace, PoolId)])
 sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
   let
-    -- this key is not delegated
-    onlyRegistered :: StakeAddress -> StakeKeyIntermediateState -> StakeKeyState
-    -- and is registered, then we can use it
-    onlyRegistered _key (StakeKeyIntermediateStateRegistered (index, skey, vkey, reward)) = StakeKeyRegistered index skey vkey reward
-    -- but isnt registered
-    onlyRegistered _key (StakeKeyIntermediateStateNotRegistered index) = StakeKeyNotRegistered index
-    --registeredAndDelegated = zipWithMaybeAMatched $ \_ v1 v2 -> pure $ Just $ StakeKeyDelegated v1 v2
-    -- this key is delegated
-    registeredAndDelegated :: StakeAddress -> StakeKeyIntermediateState -> PoolId -> Identity (Maybe StakeKeyState)
-    -- and registered
-    registeredAndDelegated _key (StakeKeyIntermediateStateRegistered (index, _skey, _vkey, rewards)) poolid = pure $ Just $ StakeKeyDelegated index rewards poolid
-    -- delegated but not registered!?
-    registeredAndDelegated _key (StakeKeyIntermediateStateNotRegistered _) _ = pure Nothing
-
     intermediateMerge :: Map StakeAddress StakeKeyIntermediateState
     intermediateMerge = Map.merge
       (mapMissing $ \_ (index, _skey, _vkey) -> StakeKeyIntermediateStateNotRegistered index)
@@ -170,6 +155,32 @@ sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
       (zipWithMaybeAMatched registeredAndDelegated)
       intermediateMerge
       delegatedStakeKeys
+
+    finalMergeValues = Map.elems finalMerge
+
+    notRegistered :: [Word32]
+    notRegistered = sort $ mapMaybe filterOnlyNotRegistered finalMergeValues
+
+    notDelegated :: [(Word32, SigningKey StakeExtendedKey, StakeCredential)]
+    notDelegated = mapMaybe filterOnlyRegistered finalMergeValues
+
+    delegated :: [(Word32, Lovelace, PoolId)]
+    delegated = mapMaybe filterOnlyDelegated finalMergeValues
+  (notRegistered,notDelegated,delegated)
+  where
+    -- this key is not delegated
+    onlyRegistered :: StakeAddress -> StakeKeyIntermediateState -> StakeKeyState
+    -- and is registered, then we can use it
+    onlyRegistered _key (StakeKeyIntermediateStateRegistered (index, skey, vkey, reward)) = StakeKeyRegistered index skey vkey reward
+    -- but isnt registered
+    onlyRegistered _key (StakeKeyIntermediateStateNotRegistered index) = StakeKeyNotRegistered index
+    -- this key is delegated
+    registeredAndDelegated :: StakeAddress -> StakeKeyIntermediateState -> PoolId -> Identity (Maybe StakeKeyState)
+    -- and registered
+    registeredAndDelegated _key (StakeKeyIntermediateStateRegistered (index, _skey, _vkey, rewards)) poolid = pure $ Just $ StakeKeyDelegated index rewards poolid
+    -- delegated but not registered!?
+    registeredAndDelegated _key (StakeKeyIntermediateStateNotRegistered _) _ = pure Nothing
+
     filterOnlyNotRegistered :: StakeKeyState -> Maybe Word32
     filterOnlyNotRegistered (StakeKeyNotRegistered index) = Just index
     filterOnlyNotRegistered _ = Nothing
@@ -179,14 +190,6 @@ sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
     filterOnlyDelegated :: StakeKeyState -> Maybe (Word32, Lovelace, PoolId)
     filterOnlyDelegated (StakeKeyDelegated index reward poolid) = Just (index, reward, poolid)
     filterOnlyDelegated _ = Nothing
-    finalMergeValues = Map.elems finalMerge
-    notRegistered :: [Word32]
-    notRegistered = sort $ mapMaybe filterOnlyNotRegistered finalMergeValues
-    notDelegated :: [(Word32, SigningKey StakeExtendedKey, StakeCredential)]
-    notDelegated = mapMaybe filterOnlyRegistered finalMergeValues
-    delegated :: [(Word32, Lovelace, PoolId)]
-    delegated = mapMaybe filterOnlyDelegated finalMergeValues
-  (notRegistered,notDelegated,delegated)
 
 submissionClient :: Bool -> TQueue (TxInMode CardanoMode, ByteString) -> Net.Tx.LocalTxSubmissionClient (TxInMode CardanoMode) reject IO a2
 submissionClient dryRun txQueue = Net.Tx.LocalTxSubmissionClient waitForTxAndLoop
@@ -233,18 +236,16 @@ newFaucetState fsConfig fsTxQueue = do
   fsOwnAddress <- withExceptT FaucetErrorShelleyAddr $ vkeyToAddr fsNetwork fsPaymentVkey
   pure $ FaucetState{..}
 
-newQueryClient :: Int -> FaucetConfigFile -> TQueue (TxInMode CardanoMode, ByteString) -> LocalStateQueryExpr block point (QueryInMode CardanoMode) r IO ()
-newQueryClient port config txQueue = do
-  era5 <- determineEraExpr defaultCModeParams
-  withEra era5 $ \era6 -> do
-    --sbe <- case cardanoEraStyle era6 of
-    --  ShelleyBasedEra sbe -> pure sbe
+_newQueryClient :: Port -> FaucetConfigFile -> TQueue (TxInMode CardanoMode, ByteString) -> LocalStateQueryExpr block point (QueryInMode CardanoMode) r IO ()
+_newQueryClient port config txQueue = do
+  rawEra <- determineEraExpr defaultCModeParams
+  withEra rawEra $ \era -> do
     eFaucetState <- liftIO $ runExceptT $ newFaucetState config txQueue
     let
       faucetState = fromRight (Prelude.error "cant create state") eFaucetState
     putStrLn $ "faucet address: " <> serialiseAddress (fsOwnAddress faucetState)
-    _child <- liftIO $ forkIO $ startApiServer era6 faucetState port
-    eUtxoResult <- queryExpr $ getUtxoQuery (fsOwnAddress faucetState) $ toEraInMode era6 CardanoMode
+    _child <- liftIO $ forkIO $ startApiServer era faucetState port
+    eUtxoResult <- queryExpr $ getUtxoQuery (fsOwnAddress faucetState) $ toEraInMode era CardanoMode
     case eUtxoResult of
       Right result -> do
         let stats = computeUtxoStats (unUTxO result)
@@ -259,7 +260,7 @@ newQueryClient port config txQueue = do
           manyStakeKeys = createManyStakeKeys (fsAcctKey faucetState) (fcfNetwork config) count
           x :: [StakeCredential]
           x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
-        eResult <- queryExpr (queryManyStakeAddr (fcfNetwork config) (toEraInMode era6 CardanoMode) x)
+        eResult <- queryExpr (queryManyStakeAddr (fcfNetwork config) (toEraInMode era CardanoMode) x)
         print eResult
         case eResult of
           Right result -> do
@@ -272,7 +273,7 @@ newQueryClient port config txQueue = do
                 putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
               False -> do
                 putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-            liftIO $ atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, map (\(idx,reward,pool) -> (idx,reward,pool)) delegated)
+            liftIO $ atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
           Left err -> print err
       Nothing -> pure ()
     pure ()
@@ -284,7 +285,7 @@ finish = do
   pure $ Net.Query.SendMsgRelease $
     pure $ Net.Query.SendMsgDone ()
 
-queryClient :: FaucetConfigFile -> TQueue (TxInMode CardanoMode, ByteString) -> Int -> Net.Query.LocalStateQueryClient (BlockInMode CardanoMode) ChainPoint (QueryInMode CardanoMode) IO ()
+queryClient :: FaucetConfigFile -> TQueue (TxInMode CardanoMode, ByteString) -> Port -> Net.Query.LocalStateQueryClient (BlockInMode CardanoMode) ChainPoint (QueryInMode CardanoMode) IO ()
 queryClient config txQueue port = LocalStateQueryClient $ do
   aquireConnection $ do
     runQueryThen (QueryCurrentEra CardanoModeIsMultiEra) $ \(AnyCardanoEra era3) -> do
@@ -328,7 +329,7 @@ queryClient config txQueue port = LocalStateQueryClient $ do
                           putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
                         False -> do
                           putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-                      atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, map (\(idx,reward,pool) -> (idx,reward,pool)) delegated)
+                      atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
                       finish
                     Left _ -> Prelude.error "not handled"
             Left _e -> Prelude.error "not handled"

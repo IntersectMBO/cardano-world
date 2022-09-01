@@ -11,7 +11,7 @@ module Cardano.Faucet.Types where
 import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey, Index, DerivationType(Hardened, Soft))
 import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
-import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential)
+import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName)
 import Cardano.CLI.Environment (EnvSocketError)
 import Cardano.CLI.Shelley.Key (InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
@@ -21,6 +21,7 @@ import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?))
+import Data.Aeson.KeyMap (member)
 import Data.ByteString.Char8 qualified as BSC
 import Data.Either.Combinators (mapRight)
 import Data.IP (IPv4)
@@ -248,18 +249,26 @@ instance FromJSON SiteVerifyReply where
         errors <- o .: "error-codes"
         pure $ SiteVerifyError errors
 
-data FaucetToken = FaucetToken (AssetId, Quantity) deriving (Show, Eq, Ord)
+data FaucetToken = FaucetToken (AssetId, Quantity) | FaucetMintToken (Word32, AssetName, Quantity) deriving (Show, Eq, Ord)
 
 instance FromJSON FaucetToken where
   parseJSON = withObject "FaucetToken" $ \v -> do
-    policyid <- v .: "policy_id"
-    quantity <- v .: "quantity"
-    token <- v .: "token"
-    pure $ FaucetToken (AssetId policyid token,quantity)
+    case ("policy_id" `member` v) of
+      True -> do
+        policyid <- v .: "policy_id"
+        quantity <- v .: "quantity"
+        token <- v .: "token"
+        pure $ FaucetToken (AssetId policyid token,quantity)
+      False -> do
+        policy_index <- v .: "policy_index"
+        token <- v .: "token"
+        quantity <- v .: "quantity"
+        pure $ FaucetMintToken (policy_index, token, quantity)
 
 instance ToJSON FaucetToken where
   toJSON (FaucetToken (AssetId policyid token, quant)) = object [ "policy_id" .= policyid, "quantity" .= quant, "token" .= token ]
   toJSON (FaucetToken (AdaAssetId, quant)) = object [ "assetid" .= ("ada" :: Text), "quantity" .= quant ]
+  toJSON (FaucetMintToken (_policyid, _token, _quant)) = undefined
 
 -- TODO, find a better way to do this
 jsonOptions :: Options
