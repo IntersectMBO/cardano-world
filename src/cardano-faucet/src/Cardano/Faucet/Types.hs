@@ -20,7 +20,8 @@ import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?))
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?), Object)
+import Data.Aeson.Types (Parser)
 import Data.Aeson.KeyMap (member)
 import Data.ByteString.Char8 qualified as BSC
 import Data.Either.Combinators (mapRight)
@@ -251,19 +252,26 @@ instance FromJSON SiteVerifyReply where
 
 data FaucetToken = FaucetToken (AssetId, Quantity) | FaucetMintToken (Word32, AssetName, Quantity) deriving (Show, Eq, Ord)
 
+parseToken :: Object -> Parser AssetName
+parseToken v = do
+  mToken <- v .:? "token"
+  case mToken of
+    Just t -> pure $ AssetName $ encodeUtf8 t
+    Nothing -> v .: "tokenHex"
+
 instance FromJSON FaucetToken where
   parseJSON = withObject "FaucetToken" $ \v -> do
     case ("policy_id" `member` v) of
       True -> do
         policyid <- v .: "policy_id"
         quantity <- v .: "quantity"
-        token <- v .: "token"
-        pure $ FaucetToken (AssetId policyid (AssetName $ encodeUtf8 token),quantity)
+        token <- parseToken v
+        pure $ FaucetToken (AssetId policyid token,quantity)
       False -> do
         policy_index <- v .: "policy_index"
-        token <- v .: "token"
+        token <- parseToken v
         quantity <- v .: "quantity"
-        pure $ FaucetMintToken (policy_index, AssetName $ encodeUtf8 token, quantity)
+        pure $ FaucetMintToken (policy_index, token, quantity)
 
 instance ToJSON FaucetToken where
   toJSON (FaucetToken (AssetId policyid token, quant)) = object [ "policy_id" .= policyid, "quantity" .= quant, "token" .= token ]
