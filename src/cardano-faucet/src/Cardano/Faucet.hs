@@ -20,7 +20,8 @@ import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
 import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
 import Cardano.Api.Byron ()
-import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra)
+--import Cardano.CLI.Run.Friendly (friendlyTxBS)
+import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo)
 import Cardano.CLI.Environment (readEnvSocketPath)
 import Cardano.CLI.Shelley.Run.Address
 import Cardano.CLI.Shelley.Run.Transaction
@@ -42,6 +43,7 @@ import Network.Wai.Handler.Warp
 import Ouroboros.Consensus.HardFork.Combinator.AcrossEras (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Client qualified as Net.Query
 import Ouroboros.Network.Protocol.LocalStateQuery.Type ()
+import Ouroboros.Network.Protocol.LocalTxMonitor.Client qualified as CTxMon
 import Ouroboros.Network.Protocol.LocalTxSubmission.Client qualified as Net.Tx
 import Paths_cardano_faucet (getDataFileName)
 import Prelude qualified
@@ -335,6 +337,20 @@ queryClient config txQueue port = LocalStateQueryClient $ do
             Left _e -> Prelude.error "not handled"
         _ -> Prelude.error "not handled"
 
+txMonitor :: LocalTxMonitorClient txid (TxInMode CardanoMode) SlotNo IO a
+txMonitor = LocalTxMonitorClient $ return $ CTxMon.SendMsgAcquire getSnapshot
+  where
+    getSnapshot :: SlotNo -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
+    getSnapshot slot = do
+      putStrLn $ format ("got mempool snapshot at slot " % sh) $ slot
+      return $ CTxMon.SendMsgNextTx getNextTx
+    getNextTx :: Show tx => Maybe tx -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
+    getNextTx (Just tx) = do
+      putStrLn $ format ("found tx in snapshot: " % sh) $ tx
+      return $ CTxMon.SendMsgNextTx getNextTx
+    getNextTx Nothing = do
+      return $ CTxMon.SendMsgAwaitAcquire getSnapshot
+
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
@@ -360,7 +376,7 @@ main = do
         { localChainSyncClient    = NoLocalChainSyncClient
         , localStateQueryClient   = Just (queryClient fsConfig fsTxQueue port)
         , localTxSubmissionClient = Just (submissionClient dryRun fsTxQueue)
-        , localTxMonitoringClient = Nothing
+        , localTxMonitoringClient = Just txMonitor
       }
   case eResult of
     Right msg -> print msg

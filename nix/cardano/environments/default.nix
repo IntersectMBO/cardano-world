@@ -157,6 +157,7 @@
           port = 30001;
         }
       ];
+      edgePort = 30001;
       submitApiConfig = mkSubmitApiConfig "vasil-dev" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
       usePeersFromLedgerAfterSlot = 60000;
