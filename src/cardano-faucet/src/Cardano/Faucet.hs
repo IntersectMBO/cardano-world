@@ -228,7 +228,7 @@ newFaucetState fsConfig fsTxQueue = do
   fsRootKey <- mnemonicToRootKey $ fcfMnemonic fsConfig
   let
     fsAcctKey = rootKeytoAcctKey fsRootKey 0x80000000
-    addrK = accountKeyToPaymentKey fsAcctKey 0x14
+    addrK = accountKeyToPaymentKey fsAcctKey (fcfAddressIndex fsConfig)
     pay_skey = PaymentExtendedSigningKey $ getKey addrK
     pay_vkey = getVerificationKey pay_skey
     fsPaymentSkey = APaymentExtendedSigningKey pay_skey

@@ -184,6 +184,7 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfRecaptchaSiteKey :: SiteKey
   , fcfRecaptchaSecretKey :: SecretKey
   , fcfAllowedCorsOrigins :: [Text]
+  , fcfAddressIndex :: Word32
   } deriving (Generic, Show)
 
 instance FromJSON FaucetConfigFile where
@@ -199,6 +200,7 @@ instance FromJSON FaucetConfigFile where
     fcfRecaptchaSiteKey <- SiteKey <$> o .: "recaptcha_site_key"
     fcfRecaptchaSecretKey <- SecretKey <$> o .: "recaptcha_secret_key"
     fcfAllowedCorsOrigins <- o .: "allowed_cors_origins"
+    fcfAddressIndex <- fromMaybe 0 <$> o .:? "address_index"
     pure FaucetConfigFile{..}
 
 -- a value with only ada, or a value containing a mix of assets
