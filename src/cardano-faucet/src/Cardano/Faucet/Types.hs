@@ -278,7 +278,7 @@ instance FromJSON FaucetToken where
 instance ToJSON FaucetToken where
   toJSON (FaucetToken (AssetId policyid token, quant)) = object [ "policy_id" .= policyid, "quantity" .= quant, "token" .= token ]
   toJSON (FaucetToken (AdaAssetId, quant)) = object [ "assetid" .= ("ada" :: Text), "quantity" .= quant ]
-  toJSON (FaucetMintToken (_policyid, _token, _quant)) = undefined
+  toJSON (FaucetMintToken (_policyid, _token, _quant)) = String "TODO"
 
 -- TODO, find a better way to do this
 jsonOptions :: Options
