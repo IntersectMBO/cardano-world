@@ -337,16 +337,18 @@ queryClient config txQueue port = LocalStateQueryClient $ do
             Left _e -> Prelude.error "not handled"
         _ -> Prelude.error "not handled"
 
-txMonitor :: LocalTxMonitorClient txid (TxInMode CardanoMode) SlotNo IO a
-txMonitor = LocalTxMonitorClient $ return $ CTxMon.SendMsgAcquire getSnapshot
+txMonitor :: FaucetConfigFile -> LocalTxMonitorClient txid (TxInMode CardanoMode) SlotNo IO a
+txMonitor FaucetConfigFile{fcfDebug} = LocalTxMonitorClient $ return $ CTxMon.SendMsgAcquire getSnapshot
   where
     getSnapshot :: SlotNo -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
     getSnapshot slot = do
-      putStrLn $ format ("got mempool snapshot at slot " % sh) $ slot
+      when fcfDebug $ do
+        putStrLn $ format ("got mempool snapshot at slot " % sh) $ slot
       return $ CTxMon.SendMsgNextTx getNextTx
     getNextTx :: Show tx => Maybe tx -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
     getNextTx (Just tx) = do
-      putStrLn $ format ("found tx in snapshot: " % sh) $ tx
+      when fcfDebug $ do
+        putStrLn $ format ("found tx in snapshot: " % sh) $ tx
       return $ CTxMon.SendMsgNextTx getNextTx
     getNextTx Nothing = do
       return $ CTxMon.SendMsgAwaitAcquire getSnapshot
@@ -376,7 +378,7 @@ main = do
         { localChainSyncClient    = NoLocalChainSyncClient
         , localStateQueryClient   = Just (queryClient fsConfig fsTxQueue port)
         , localTxSubmissionClient = Just (submissionClient dryRun fsTxQueue)
-        , localTxMonitoringClient = Just txMonitor
+        , localTxMonitoringClient = Just (txMonitor fsConfig)
       }
   case eResult of
     Right msg -> print msg
