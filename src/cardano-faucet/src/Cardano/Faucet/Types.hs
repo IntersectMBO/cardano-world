@@ -8,10 +8,10 @@
 
 module Cardano.Faucet.Types where
 
-import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey)
-import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake))
+import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey, Index, DerivationType(Hardened, Soft))
+import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
-import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential)
+import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..))
 import Cardano.CLI.Environment (EnvSocketError)
 import Cardano.CLI.Shelley.Key (InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
@@ -20,7 +20,9 @@ import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?))
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?), Object)
+import Data.Aeson.Types (Parser)
+import Data.Aeson.KeyMap (member)
 import Data.ByteString.Char8 qualified as BSC
 import Data.Either.Combinators (mapRight)
 import Data.IP (IPv4)
@@ -28,7 +30,7 @@ import Data.List.Split (splitOn)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
 import Data.Time.Clock (UTCTime, NominalDiffTime)
-import Prelude (String, error, id, read)
+import Prelude (String, error, read)
 import Servant (FromHttpApiData(parseHeader, parseQueryParam, parseUrlPiece))
 import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 
@@ -60,6 +62,7 @@ data FaucetError = FaucetErrorTodo ShelleyTxCmdError
   | FaucetErrorBadMnemonic Text
   | FaucetErrorBadIdx
   | FaucetErrorShelleyAddr ShelleyAddressCmdError
+  | FaucetErrorTodo2 Text
   deriving Generic
 
 renderFaucetError :: FaucetError -> Text
@@ -71,6 +74,7 @@ renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"
 renderFaucetError (FaucetErrorBadMnemonic msg) = "bad mnemonic " <> msg
 renderFaucetError FaucetErrorBadIdx = "bad index"
 renderFaucetError (FaucetErrorShelleyAddr err) = show err
+renderFaucetError (FaucetErrorTodo2 err) = show err
 
 -- errors that can be sent to the user
 data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
@@ -100,17 +104,19 @@ data ApiKey = Recaptcha Text | ApiKey Text deriving (Ord, Eq)
 
 -- the state of the entire faucet
 data IsCardanoEra era => FaucetState era = FaucetState
-  { utxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
-  , stakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
-  , network :: NetworkId
-  , queue :: TQueue (TxInMode CardanoMode, ByteString)
-  , skey :: SomeWitness
-  , vkey :: SomeAddressVerificationKey
+  { fsUtxoTMVar :: TMVar (Map TxIn (TxOut CtxUTxO era))
+  , fsStakeTMVar :: TMVar ([(Word32, SigningKey StakeExtendedKey, StakeCredential)], [(Word32, Lovelace, PoolId)])
+  , fsNetwork :: NetworkId
+  , fsTxQueue :: TQueue (TxInMode CardanoMode, ByteString)
+  , fsRootKey :: Shelley 'RootK XPrv
+  , fsPaymentSkey :: SomeWitness
+  , fsPaymentVkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
   , fsSendMoneyRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsDelegationRateLimitState :: TMVar (Map ApiKey (Map RateLimitAddress UTCTime))
   , fsBucketSizes :: [FaucetValue]
+  , fsOwnAddress :: AddressAny
   }
 
 -- the result of checking a rate limit
@@ -178,6 +184,7 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfRecaptchaSiteKey :: SiteKey
   , fcfRecaptchaSecretKey :: SecretKey
   , fcfAllowedCorsOrigins :: [Text]
+  , fcfAddressIndex :: Word32
   } deriving (Generic, Show)
 
 instance FromJSON FaucetConfigFile where
@@ -193,6 +200,7 @@ instance FromJSON FaucetConfigFile where
     fcfRecaptchaSiteKey <- SiteKey <$> o .: "recaptcha_site_key"
     fcfRecaptchaSecretKey <- SecretKey <$> o .: "recaptcha_secret_key"
     fcfAllowedCorsOrigins <- o .: "allowed_cors_origins"
+    fcfAddressIndex <- fromMaybe 0 <$> o .:? "address_index"
     pure FaucetConfigFile{..}
 
 -- a value with only ada, or a value containing a mix of assets
@@ -207,7 +215,7 @@ data FaucetValue = Ada Lovelace
 
 instance ToJSON FaucetValue where
   toJSON (Ada lovelace) = object [ "lovelace" .= lovelace ]
-  toJSON (FaucetValueMultiAsset _ _) = String "unsupported"
+  toJSON (FaucetValueMultiAsset _ _) = String "TODO"
   toJSON (FaucetValueManyTokens _) = String "unsupported"
 
 data UtxoStats = UtxoStats (Map FaucetValue Int) deriving Show
@@ -244,18 +252,33 @@ instance FromJSON SiteVerifyReply where
         errors <- o .: "error-codes"
         pure $ SiteVerifyError errors
 
-data FaucetToken = FaucetToken (AssetId, Quantity) deriving (Show, Eq, Ord)
+data FaucetToken = FaucetToken (AssetId, Quantity) | FaucetMintToken (Word32, AssetName, Quantity) deriving (Show, Eq, Ord)
+
+parseToken :: Object -> Parser AssetName
+parseToken v = do
+  mToken <- v .:? "token"
+  case mToken of
+    Just t -> pure $ AssetName $ encodeUtf8 t
+    Nothing -> v .: "tokenHex"
 
 instance FromJSON FaucetToken where
   parseJSON = withObject "FaucetToken" $ \v -> do
-    policyid <- v .: "policy_id"
-    quantity <- v .: "quantity"
-    token <- v .: "token"
-    pure $ FaucetToken (AssetId policyid token,quantity)
+    case ("policy_id" `member` v) of
+      True -> do
+        policyid <- v .: "policy_id"
+        quantity <- v .: "quantity"
+        token <- parseToken v
+        pure $ FaucetToken (AssetId policyid token,quantity)
+      False -> do
+        policy_index <- v .: "policy_index"
+        token <- parseToken v
+        quantity <- v .: "quantity"
+        pure $ FaucetMintToken (policy_index, token, quantity)
 
 instance ToJSON FaucetToken where
   toJSON (FaucetToken (AssetId policyid token, quant)) = object [ "policy_id" .= policyid, "quantity" .= quant, "token" .= token ]
   toJSON (FaucetToken (AdaAssetId, quant)) = object [ "assetid" .= ("ada" :: Text), "quantity" .= quant ]
+  toJSON (FaucetMintToken (_policyid, _token, _quant)) = String "TODO"
 
 -- TODO, find a better way to do this
 jsonOptions :: Options
@@ -277,18 +300,23 @@ mnemonicToRootKey mnemonic = do
   mw <- either (left . FaucetErrorBadMnemonic . T.pack . getMkSomeMnemonicError) pure $ mkSomeMnemonic @'[24] mnemonic
   pure $ genMasterKeyFromMnemonic mw mempty
 
-rootKeytoAcctKey :: Monad m => Shelley 'RootK XPrv -> Word32 -> ExceptT FaucetError m (Shelley 'AccountK XPrv)
-rootKeytoAcctKey rootK index = do
-  accIx <- maybe (left FaucetErrorBadIdx) pure $ indexFromWord32 index
-  pure $ deriveAccountPrivateKey rootK accIx
+convertHardenedIndex :: HasCallStack => Word32 -> Index 'Hardened depth
+convertHardenedIndex idx = fromMaybe (error "bad hardened index") $ indexFromWord32 idx
 
-accountKeyToPaymentKey :: Monad m => Shelley 'AccountK XPrv -> Word32 -> ExceptT FaucetError m (Shelley 'PaymentK XPrv)
-accountKeyToPaymentKey acctK index = do
-  addIx <- maybe (left FaucetErrorBadIdx) pure $ indexFromWord32 index
-  pure $ deriveAddressPrivateKey acctK UTxOExternal addIx
+convertSoftIndex :: Word32 -> Index 'Soft depth
+convertSoftIndex idx = fromMaybe (error "bad soft index") $ indexFromWord32 idx
+
+rootKeytoAcctKey :: Shelley 'RootK XPrv -> Word32 -> Shelley 'AccountK XPrv
+rootKeytoAcctKey rootK index = deriveAccountPrivateKey rootK $ convertHardenedIndex index
+
+accountKeyToPaymentKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
+accountKeyToPaymentKey acctK index = deriveAddressPrivateKey acctK UTxOExternal $ convertSoftIndex index
+
+rootKeyToPolicyKey :: HasCallStack => Shelley 'RootK XPrv -> Word32 -> Shelley 'PolicyK XPrv
+rootKeyToPolicyKey acctK index = derivePolicyPrivateKey acctK $ convertHardenedIndex index
 
 accountKeyToStakeKey :: Shelley 'AccountK XPrv -> Word32 -> Shelley 'PaymentK XPrv
-accountKeyToStakeKey acctK index = deriveAddressPrivateKey acctK Stake (maybe (error "bad stake index") Prelude.id $ indexFromWord32 index)
+accountKeyToStakeKey acctK index = deriveAddressPrivateKey acctK Stake $ convertSoftIndex index
 
 vkeyToAddr :: NetworkId -> SomeAddressVerificationKey -> ExceptT ShelleyAddressCmdError IO AddressAny
 vkeyToAddr nw (AByronVerificationKey vk) = return (AddressByron (makeByronAddress nw vk))
@@ -306,9 +334,9 @@ test = do
     config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
     print config
     rootK <- mnemonicToRootKey $ fcfMnemonic config
-    acctK <- rootKeytoAcctKey rootK 0x80000000
+    let acctK = rootKeytoAcctKey rootK 0x80000000
 
-    _addrK <- accountKeyToPaymentKey acctK 0x14
+    let _addrK = accountKeyToPaymentKey acctK 0x14
     pure ()
     {-
     stakeK <- accountKeyToStakeKey acctK 0x1

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -14,14 +14,13 @@
 
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
-import Cardano.Api (CardanoEra, IsShelleyBasedEra, ShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey)
-import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName))
+import Cardano.Api (CardanoEra, IsShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey(PaymentExtendedSigningKey), PaymentExtendedKey)
+import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId, AdaAssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), Script(SimpleScript), simpleScriptVersion, SimpleScriptOrReferenceInput(SScript), SimpleScriptV2, scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), SimpleScriptVersion, shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey, Quantity(Quantity), scriptPolicyId, TxOut(TxOut), TxOutValue(TxOutAdaOnly, TxOutValue), lovelaceToValue, negateValue, Value, BuildTx, CtxUTxO, WitCtxMint)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.CLI.Shelley.Run.Address (renderShelleyAddressCmdError)
-import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(AStakeExtendedSigningKey))
-import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace)
-import Cardano.Faucet.TxUtils (makeAndSignTx)
-import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), vkeyToAddr, SendMoneySent(..), FaucetToken(FaucetToken))
+import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(..))
+import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace, stripMintingTokens)
+import Cardano.Faucet.TxUtils (makeAndSignTx, Fee(..))
+import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), SendMoneySent(..), FaucetToken(FaucetToken, FaucetMintToken), rootKeyToPolicyKey)
 import Cardano.Faucet.Utils (findUtxoOfSize, computeUtxoStats)
 import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (writeTQueue, TMVar, takeTMVar, putTMVar, readTMVar)
@@ -43,8 +42,11 @@ import Network.Socket (SockAddr(SockAddrInet))
 import Prelude qualified (id)
 import Servant
 import Servant.Client (ClientM, ClientError, client, runClientM, mkClientEnv, BaseUrl(BaseUrl), Scheme(Https))
+import Cardano.Address.Style.Shelley (Shelley, getKey)
+import Cardano.Address.Derivation (Depth(PolicyK), XPrv)
+import Cardano.CLI.Types (TxOutAnyEra(TxOutAnyEra), TxOutDatumAnyEra(TxOutDatumByNone), ReferenceScriptAnyEra(ReferenceScriptAnyEraNone))
 
--- create recaptcha api keys at https://www.google.com/recaptcha/admin/create
+-- create recaptcha api keys at https://www.google.com/recaptcha/admin
 -- reCAPTCHA v2, "i am not a robot"
 
 instance FromHttpApiData PoolId where
@@ -57,19 +59,20 @@ instance Accept HTML where
 instance MimeRender HTML Text where
   mimeRender _ = LT.encodeUtf8 . LT.fromStrict
 
-#define ApiKeyProtected QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text
+type ApiKeyProtected rest = QueryParam' '[Optional] "api_key" Text :> QueryParam' '[Optional] "g-recaptcha-response" CaptchaToken :> RemoteHost :> Header "X-Forwarded-For" ForwardedFor :> Header "Origin" Text :> rest
 
-type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
+type SendMoneyUrl = "send-money" :> Capture "destination_address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected (Post '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply))
+type SendMoneyQuery = "send-money" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Optional] "type" Text :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply))
 type Metrics = "metrics" :> Get '[PlainText] Text
-type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected :> Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
+type DelegateStakeUrl = "delegate" :> Capture "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
+type DelegateStakeQuery = "delegate" :> QueryParam' '[Required] "poolid" PoolId :> ApiKeyProtected (Get '[JSON] (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply))
+type MintCoins = "mint-many" :> QueryParam' '[Required] "address" Text :> QueryParam' '[Required] "fee" Integer :> QueryParam' '[Required] "output_count" Integer :> QueryParam' '[Required] "tokens_per_utxo" Integer :> Get '[JSON] (Either FaucetWebError ())
 type SiteVerify = "recaptcha" :> "api" :> "siteverify" :> ReqBody '[FormUrlEncoded] SiteVerifyRequest :> Post '[JSON] SiteVerifyReply
 type GetSiteKey = "get-site-key" :> Get '[PlainText] Text
 type GetBasicFaucet = "basic-faucet" :> Get '[HTML] Text
 
 -- faucet root dir
-type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStakeUrl :<|> DelegateStakeQuery :<|> GetSiteKey :<|> GetBasicFaucet
+type RootDir = SendMoneyUrl :<|> SendMoneyQuery :<|> Metrics :<|> DelegateStakeUrl :<|> DelegateStakeQuery :<|> GetSiteKey :<|> GetBasicFaucet :<|> MintCoins
 -- recaptcha root dir
 type CaptchaRootDir = SiteVerify
 
@@ -89,11 +92,10 @@ doSiteVerify secret token = do
 
 server :: IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Text
   -> Server RootDir
-server era sbe faucetState indexHtml = handleSendMoney era sbe faucetState :<|> handleSendMoney era sbe faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleDelegateStake era sbe faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml)
+server era faucetState indexHtml = handleSendMoney era faucetState :<|> handleSendMoney era faucetState :<|> handleMetrics faucetState :<|> handleDelegateStake era faucetState :<|> handleDelegateStake era faucetState :<|> handleStaticFile site_key_reply :<|> (handleStaticFile indexHtml) :<|> handleMintCoins era faucetState
   where
     site_key_reply = sformat ("site_key = \"" % st % "\";") $ unSiteKey $ fcfRecaptchaSiteKey $ fsConfig faucetState
 
@@ -122,9 +124,155 @@ getCorsReply whitelist mOrigin = case mOrigin of
     True -> addHeader origin
     False -> noHeader
 
-handleDelegateStake :: IsShelleyBasedEra era
+handleMintCoins :: IsShelleyBasedEra era => CardanoEra era -> FaucetState era -> Text -> Integer -> Integer -> Integer -> Servant.Handler (Either FaucetWebError ())
+handleMintCoins era fs@FaucetState{fsTxQueue} addr fee output_count tokens_per_utxo = do
+  eResult <- liftIO $ runExceptT $ do
+    addressAny <- parseAddress addr
+    print addressAny
+    (signedTx, _txid) <- mintFreshTokens era fs 0 addressAny (AssetName "Testtoken") tokens_per_utxo output_count (Fee $ Lovelace fee)
+    let prettyTx = friendlyTxBS era signedTx
+    eraInMode <- convertEra era
+    liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
+    pure ()
+  pure eResult
+
+{-test :: IO ()
+test = do
+  eResult <- runExceptT $ do
+    config <- parseConfig "/home/clever/iohk/cardano-world/sample-config.json"
+    rootK <- mnemonicToRootKey $ fcfMnemonic config
+    fsUtxoTMVar <- liftIO $ newEmptyTMVarIO
+    addressAny <- withExceptT (FaucetErrorTodo2 . show) $ parseAddress "addr_test1vq4p02j5rf5w69kldld0t9wt6fe2efvfhcxsk4qdhwm2pnglr5yaj"
+    let
+      addr :: AddressInEra undefined
+      addr = anyAddressInShelleyBasedEra addressAny
+      txid = fromMaybe undefined $ decode "8452cb2be57a8389f20e4c48bfb6e3ce9b7c2e655b9675f96025339af905c0c3"
+      txout :: TxOut CtxUTxO era
+      txout = TxOut addr _ _ _
+      fakeUtxo :: Map TxIn (TxOut CtxUTxO era)
+      fakeUtxo = Map.singleton (TxIn txid $ TxIx 0) txout
+      fs = FaucetState
+        { fsRootKey = rootK
+        , fsUtxoTMVar = fsUtxoTMVar
+        , fsStakeTMVar = Prelude.error "stake mvar"
+        , fsNetwork = Testnet $ NetworkMagic 9
+        , fsTxQueue = Prelude.error "tx queue"
+        , fsPaymentSkey = Prelude.error "skey"
+        , fsPaymentVkey = Prelude.error "vkey"
+        , fsAcctKey = Prelude.error "acct key"
+        , fsConfig = config
+        , fsSendMoneyRateLimitState = undefined
+        , fsDelegationRateLimitState = undefined
+        , fsBucketSizes = Prelude.error "bucket size"
+        , fsOwnAddress = Prelude.error "own addr"
+        }
+    liftIO $ atomically $ putTMVar fsUtxoTMVar fakeUtxo
+    res <- withExceptT (FaucetErrorTodo2 . show) $ mintFreshTokens ShelleyEra fs 0x80000000 addressAny (AssetName "Testtoken") (Quantity 100)
+    print res
+    pure ()
+  case eResult of
+    Left err -> print $ renderFaucetError err
+    Right res -> print res-}
+
+txoutToValue :: TxOut CtxUTxO era -> Value
+txoutToValue (TxOut _ txOutValue _ _) = unwrap txOutValue
+  where
+    unwrap :: TxOutValue era -> Value
+    unwrap (TxOutAdaOnly _ ll) = lovelaceToValue ll
+    unwrap (TxOutValue _ v) = v
+
+data TokenState = TokenState
+  { tsAssetId :: AssetId
+  , tsPolicyId :: PolicyId
+  , tsSimpleScript :: SimpleScript SimpleScriptV2
+  , tsPolicySKey :: SigningKey PaymentExtendedKey
+  , tsScript :: Script SimpleScriptV2
+  }
+
+getTokenState :: HasCallStack => IsCardanoEra era => Word32 -> AssetName -> FaucetState era -> TokenState
+getTokenState policy_index name FaucetState{fsRootKey} = TokenState{tsAssetId,tsPolicyId,tsSimpleScript,tsPolicySKey,tsScript}
+  where
+    policyKey :: Shelley 'PolicyK XPrv
+    policyKey = rootKeyToPolicyKey fsRootKey (0x80000000 + policy_index)
+    tsPolicySKey :: SigningKey PaymentExtendedKey
+    tsPolicySKey = PaymentExtendedSigningKey $ getKey policyKey
+    policy_vkey :: VerificationKey PaymentExtendedKey
+    policy_vkey = getVerificationKey tsPolicySKey
+    tsSimpleScript :: SimpleScript SimpleScriptV2
+    tsSimpleScript = RequireSignature $ verificationKeyHash $ castVerificationKey policy_vkey
+    tsScript :: Script SimpleScriptV2
+    tsScript = SimpleScript simpleScriptVersion tsSimpleScript
+    tsPolicyId = scriptPolicyId tsScript
+    tsAssetId = AssetId tsPolicyId name
+
+getOptionalMintOutput :: IsCardanoEra era => FaucetState era -> CardanoEra era -> FaucetValue -> ExceptT FaucetWebError IO (Value, TxMintValue BuildTx era, [SomeWitness])
+getOptionalMintOutput fs era (FaucetValueMultiAsset _ (FaucetMintToken (policy_index, name, quant))) = do
+  supported <- either (\_ -> left $ FaucetWebErrorTodo "asset error") pure $ multiAssetSupportedInEra era
+  let
+    x :: SimpleScriptVersion SimpleScriptV2
+    x = simpleScriptVersion
+  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage x) of
+    Just yes -> pure yes
+    Nothing -> left $ FaucetWebErrorTodo "scripts not supported"
+  let
+    TokenState{tsAssetId,tsPolicyId,tsSimpleScript,tsPolicySKey} = getTokenState policy_index name fs
+    valueToMint = valueFromList [ (tsAssetId, quant) ]
+    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript tsSimpleScript))]
+    y = BuildTxWith $ witnessesProvidedMap
+  pure $ (valueToMint, TxMintValue supported valueToMint y, [APaymentExtendedSigningKey tsPolicySKey])
+getOptionalMintOutput _ _ _ = pure (mempty, TxMintNone, [])
+
+mintFreshTokens :: forall era . IsShelleyBasedEra era
   => CardanoEra era
-  -> ShelleyBasedEra era
+  -> FaucetState era
+  -> Word32
+  -> AddressAny
+  -> AssetName
+  -> Integer
+  -> Integer
+  -> Fee
+  -> ExceptT FaucetWebError IO (Tx era, TxId)
+mintFreshTokens era fs@FaucetState{fsUtxoTMVar,fsNetwork,fsPaymentSkey,fsOwnAddress} policyIndex destinationAddress tokenname count tx_out_count (Fee feeLovelace) = do
+  let
+    TokenState{tsAssetId,tsPolicyId,tsSimpleScript,tsPolicySKey} = getTokenState policyIndex tokenname fs
+    sbe = shelleyBasedEra @era
+    x :: SimpleScriptVersion SimpleScriptV2
+    x = simpleScriptVersion
+  txinout@(_, txout) <- liftIO $ atomically $ do
+    txinout <- findUtxoOfSize fsUtxoTMVar $ Ada $ Lovelace (1000 * 1000000)
+    pure txinout
+  supported <- either (\_ -> left $ FaucetWebErrorTodo "asset error") pure $ multiAssetSupportedInEra era
+  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage x) of
+    Just yes -> pure yes
+    Nothing -> left $ FaucetWebErrorTodo "scripts not supported"
+  let
+    valueToMint = valueFromList [(tsAssetId, Quantity $ count * tx_out_count)]
+    witnessesProvidedMap :: Map PolicyId (ScriptWitness WitCtxMint era)
+    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript tsSimpleScript))]
+    mint = TxMintValue supported valueToMint $ BuildTxWith witnessesProvidedMap
+    -- value in each utxo being created
+    outputValue = valueFromList [ (AdaAssetId, Quantity 10000000), (tsAssetId, Quantity count) ]
+    outputValues = replicate (fromIntegral tx_out_count) outputValue
+    -- takes an addr and a value, and creates a txout
+    to_txout :: AddressAny -> Value -> TxOutAnyEra
+    to_txout addr v = TxOutAnyEra addr v TxOutDatumByNone ReferenceScriptAnyEraNone
+    feeValue = lovelaceToValue feeLovelace
+    -- the desired txout's
+    outputs = map (to_txout destinationAddress) outputValues
+    output_sum = negateValue $ mconcat $ feeValue:outputValues
+    input_sum = mconcat [ txoutToValue txout, valueToMint ]
+    change = input_sum <> output_sum
+    -- prepend the change if there is any
+    outputsWithChange = if (change == mempty) then outputs else (to_txout fsOwnAddress change):outputs
+  putStrLn $ format ("outputValue: " % sh) $ outputValue
+  putStrLn $ format ("output_sum: " % sh) $ output_sum
+  putStrLn $ format ("input_sum: " % sh) $ input_sum
+  putStrLn $ format ("change: " % sh) $ change
+  (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputsWithChange) fsNetwork [fsPaymentSkey, APaymentExtendedSigningKey tsPolicySKey] TxCertificatesNone mint (Fee feeLovelace)
+  pure (signedTx, txid)
+
+handleDelegateStake :: forall era. IsShelleyBasedEra era
+  => CardanoEra era
   -> FaucetState era
   -> PoolId
   -> Maybe Text
@@ -133,9 +281,10 @@ handleDelegateStake :: IsShelleyBasedEra era
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeTMVar,fsConfig,fsDelegationRateLimitState} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleDelegateStake era FaucetState{fsPaymentSkey,fsNetwork,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState,fsOwnAddress} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
   let
     clientIP = pickIp mForwardedFor remoteip
+    sbe = shelleyBasedEra @era
   eResult <- liftIO $ runExceptT $ do
     when (fcfMaxStakeKeyIndex fsConfig == Nothing) $ left $ FaucetWebErrorTodo "delegation disabled"
     mReply <- liftIO $ decideBetweenKeyAndCaptcha Nothing mApiKey mToken fsConfig
@@ -152,9 +301,9 @@ handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeT
             RateLimitResultAllow -> do
               -- the rate limits allow the action at the current time
               -- get an unused stake key
-              stakeKey <- getKeyToDelegate stakeTMVar poolId
+              stakeKey <- getKeyToDelegate fsStakeTMVar poolId
               -- and get a txout to fund the delegation tx
-              txinout <- findUtxoOfSize utxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
+              txinout <- findUtxoOfSize fsUtxoTMVar $ Ada $ Lovelace ((fcfDelegationUtxoSize fsConfig) * 1000000)
               pure $ Right (stakeKey, txinout)
             RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseToBech32 poolId)
       -- getKeyToDelegate and findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
@@ -166,14 +315,13 @@ handleDelegateStake era sbe FaucetState{skey,vkey,network,utxoTMVar,queue,stakeT
           cert = makeStakeAddressDelegationCertificate creds poolId
           stake_witness = AStakeExtendedSigningKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
-        addressAny <- withExceptT (FaucetWebErrorTodo . renderShelleyAddressCmdError) $ vkeyToAddr network vkey
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era
-        (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey, stake_witness] (TxCertificates supported [cert] x)
+        (signedTx, txid) <- makeAndSignTx sbe txinout (Left fsOwnAddress) fsNetwork [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x) TxMintNone (Fee $ Lovelace 200000)
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
         putStrLn $ format ("delegating stake key to pool " % sh) poolId
-        liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
+        liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
         pure $ DelegationReplySuccess txid
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
@@ -258,11 +406,11 @@ toMetric :: Metric -> Text
 toMetric (Metric attribs key val) = key <> (attributesToString attribs) <> " " <> valToString val
 
 handleMetrics :: IsCardanoEra era => FaucetState era -> Servant.Handler Text
-handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
+handleMetrics FaucetState{fsUtxoTMVar,fsBucketSizes,fsConfig,fsStakeTMVar} = do
   liftIO $ do
     (utxo, (stakeUnused, stakeUsed)) <- atomically $ do
-      u <- readTMVar utxoTMVar
-      stake <- readTMVar stakeTMVar
+      u <- readTMVar fsUtxoTMVar
+      stake <- readTMVar fsStakeTMVar
       pure (u,stake)
     let
       -- how many utxo exist at each value
@@ -283,7 +431,7 @@ handleMetrics FaucetState{utxoTMVar,fsBucketSizes,fsConfig,stakeTMVar} = do
       tokenAttributes _ = []
       toStats :: FaucetValue -> Int -> Metric
       toStats fv@((Ada l)) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [isRequiredSize fv, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
-      toStats fv@(FaucetValueMultiAsset _ll token) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [ isRequiredSize fv ] <> tokenAttributes token) "bucket_todo" (MetricValueInt $ fromIntegral count)
+      toStats fv@(FaucetValueMultiAsset _ll token) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [ isRequiredSize fv ] <> tokenAttributes token) "faucet_utxo" (MetricValueInt $ fromIntegral count)
       toStats fv@(FaucetValueManyTokens _) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv) "faucet_utxo_too_many_tokens" (MetricValueInt $ fromIntegral count)
       stakeUnusedToMetric :: Metric
       stakeUnusedToMetric = Metric mempty "faucet_delegation_available" (MetricValueInt $ fromIntegral $ length stakeUnused)
@@ -322,9 +470,8 @@ decideBetweenKeyAndCaptcha mType Nothing (Just token) FaucetConfigFile{fcfRecapt
     _ -> pure Nothing
 decideBetweenKeyAndCaptcha _ Nothing Nothing _ = pure Nothing
 
-handleSendMoney :: IsShelleyBasedEra era =>
+handleSendMoney :: forall era. IsShelleyBasedEra era =>
   CardanoEra era
-  -> ShelleyBasedEra era
   -> FaucetState era
   -> Text
   -> Maybe Text
@@ -334,14 +481,21 @@ handleSendMoney :: IsShelleyBasedEra era =>
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era fs@FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
+  let sbe = shelleyBasedEra @era
   eResult <- liftIO $ runExceptT $ do
     addressAny <- parseAddress addr
     mReply <- liftIO $ decideBetweenKeyAndCaptcha mType mApiKey mToken fsConfig
     (key, limits) <- case mReply of
       Just x -> pure x
       Nothing -> left FaucetWebErrorInvalidApiKey
+    let
+      limitFaucetValue = toFaucetValue limits
+      withoutMintedTokens = stripMintingTokens limitFaucetValue
+    print limits
+    print limitFaucetValue
+    print withoutMintedTokens
     now <- liftIO $ getCurrentTime
     result <- liftIO $ atomically $ do
       let
@@ -349,21 +503,30 @@ handleSendMoney era sbe FaucetState{network,utxoTMVar,skey,queue,fsConfig,fsSend
           limitResult <- checkRateLimits now [ RateLimitAddressCardano addressAny, RateLimitAddressNetwork clientIP ] key fsSendMoneyRateLimitState limits
           case limitResult of
             RateLimitResultAllow -> do
-              txinout <- findUtxoOfSize utxoTMVar $ toFaucetValue limits
+              txinout <- findUtxoOfSize fsUtxoTMVar withoutMintedTokens
               pure $ Right txinout
             RateLimitResultDeny waitPeriod -> throwSTM $ FaucetWebErrorRateLimitExeeeded waitPeriod (serialiseAddress addressAny)
       -- findUtxoOfSize can use throwSTM to report an error, and undo the entire atomic action
       catchSTM maybeBumpLimitAndGetUtxo $ pure . Left
-    txinout@(txin, _) <- case result of
+    txinout@(txin, txout) <- case result of
       Left err -> left err
       Right txinout -> pure txinout
     eraInMode <- convertEra era
-    (signedTx, txid) <- makeAndSignTx sbe txinout addressAny network [skey] TxCertificatesNone
+    (mintedValue, mintField, extraKeys) <- getOptionalMintOutput fs era limitFaucetValue
+    let
+      feeLovelace = Lovelace 200000
+      txInValue = txoutToValue txout
+      valueUserShouldReceive = txInValue <> mintedValue <> (negateValue $ lovelaceToValue feeLovelace)
+      outputs :: [TxOutAnyEra]
+      outputs = [ TxOutAnyEra addressAny valueUserShouldReceive TxOutDatumByNone ReferenceScriptAnyEraNone ]
+    (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputs) fsNetwork (extraKeys <> [fsPaymentSkey]) TxCertificatesNone mintField (Fee $ feeLovelace)
+    putStrLn $ format ("txin is worth: " % sh) $ txInValue
+    putStrLn $ format ("user should receive: " % sh) valueUserShouldReceive
     putStrLn $ format (sh % ": sending funds to address " % st % " via txid " % sh) clientIP (serialiseAddress addressAny) txid
     let
       prettyTx = friendlyTxBS era signedTx
-    liftIO $ atomically $ writeTQueue queue (TxInMode signedTx eraInMode, prettyTx)
-    return $ SendMoneyReplySuccess $ SendMoneySent txid txin $ toFaucetValue limits
+    liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
+    return $ SendMoneyReplySuccess $ SendMoneySent txid txin limitFaucetValue
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
   case eResult of
     Right msg -> pure $ corsHeader msg

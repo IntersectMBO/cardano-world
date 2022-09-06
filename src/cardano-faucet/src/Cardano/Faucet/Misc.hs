@@ -30,6 +30,12 @@ toFaucetValue :: ApiKeyValue -> FaucetValue
 toFaucetValue (ApiKeyValue _ lovelace _ Nothing _) = Ada lovelace
 toFaucetValue (ApiKeyValue _ ll _ (Just t) _) = FaucetValueMultiAsset ll t
 
+stripMintingTokens :: FaucetValue -> FaucetValue
+stripMintingTokens fv@(Ada _) = fv
+stripMintingTokens fv@(FaucetValueMultiAsset _ (FaucetToken _)) = fv
+stripMintingTokens (FaucetValueMultiAsset ll (FaucetMintToken _)) = Ada ll
+stripMintingTokens fv@(FaucetValueManyTokens _) = fv
+
 -- returns just the lovelace component and ignores tokens
 faucetValueToLovelace :: FaucetValue -> Lovelace
 faucetValueToLovelace (Ada ll) = ll

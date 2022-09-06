@@ -86,6 +86,7 @@ in rec {
       legacyTopology = mkEdgeTopology {
         edgeNodes = [env.relaysNew];
         valency = 2;
+        edgePort = env.edgePort or 3001;
       };
       p2pTopology = mkEdgeTopologyP2P {
         inherit (env) edgeNodes;

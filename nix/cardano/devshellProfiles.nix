@@ -60,14 +60,14 @@ rec {
       #  name = "hlint";
       #  category = "development";
       #}
-      #{
-      #  package = haskell-nix.tool compiler-nix-name "ghcid" {
-      #    version = "0.8.7";
-      #    inherit index-state;
-      #  };
-      #  name = "ghcid";
-      #  category = "development";
-      #}
+      {
+        package = haskell-nix.tool compiler-nix-name "ghcid" {
+          version = "0.8.7";
+          inherit index-state;
+        };
+        name = "ghcid";
+        category = "development";
+      }
       #{
       #  package = haskell-nix.tool compiler-nix-name "haskell-language-server" {
       #    version = "1.6.1.1";
