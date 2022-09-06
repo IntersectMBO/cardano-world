@@ -166,6 +166,7 @@ in {
           inherit
             (cells.cardano.alerts)
             node
+            dbsync
             ;
           # Upstream alerts
           inherit
@@ -185,6 +186,7 @@ in {
           inherit
             (cells.cardano.dashboards)
             application-metrics
+            dbsync
             p2p
             performance
             ;

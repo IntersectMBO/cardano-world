@@ -255,4 +255,63 @@ in
         }
       ];
   };
+
+  dbsync = {
+    datasource = "vm";
+    rules =
+      [
+        {
+          alert = "dbsync_db_block_height_stall";
+          expr = "increase(cardano_db_sync_db_block_height[1m]) == 0";
+          for = "30m";
+          labels = {
+            severity = "page";
+          };
+          annotations = {
+            summary = "Dbsync job {{$labels.nomad_alloc_index}} is experiencing block height stall.";
+            description = "Dbsync job {{$labels.nomad_alloc_index}} has not increased in DB block height for the past 30 minutes";
+          };
+        }
+        {
+          alert = "dbsync_node_block_height_stall";
+          expr = "increase(cardano_db_sync_node_block_height[1m]) == 0";
+          for = "10m";
+          labels = {
+            severity = "page";
+          };
+          annotations = {
+            summary = "Dbsync job {{$labels.nomad_alloc_index}} is experiencing cardano node block height stall.";
+            description = "Dbsync job {{$labels.nomad_alloc_index}} has not observed cardano node block height for the past 10 minutes";
+          };
+        }
+        {
+          alert = "dbsync_node_block_height_divergence";
+          expr = "abs(cardano_db_sync_node_block_height - cardano_db_sync_db_block_height) > 10";
+          for = "30m";
+          labels = {
+            severity = "warning";
+          };
+          annotations = {
+            summary = "Dbsync job {{$labels.nomad_alloc_index}} is experiencing block height divergence from cardano node.";
+            description = ''
+              Dbsync job {{$labels.nomad_alloc_index}} has averaged more than 10 blocks divergence with node for more than 10 minutes.
+              During extended resynchronization events this may be expected and should resolve once synchronization is complete.'';
+          };
+        }
+        {
+          alert = "dbsync_queue_length";
+          expr = "cardano_db_sync_db_queue_length > 10";
+          for = "30m";
+          labels = {
+            severity = "warning";
+          };
+          annotations = {
+            summary = "Dbsync job {{$labels.nomad_alloc_index}} is experiencing queue backlog.";
+            description = ''
+              Dbsync job {{$labels.nomad_alloc_index}} has queue length of > 10 for more than 30 minutes.
+              During extended resynchronization events this may be expected and should resolve once synchronization is complete.'';
+          };
+        }
+      ];
+  };
 }
