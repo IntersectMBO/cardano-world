@@ -20,6 +20,7 @@ let
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
 
+in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
   inherit
     (import inputs.nixpkgs-haskell {
       inherit (nixpkgs) system;
@@ -30,7 +31,7 @@ let
         crypto
         (final: prev: {
           haskellBuildUtils = prev.haskellBuildUtils.override {
-            inherit compiler-nix-name index-state;
+            inherit compiler-nix-name index-state evalSystem;
           };
         })
       ];
@@ -42,7 +43,7 @@ let
 
   project =
     (import ./haskell.nix {
-      inherit lib haskell-nix;
+      inherit lib haskell-nix evalSystem;
       inherit (inputs) byron-chain;
       src = self;
     });
@@ -137,4 +138,4 @@ in
     cardano.library.generateStaticHTMLConfigs environments;
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
   inherit nix-inclusive; # TODO REMOVE
-}
+}) {}

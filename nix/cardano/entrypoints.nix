@@ -6,6 +6,9 @@
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
   inherit (cell) packages environments library constants;
+  packages' = packages;
+in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
+  packages = if args ? evalSystem then packages'.override { inherit evalSystem; } else packages';
 
   prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
 
@@ -598,4 +601,4 @@ in {
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
     '';
   };
-}
+}) {}
