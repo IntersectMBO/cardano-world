@@ -18,6 +18,7 @@ in
     extraVector ? {},
     nodeClass,
     scaling,
+    ...
   }: let
     id = jobname;
     type = "service";
