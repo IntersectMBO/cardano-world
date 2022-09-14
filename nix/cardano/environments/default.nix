@@ -175,9 +175,10 @@
       edgeNodes = [
         {
           addr = relaysNew;
-          port = 30000;
+          port = edgePort;
         }
       ];
+      edgePort = 30000;
       submitApiConfig = mkSubmitApiConfig "preprod" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "preprod" nodeConfig;
       usePeersFromLedgerAfterSlot = 4642000;
@@ -195,9 +196,10 @@
       edgeNodes = [
         {
           addr = relaysNew;
-          port = 30002;
+          port = edgePort;
         }
       ];
+      edgePort = 30002;
       submitApiConfig = mkSubmitApiConfig "preview" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
       usePeersFromLedgerAfterSlot = 322000;
