@@ -85,7 +85,7 @@ in rec {
     mkTopology = env: let
       legacyTopology = mkEdgeTopology {
         edgeNodes = [env.relaysNew];
-        valency = 2;
+        valency = 1;
         edgePort = env.edgePort or 3001;
       };
       p2pTopology = mkEdgeTopologyP2P {
