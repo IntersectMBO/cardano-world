@@ -90,7 +90,7 @@
       inherit inputs;
       cellsFrom = ./nix;
       #debug = ["cells" "cloud" "packages"];
-      organelles = [
+      cellBlocks = [
         (inputs.std.data "constants")
         (inputs.std.data "environments")
         (inputs.std.data "namespaces/infra")
