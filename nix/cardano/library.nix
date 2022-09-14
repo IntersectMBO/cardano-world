@@ -96,33 +96,36 @@ in rec {
       if (env.nodeConfig.EnableP2P or false)
       then p2pTopology
       else legacyTopology;
+    copyEnv = env: value: let
+      p = value.consensusProtocol;
+    in ''
+      mkdir -p "$DATA_DIR/config/${env}"
+      ${jq}/bin/jq . < ${__toFile "${env}-config.json" (__toJSON (value.nodeConfig
+        // {
+          ByronGenesisFile = "byron-genesis.json";
+          ShelleyGenesisFile = "shelley-genesis.json";
+          AlonzoGenesisFile = "alonzo-genesis.json";
+        }))} > "$DATA_DIR/config/${env}/config.json"
+      ${jq}/bin/jq . < ${__toFile "${env}-db-sync-config.json" (__toJSON (value.dbSyncConfig
+        // {
+          NodeConfigFile = "config.json";
+        }))} > "$DATA_DIR/config/${env}/db-sync-config.json"
+      ${jq}/bin/jq . < ${__toFile "${env}-submit-api-config.json" (__toJSON value.submitApiConfig)} > "$DATA_DIR/config/${env}/submit-api-config.json"
+      cp ${value.nodeConfig.ByronGenesisFile} "$DATA_DIR/config/${env}/byron-genesis.json"
+      cp ${value.nodeConfig.ShelleyGenesisFile} "$DATA_DIR/config/${env}/shelley-genesis.json"
+      cp ${value.nodeConfig.AlonzoGenesisFile} "$DATA_DIR/config/${env}/alonzo-genesis.json"
+      ${jq}/bin/jq . < ${mkTopology value} > "$DATA_DIR/config/${env}/topology.json"
+    '';
+    copyEnvWithP2P = env: value:
+      if (value.nodeConfig.EnableP2P or false)
+      then [
+        (copyEnv "${env}_p2p" value)
+        (copyEnv env (inputs.data-merge.merge value {nodeConfig.EnableP2P = false;}))
+      ]
+      else (copyEnv env value);
   in ''
     mkdir -p "$DATA_DIR/config"
-    ${
-      toString (lib.mapAttrsToList (
-          env: value: let
-            p = value.consensusProtocol;
-          in ''
-            mkdir -p "$DATA_DIR/config/${env}"
-            ${jq}/bin/jq . < ${__toFile "${env}-config.json" (__toJSON (value.nodeConfig
-              // {
-                ByronGenesisFile = "byron-genesis.json";
-                ShelleyGenesisFile = "shelley-genesis.json";
-                AlonzoGenesisFile = "alonzo-genesis.json";
-              }))} > "$DATA_DIR/config/${env}/config.json"
-            ${jq}/bin/jq . < ${__toFile "${env}-db-sync-config.json" (__toJSON (value.dbSyncConfig
-              // {
-                NodeConfigFile = "config.json";
-              }))} > "$DATA_DIR/config/${env}/db-sync-config.json"
-            ${jq}/bin/jq . < ${__toFile "${env}-submit-api-config.json" (__toJSON value.submitApiConfig)} > "$DATA_DIR/config/${env}/submit-api-config.json"
-            cp ${value.nodeConfig.ByronGenesisFile} "$DATA_DIR/config/${env}/byron-genesis.json"
-            cp ${value.nodeConfig.ShelleyGenesisFile} "$DATA_DIR/config/${env}/shelley-genesis.json"
-            cp ${value.nodeConfig.AlonzoGenesisFile} "$DATA_DIR/config/${env}/alonzo-genesis.json"
-            ${jq}/bin/jq . < ${mkTopology value} > "$DATA_DIR/config/${env}/topology.json"
-          ''
-        )
-        environments)
-    }
+    ${toString (lib.mapAttrsToList copyEnvWithP2P environments)}
   '';
   generateStaticHTMLConfigs = environments: let
     createEnvironmentConfigs = copyEnvsTemplate environments;
