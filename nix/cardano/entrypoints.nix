@@ -637,14 +637,14 @@ in {
       export CARDANO_NODE_CONFIG_PATH="$NODE_CONFIG"
 
       # Env Vars with defaults that can be overridden
-      HASURA_GRAPHQL_ENABLE_TELEMETRY=''${HASURA_GRAPHQL_ENABLE_TELEMETRY:-false}
-      LOGGER_MIN_SEVERITY=''${LOGGER_MIN_SEVERITY:-INFO}
-      PROMETHEUS_METRICS=''${PROMETHEUS_METRICS:-true}
-      TRACING=''${TRACING:-true}
-      ALLOW_INTROSPECTION=''${ALLOW_INTROSPECTION:-false}
-      CACHE_ENABLED=''${CACHE_ENABLED:-true}
-      METADATA_SERVER_URI=''${METADATA_SERVER_URI:-https://tokens.cardano.org}
-      LISTEN_ADDRESS=''${LISTEN_ADDRESS:-127.0.0.1}
+      export HASURA_GRAPHQL_ENABLE_TELEMETRY=''${HASURA_GRAPHQL_ENABLE_TELEMETRY:-false}
+      export LOGGER_MIN_SEVERITY=''${LOGGER_MIN_SEVERITY:-INFO}
+      export PROMETHEUS_METRICS=''${PROMETHEUS_METRICS:-true}
+      export TRACING=''${TRACING:-true}
+      export ALLOW_INTROSPECTION=''${ALLOW_INTROSPECTION:-false}
+      export CACHE_ENABLED=''${CACHE_ENABLED:-true}
+      export METADATA_SERVER_URI=''${METADATA_SERVER_URI:-https://tokens.cardano.org}
+      export LISTEN_ADDRESS=''${LISTEN_ADDRESS:-127.0.0.1}
 
       # Other Optional env vars
       # ALLOWED_ORIGINS
@@ -682,6 +682,7 @@ in {
       args+=("--host" "$DB_HOST")
       args+=("-d" "$DB_NAME")
       args+=("--port" "$DB_PORT")
+      args+=("serve")
       args+=("--server-port" "$HASURA_PORT")
       args+=("--enable-telemetry=false" "--disable-cors")
 
