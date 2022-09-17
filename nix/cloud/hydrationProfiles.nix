@@ -180,6 +180,11 @@ in {
             bitte-vm-standalone
             bitte-vmagent
             ;
+
+          inherit
+            (inputs.bitte-cells.patroni.alerts)
+            bitte-cells-patroni
+            ;
         }
         # Dashboards
         {
@@ -203,6 +208,10 @@ in {
             bitte-vmalert
             bitte-vm
             bitte-vulnix
+            ;
+          inherit
+            (inputs.bitte-cells.patroni.dashboards)
+            bitte-cells-patroni
             ;
         };
     };
