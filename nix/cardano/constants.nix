@@ -23,7 +23,7 @@
     # https://update-cardano-mainnet.iohk.io/cardano-db-sync/index.html#13/
     mainnet = {
       base_url = "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13";
-      file_name = "db-sync-snapshot-schema-13-block-7519843-x86_64.tgz";
+      file_name = "db-sync-snapshot-schema-13-block-7770734-x86_64.tgz";
     };
   };
 }
