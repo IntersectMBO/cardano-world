@@ -68,9 +68,9 @@
       # shellcheck source=/dev/null
       source ${nixpkgs.cacert}/nix-support/setup-hook
       echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME into $SNAPSHOT_DIR  ..." >&2
-      if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+      if curl -fL "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
         echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum into $SNAPSHOT_DIR ..." >&2
-        if curl -L "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum"; then
+        if curl -fL "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum"; then
           echo -n "pushd: " >&2
           pushd "$SNAPSHOT_DIR" >&2
           echo "Validating sha256sum for ./$SNAPSHOT_FILE_NAME." >&2
@@ -132,6 +132,7 @@
 
       local cmd=(
         "curl"
+        "--fail"
         "$CONSUL_HTTP_ADDR/v1/kv/$CONSUL_KV_PATH?raw"
         "--header" "X-Consul-Token: $CONSUL_HTTP_TOKEN"
         "--header" "Content-Type: application/json"
@@ -177,6 +178,7 @@
 
       local cmd=(
         "curl"
+        "--fail"
         "$VAULT_ADDR/v1/$VAULT_KV_PATH"
         "--header" "X-Vault-Token: $VAULT_TOKEN"
         "--header" "Content-Type: application/json"
