@@ -7,6 +7,17 @@
   inherit (cell) entrypoints packages healthChecks;
   n2c = inputs.n2c.packages.nix2container;
 
+  rootCACerts = nixpkgs.linkFarm "root-ca-certs" [
+    {
+      name = "etc/ssl/certs/ca-bundle.crt";
+      path = "${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    }
+    {
+      name = "etc/ssl/certs/ca-certificates.crt";
+      path = "${nixpkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+    }
+  ];
+
   buildDebugImage = ep: o: n2c.buildImage (_utils.library.mkDebugOCI ep o);
 in {
   cardano-node = buildDebugImage entrypoints.cardano-node {
@@ -29,7 +40,7 @@ in {
       (n2c.buildLayer {deps = entrypoints.cardano-db-sync.runtimeInputs;})
       (n2c.buildLayer {deps = [packages.cardano-db-sync];})
     ];
-    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc];
+    contents = [nixpkgs.bashInteractive nixpkgs.iana-etc rootCACerts];
     config.Cmd = [
       "${entrypoints.cardano-db-sync}/bin/entrypoint"
     ];
