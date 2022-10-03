@@ -6,6 +6,7 @@
 , # cabal.project directory
   src
 , byron-chain
+, evalSystem
 }:
 let
 
@@ -65,6 +66,7 @@ in
 
       withHoogle = true;
     };
+    inherit evalSystem;
     modules =
       let
         inherit (config) src;
