@@ -87,7 +87,7 @@ in
         }
         {
           alert = "cardano_new_node_blockheight_unchanged";
-          expr = "rate(cardano_node_metrics_blockNum_int[1m]) == 0";
+          expr = "rate(cardano_node_metrics_blockNum_int[10m]) == 0";
           for = "5m";
           labels = {
             severity = "page";
