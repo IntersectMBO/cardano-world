@@ -113,7 +113,7 @@ in
   inherit (nodeProject.exes) cardano-node cardano-cli cardano-submit-api cardano-tracer;
   inherit (nodeProject.hsPkgs.bech32.components.exes) bech32;
   inherit (nodeProject.hsPkgs.network-mux.components.exes) cardano-ping;
-  inherit (project.exes) cardano-new-faucet;
+  inherit (project.exes) cardano-new-faucet db-sync-query;
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;
   inherit (cardano-db-sync.packages) cardano-db-sync;

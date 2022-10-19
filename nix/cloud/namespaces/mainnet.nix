@@ -46,4 +46,30 @@ in {
         };
       };
     };
+
+  db-sync-query = let
+    jobname = "db-sync-query";
+  in
+    data-merge.merge (cardano.nomadCharts.db-sync-query (
+      constants.envs.mainnet
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+        scaling = 1;
+      }
+    )) {
+      job.${jobname}.group.db-sync-query.task = {
+        db-sync-query = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DB_NAME = "mainnet_dbsync";
+            CONSUL_KV_PATH = "config/cardano/mainnet";
+            VAULT_KV_PATH = "kv/data/db-sync/mainnet";
+            MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          };
+        };
+      };
+    };
+
 }
