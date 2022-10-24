@@ -31,7 +31,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
         crypto
         (final: prev: {
           haskellBuildUtils = prev.haskellBuildUtils.override {
-            inherit compiler-nix-name index-state evalSystem;
+            inherit compiler-nix-name index-state;
           };
         })
       ];
