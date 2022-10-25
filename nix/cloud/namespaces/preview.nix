@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) data-merge;
+  inherit (inputs) dmerge;
   inherit (inputs.cells) cardano;
   inherit (cell) constants;
 
@@ -12,7 +12,7 @@ in {
   sp-1 = let
     jobname = "cardano-sp-1";
   in
-    data-merge.merge (
+    dmerge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.preview
         // {
@@ -37,7 +37,7 @@ in {
   sp-2 = let
     jobname = "cardano-sp-2";
   in
-    data-merge.merge (
+    dmerge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.preview
         // {
@@ -62,7 +62,7 @@ in {
   sp-3 = let
     jobname = "cardano-sp-3";
   in
-    data-merge.merge (
+    dmerge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.preview
         // {
@@ -88,7 +88,7 @@ in {
   db-sync-0 = let
     jobname = "db-sync-0";
   in
-    data-merge.merge (cardano.nomadCharts.cardano-db-sync (
+    dmerge.merge (cardano.nomadCharts.cardano-db-sync (
       constants.envs.preview
       // {
         datacenters = ["eu-central-1"];
@@ -125,7 +125,7 @@ in {
   faucet = let
     jobname = "faucet";
   in
-    data-merge.merge (cardano.nomadCharts.cardano-faucet (
+    dmerge.merge (cardano.nomadCharts.cardano-faucet (
       constants.envs.preview
       // {
         datacenters = ["eu-central-1"];
