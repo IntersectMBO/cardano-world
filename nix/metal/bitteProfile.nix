@@ -134,11 +134,6 @@ in {
                     ["preview-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
                   )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["mixed-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];

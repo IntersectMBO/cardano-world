@@ -31,3 +31,4 @@ treefmt.toml
 .conform.yaml
 # nixago-auto-created: mdbook-build-folder
 book/**
+*.log

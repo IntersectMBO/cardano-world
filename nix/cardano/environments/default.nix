@@ -202,26 +202,6 @@
       dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
       usePeersFromLedgerAfterSlot = 322000;
     };
-    mixed = rec {
-      useByronWallet = false;
-      private = false;
-      relaysNew = "mixed-node.world.dev.cardano.org";
-      explorerUrl = "https://mixed-explorer.world.dev.cardano.org";
-      smashUrl = "https://mixed-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./mixed-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgeNodes = [
-        {
-          addr = relaysNew;
-          port = 30003;
-        }
-      ];
-      submitApiConfig = mkSubmitApiConfig "mixed" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "mixed" nodeConfig;
-      usePeersFromLedgerAfterSlot = 52000;
-    };
 
     # used for SRE development
     sre = rec {
