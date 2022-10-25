@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) data-merge cells;
+  inherit (inputs) dmerge cells;
   inherit (inputs.nixpkgs) lib;
   inherit (inputs.nixpkgs) system;
   inherit (inputs.bitte-cells) vector _utils;
@@ -28,7 +28,7 @@ in
     vaultPkiPath = "pki/issue/db-sync";
     consulRolePath = "consul/creds/db-sync";
   in
-    with data-merge; {
+    with dmerge; {
       job.${id} = {
         inherit namespace datacenters id type priority;
         # ----------

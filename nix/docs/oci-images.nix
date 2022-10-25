@@ -3,9 +3,9 @@
   cell,
 }: let
   inherit (inputs) nixpkgs;
+  inherit (inputs.std) n2c;
   inherit (inputs.bitte-cells) _utils;
   inherit (cell) entrypoints;
-  n2c = inputs.n2c.packages.nix2container;
 in {
   public-documentation = n2c.buildImage {
     name = "registry.ci.iog.io/cardano-public-documentation";

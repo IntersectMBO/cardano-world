@@ -3,9 +3,9 @@
   cell,
 }: let
   inherit (inputs) nixpkgs;
+  inherit (inputs.std) n2c;
   inherit (inputs.bitte-cells) _utils;
   inherit (cell) entrypoints packages healthChecks;
-  n2c = inputs.n2c.packages.nix2container;
 
   rootCACerts = nixpkgs.linkFarm "root-ca-certs" [
     {
