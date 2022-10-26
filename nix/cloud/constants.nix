@@ -46,5 +46,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    pv8 = {
+      namespace = "pv8";
+      domain = "pv8.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }

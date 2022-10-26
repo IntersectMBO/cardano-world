@@ -10,6 +10,7 @@ let
     nixpkgs
     iohk-nix
     cardano-node
+    cardano-node-src
     cardano-wallet
     cardano-db-sync
     ogmios
@@ -50,12 +51,12 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
 
   nodeProject = (project.appendModule {
     name = "cardano-node";
-    gitrev = cardano-node.rev;
+    gitrev = cardano-node-src.rev;
     src = haskellLib.cleanSourceWith {
-      src = cardano-node.outPath;
+      src = cardano-node-src.outPath;
       name = "cardano-node-src";
       filter = path: type:
-        let relPath = lib.removePrefix "${cardano-node.outPath}/" path; in
+        let relPath = lib.removePrefix "${cardano-node-src.outPath}/" path; in
         # excludes directories not part of cabal project:
         (type != "directory" || (builtins.match ".*/.*" relPath != null) || (!(lib.elem relPath [
           "nix"
@@ -110,9 +111,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
 in
 {
   inherit project nodeProject ogmiosProject; # TODO REMOVE
-  inherit (nodeProject.exes) cardano-node cardano-cli cardano-submit-api cardano-tracer;
-  inherit (nodeProject.hsPkgs.bech32.components.exes) bech32;
-  inherit (nodeProject.hsPkgs.network-mux.components.exes) cardano-ping;
+  inherit (cardano-node.packages) cardano-node cardano-cli cardano-submit-api cardano-tracer cardano-ping bech32 db-synthesizer;
   inherit (project.exes) cardano-new-faucet;
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;

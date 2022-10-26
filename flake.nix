@@ -57,6 +57,10 @@
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
+      url = "github:input-output-hk/cardano-node/1.35-cli-secp";
+    };
+    # TODO: remove when faucet is CHaP'd and no longer depends on source from cardano-node
+    cardano-node-src = {
       url = "github:input-output-hk/cardano-node/1.35.3";
       flake = false;
     };
@@ -99,6 +103,7 @@
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
+        (inputs.std.data "namespaces/pv8")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
@@ -163,6 +168,7 @@
       vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
+      pv8 = mkNomadJobs cloud."namespaces/pv8";
     })
     # 3) hydra jobs
     (

@@ -33,6 +33,11 @@ rec {
         category = "cardano";
       }
       {
+        package = packages.db-synthesizer;
+        name = "db-synthesizer";
+        category = "cardano";
+      }
+      {
         package = inputs.cells.automation.jobs.update-cabal-source-repo-checksums;
         category = "nix-build";
       }

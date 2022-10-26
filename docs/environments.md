@@ -22,15 +22,15 @@ Accountable: SRE Director
 Consulted: Release Manager
 Informed: Cardano Core Tribe
 
-### Vasil-Dev
+### PV8
 
-- [Node Config](environments/vasil-dev/config.json)
-- [DB Sync Config](environments/vasil-dev/db-sync-config.json)
-- [Submit API Config](environments/vasil-dev/submit-api-config.json)
-- [Node Topology](environments/vasil-dev/topology.json)
-- [Byron Genesis](environments/vasil-dev/byron-genesis.json)
-- [Shelley Genesis](environments/vasil-dev/shelley-genesis.json)
-- [Alonzo Genesis](environments/vasil-dev/alonzo-genesis.json)
+- [Node Config](environments/pv8/config.json)
+- [DB Sync Config](environments/pv8/db-sync-config.json)
+- [Submit API Config](environments/pv8/submit-api-config.json)
+- [Node Topology](environments/pv8/topology.json)
+- [Byron Genesis](environments/pv8/byron-genesis.json)
+- [Shelley Genesis](environments/pv8/shelley-genesis.json)
+- [Alonzo Genesis](environments/pv8/alonzo-genesis.json)
 
 ## Shelley-QA (Internal Only)
 

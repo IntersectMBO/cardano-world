@@ -202,6 +202,26 @@
       dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
       usePeersFromLedgerAfterSlot = 322000;
     };
+    pv8 = rec {
+      useByronWallet = false;
+      private = false;
+      relaysNew = "pv8-node.world.dev.cardano.org";
+      explorerUrl = "https://pv8-explorer.world.dev.cardano.org";
+      smashUrl = "https://pv8-smash.world.dev.cardano.org";
+      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      networkConfig = import ./pv8-config.nix;
+      consensusProtocol = networkConfig.Protocol;
+      nodeConfig = defaultLogConfig // networkConfig;
+      edgeNodes = [
+        {
+          addr = relaysNew;
+          port = 30006;
+        }
+      ];
+      submitApiConfig = mkSubmitApiConfig "pv8" nodeConfig;
+      dbSyncConfig = mkDbSyncConfig "pv8" nodeConfig;
+      usePeersFromLedgerAfterSlot = 32000;
+    };
 
     # used for SRE development
     sre = rec {
