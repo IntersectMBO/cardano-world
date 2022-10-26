@@ -6,13 +6,13 @@ index e55834b276..7171255e8f 100644
        inputs.cells.cardano.devshellProfiles.world
      ];
    };
--  monorepo = dev.mkShell {
+-  monorepo = std.lib.mkShell {
 -    imports = [
 -      cardanoWorld
 -      inputs.cells.cardano.devshellProfiles.monorepo
 -    ];
 -  };
-   minimal = dev.mkShell {
+   minimal = std.lib.mkShell {
      imports = [
        cardanoWorld
 diff --git a/nix/cardano/devshellProfiles.nix b/nix/cardano/devshellProfiles.nix

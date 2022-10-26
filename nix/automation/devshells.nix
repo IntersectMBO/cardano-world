@@ -3,7 +3,6 @@
   cell,
 }: let
   inherit (inputs.std) std;
-  inherit (inputs.std.lib) dev;
   inherit (inputs) capsules bitte-cells bitte nixpkgs;
   inherit (inputs.cells) cardano;
 
@@ -50,7 +49,7 @@
     };
   };
 in {
-  dev = dev.mkShell {
+  dev = std.lib.mkShell {
     imports = [
       cardanoWorld
       capsules.base
@@ -60,7 +59,7 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  devops = dev.mkShell {
+  devops = std.lib.mkShell {
     imports = [
       cardanoWorld
       capsules.base
@@ -69,7 +68,7 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  ops = dev.mkShell {
+  ops = std.lib.mkShell {
     imports = [
       cardanoWorld
       capsules.base
@@ -81,13 +80,13 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  monorepo = dev.mkShell {
+  monorepo = std.lib.mkShell {
     imports = [
       cardanoWorld
       inputs.cells.cardano.devshellProfiles.monorepo
     ];
   };
-  minimal = dev.mkShell {
+  minimal = std.lib.mkShell {
     imports = [
       cardanoWorld
       inputs.cells.cardano.devshellProfiles.minimal

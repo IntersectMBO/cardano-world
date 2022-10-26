@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) dmerge;
+  inherit (inputs) data-merge;
   inherit (inputs.cells) cardano;
   inherit (cell) constants;
 
@@ -11,7 +11,7 @@ in {
   bft-0 = let
     jobname = "cardano-bft-0";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
         // {
           datacenters = ["eu-central-1"];
@@ -31,7 +31,7 @@ in {
   bft-1 = let
     jobname = "cardano-bft-1";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
         // {
           datacenters = ["eu-west-1"];
@@ -51,7 +51,7 @@ in {
   bft-2 = let
     jobname = "cardano-bft-2";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
         // {
           datacenters = ["us-east-2"];
@@ -71,7 +71,7 @@ in {
   sp-1 = let
     jobname = "cardano-sp-1";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.shelley-qa
         // {
@@ -93,7 +93,7 @@ in {
   sp-2 = let
     jobname = "cardano-sp-2";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.shelley-qa
         // {
@@ -115,7 +115,7 @@ in {
   sp-3 = let
     jobname = "cardano-sp-3";
   in
-    dmerge.merge (
+    data-merge.merge (
       cardano.nomadCharts.cardano-node (
         constants.envs.shelley-qa
         // {
@@ -137,7 +137,7 @@ in {
   ogmios-0 = let
     jobname = "ogmios-0";
   in
-    dmerge.merge (cardano.nomadCharts.ogmios (
+    data-merge.merge (cardano.nomadCharts.ogmios (
       constants.envs.shelley-qa
       // {
         datacenters = ["eu-central-1"];
@@ -165,7 +165,7 @@ in {
   db-sync-0 = let
     jobname = "db-sync-0";
   in
-    dmerge.merge (cardano.nomadCharts.cardano-db-sync (
+    data-merge.merge (cardano.nomadCharts.cardano-db-sync (
       constants.envs.shelley-qa
       // {
         datacenters = ["eu-central-1"];

@@ -13,6 +13,7 @@
       url = "github:divnix/std";
       # inputs.nixpkgs.follows = "nixpkgs"; # doesn't have `conform` yet
     };
+    n2c.url = "github:nlewo/nix2container";
     haskell-nix = {
       url = "github:input-output-hk/haskell.nix";
       inputs = {
@@ -27,6 +28,7 @@
       url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    data-merge.url = "github:divnix/data-merge";
     byron-chain = {
       url = "github:input-output-hk/cardano-mainnet-mirror";
       flake = false;
@@ -38,8 +40,8 @@
       inputs = {
         std.follows = "std";
         nixpkgs.follows = "nixpkgs";
-        n2c.follows = "std/n2c";
-        data-merge.follows = "std/dmerge";
+        n2c.follows = "n2c";
+        data-merge.follows = "data-merge";
         cardano-iohk-nix.follows = "iohk-nix";
         cardano-node.follows = "cardano-node";
         cardano-db-sync.follows = "cardano-db-sync";

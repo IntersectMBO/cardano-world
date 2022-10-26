@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) dmerge;
+  inherit (inputs) data-merge;
   inherit (inputs.cells) cardano;
   inherit (cell) constants;
 
@@ -12,7 +12,7 @@ in {
   db-sync-0 = let
     jobname = "db-sync-0";
   in
-    dmerge.merge (cardano.nomadCharts.cardano-db-sync (
+    data-merge.merge (cardano.nomadCharts.cardano-db-sync (
       constants.envs.mainnet
       // {
         datacenters = ["eu-central-1"];

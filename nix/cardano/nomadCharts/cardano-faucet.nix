@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) dmerge cells nixpkgs;
+  inherit (inputs) data-merge cells nixpkgs;
   inherit (inputs.bitte-cells) vector _utils;
   inherit (cell) healthChecks constants oci-images;
   l = nixpkgs.lib // builtins;
@@ -25,7 +25,7 @@ in
     vaultPkiPath = "pki/issue/cardano-faucet";
     consulRolePath = "consul/creds/cardano-faucet";
   in
-    with dmerge; {
+    with data-merge; {
       job.${id} = {
         inherit namespace datacenters id type priority;
         # ----------
