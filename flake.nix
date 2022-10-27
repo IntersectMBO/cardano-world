@@ -24,6 +24,12 @@
       url = "github:input-output-hk/hackage.nix";
       flake = false;
     };
+
+    CHaP = {
+      url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
+      flake = false;
+    };
+
     iohk-nix = {
       url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";

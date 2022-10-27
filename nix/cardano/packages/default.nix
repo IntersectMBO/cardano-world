@@ -47,44 +47,8 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
       inherit lib haskell-nix evalSystem;
       inherit (inputs) byron-chain;
       src = self;
+      inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = inputs.CHaP; };
     });
-
-  nodeProject = (project.appendModule {
-    name = "cardano-node";
-    gitrev = cardano-node-src.rev;
-    src = haskellLib.cleanSourceWith {
-      src = cardano-node-src.outPath;
-      name = "cardano-node-src";
-      filter = path: type:
-        let relPath = lib.removePrefix "${cardano-node-src.outPath}/" path; in
-        # excludes directories not part of cabal project:
-        (type != "directory" || (builtins.match ".*/.*" relPath != null) || (!(lib.elem relPath [
-          "nix"
-          "doc"
-          "docs"
-        ]) && !(lib.hasPrefix "." relPath)))
-        # only keep cabal.project from files at root:
-        && (type == "directory" || builtins.match ".*/.*" relPath != null || (relPath == "cabal.project"))
-        && (lib.cleanSourceFilter path type)
-        && (haskell-nix.haskellSourceFilter path type)
-        && !(lib.hasSuffix ".gitignore" relPath)
-        # removes socket files
-        && lib.elem type [ "regular" "directory" "symlink" ];
-    };
-  }).extend (final: prev: {
-    release = nixpkgs.callPackage ./binary-release.nix {
-      inherit (final.pkgs) stdenv;
-      inherit (final.pkgs.buildPackages) haskellBuildUtils;
-      exes =
-        lib.attrValues final.exes
-        ++ [
-          final.hsPkgs.bech32.components.exes.bech32
-        ];
-      inherit (final.exes.cardano-node.identifier) version;
-      inherit (cardano.library) copyEnvsTemplate;
-      inherit (cardano) environments;
-    };
-  });
 
   inherit (project.args) compiler-nix-name;
   inherit (project) index-state;
@@ -110,7 +74,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
   };
 in
 {
-  inherit project nodeProject ogmiosProject; # TODO REMOVE
+  inherit project ogmiosProject;
   inherit (cardano-node.packages) cardano-node cardano-cli cardano-submit-api cardano-tracer cardano-ping bech32 db-synthesizer;
   inherit (project.exes) cardano-new-faucet;
   inherit (cardano-wallet.packages) cardano-wallet;

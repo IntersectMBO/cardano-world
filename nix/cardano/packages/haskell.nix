@@ -7,6 +7,7 @@
   src
 , byron-chain
 , evalSystem
+, inputMap
 }:
 let
 
@@ -28,6 +29,7 @@ in
     };
   };
   config = {
+    inherit inputMap;
     name = lib.mkDefault "cardano-world";
     src = lib.mkDefault (haskellLib.cleanSourceWith {
       src = src.outPath;
@@ -60,10 +62,6 @@ in
       nativeBuildInputs = with pkgs.buildPackages.buildPackages; [
       ];
 
-      # Prevents cabal from choosing alternate plans, so that
-      # *all* dependencies are provided by Nix.
-      exactDeps = true;
-
       withHoogle = true;
     };
     inherit evalSystem;
@@ -73,7 +71,7 @@ in
         packagesExes =
           let
             project = haskell-nix.cabalProject' {
-              inherit (config) name src compiler-nix-name cabalProjectLocal;
+              inherit (config) name src compiler-nix-name cabalProjectLocal inputMap;
             };
             packages = haskellLib.selectProjectPackages project.hsPkgs;
           in
