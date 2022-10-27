@@ -57,7 +57,7 @@
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35-cli-secp";
+      url = "github:input-output-hk/cardano-node/1.35.4-rc1";
     };
     # TODO: remove when faucet is CHaP'd and no longer depends on source from cardano-node
     cardano-node-src = {

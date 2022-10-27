@@ -2330,16 +2330,16 @@
         "utils": "utils_39"
       },
       "locked": {
-        "lastModified": 1666726109,
+        "lastModified": 1666810931,
         "narHash": "sha256-/SGqmlWj2G2F4vYKgL8anyJx5syk2ueABZ7I5wqS5bg=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "2b6176750a6da25f96effbca53703660dc1bd99c",
+        "rev": "54998e843cf7d54eb1594ce191a261a112429ead",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "1.35-cli-secp",
+        "ref": "1.35.4-rc1",
         "repo": "cardano-node",
         "type": "github"
       }
