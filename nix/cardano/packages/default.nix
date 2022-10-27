@@ -47,6 +47,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
       inherit lib haskell-nix evalSystem;
       inherit (inputs) byron-chain;
       src = self;
+      inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = inputs.CHaP; };
     });
 
   nodeProject = (project.appendModule {

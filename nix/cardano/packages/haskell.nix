@@ -7,6 +7,7 @@
   src
 , byron-chain
 , evalSystem
+, inputMap
 }:
 let
 
@@ -28,6 +29,7 @@ in
     };
   };
   config = {
+    inherit inputMap;
     name = lib.mkDefault "cardano-world";
     src = lib.mkDefault (haskellLib.cleanSourceWith {
       src = src.outPath;
