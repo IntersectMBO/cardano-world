@@ -3,6 +3,23 @@
     "CHaP": {
       "flake": false,
       "locked": {
+        "lastModified": 1666870889,
+        "narHash": "sha256-4KKdmTO9vjUtLN30dPwkWF+6265crSG979HhB/oA3l4=",
+        "owner": "input-output-hk",
+        "repo": "cardano-haskell-packages",
+        "rev": "60611fb38ed4059168a9c275aed3463f97025c84",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "ref": "repo",
+        "repo": "cardano-haskell-packages",
+        "type": "github"
+      }
+    },
+    "CHaP_2": {
+      "flake": false,
+      "locked": {
         "lastModified": 1666726035,
         "narHash": "sha256-EBodp9DJb8Z+aVbuezVwLJ9Q9XIJUXFd/n2skay3FeU=",
         "owner": "input-output-hk",
@@ -2305,7 +2322,7 @@
     },
     "cardano-node": {
       "inputs": {
-        "CHaP": "CHaP",
+        "CHaP": "CHaP_2",
         "cardano-mainnet-mirror": "cardano-mainnet-mirror",
         "cardano-node-workbench": "cardano-node-workbench",
         "customConfig": "customConfig_3",
@@ -13829,6 +13846,7 @@
     },
     "root": {
       "inputs": {
+        "CHaP": "CHaP",
         "bitte": "bitte",
         "bitte-cells": "bitte-cells",
         "byron-chain": "byron-chain",

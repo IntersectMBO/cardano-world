@@ -33,6 +33,7 @@ common project-config
                         -Wpartial-fields
                         -Wredundant-constraints
                         -Wunused-packages
+                        --Wno-deprecations
 
 common maybe-unix
   if !os(windows)
@@ -67,6 +68,7 @@ library
                       , cardano-api
                       , cardano-cli
                       , cardano-ledger-byron
+                      , cardano-ledger-core
                       , cardano-prelude
                       , containers
                       , either

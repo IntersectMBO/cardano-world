@@ -18,11 +18,12 @@ module Cardano.Faucet (main) where
 
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
-import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
-import Cardano.Api.Byron ()
+import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress, QueryUTxOWhole), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
 --import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo)
+import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo, makeStakeAddressRegistrationCertificate, executeLocalStateQueryExpr, TxOut(TxOut), AddressInEra(AddressInEra), Address(ShelleyAddress), TxOutValue(TxOutValue, TxOutAdaOnly), fromShelleyStakeCredential, selectLovelace)
 import Cardano.CLI.Environment (readEnvSocketPath)
+import Cardano.CLI.Shelley.Commands
+import Cardano.CLI.Shelley.Key
 import Cardano.CLI.Shelley.Run.Address
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.CLI.Types
@@ -30,19 +31,23 @@ import Cardano.Faucet.Misc
 import Cardano.Faucet.Types
 import Cardano.Faucet.Utils
 import Cardano.Faucet.Web
+import Cardano.Ledger.Credential qualified as Shelley
 import Cardano.Prelude hiding ((%))
 import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO, TQueue)
+import Control.Monad.Trans.Except.Exit (orDie)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.List.Utils (uniq)
 import Data.Map qualified as Map
 import Data.Map.Merge.Lazy as Map
+import Data.Maybe
 import Data.Set qualified as Set
+import Data.Text qualified as T
 import Formatting ((%), format)
 import Formatting.ShortFormatters hiding (x, b, f, l)
 import Network.Wai.Handler.Warp
 import Ouroboros.Consensus.HardFork.Combinator.AcrossEras (EraMismatch)
 import Ouroboros.Network.Protocol.LocalStateQuery.Client qualified as Net.Query
-import Ouroboros.Network.Protocol.LocalStateQuery.Type ()
+import Ouroboros.Network.Protocol.LocalStateQuery.Type (AcquireFailure)
 import Ouroboros.Network.Protocol.LocalTxMonitor.Client qualified as CTxMon
 import Ouroboros.Network.Protocol.LocalTxSubmission.Client qualified as Net.Tx
 import Paths_cardano_faucet (getDataFileName)
@@ -87,8 +92,8 @@ deriveSingleKey net acctK stakeIndex = (stake_skey, y, x)
     y = StakeCredentialByKey stake_vkey_hash
     x = makeStakeAddress net y
 
-createManyStakeKeys :: Shelley 'AccountK XPrv -> NetworkId -> Word32 -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
-createManyStakeKeys acctK net count = Map.fromList $ map f indexRange
+createManyStakeKeys :: Shelley 'AccountK XPrv -> NetworkId -> Word32 -> ManyStakeKeys
+createManyStakeKeys acctK net count = ManyStakeKeys $ Map.fromList $ map f indexRange
   where
     indexRange = [0..count]
     f :: Word32 -> (StakeAddress, (Word32, SigningKey StakeExtendedKey, StakeCredential))
@@ -103,14 +108,93 @@ _populateStakes = do
     bar <- unmaybe configFilePath
     config <- parseConfig bar
     rootK <- mnemonicToRootKey $ fcfMnemonic config
+    SocketPath sockPath <- withExceptT FaucetErrorSocketNotFound readEnvSocketPath
+
+    rich_vkey <- liftIO $ loadvkey "/home/clever/iohk/cardano-node/pay.vkey"
+    rich_addr <- withExceptT FaucetErrorShelleyAddr $ vkeyToAddr (fcfNetwork config) rich_vkey
+    putStrLn $ format  ("rich addr: " % sh) $ serialiseAddress rich_addr
     let
       acctK = rootKeytoAcctKey rootK 0x80000000
       net = fcfNetwork config
-    print $ map (deriveSingleKey net acctK) [0..10]
+      localNodeConnInfo = LocalNodeConnectInfo defaultCModeParams net sockPath
+    case fcfMaxStakeKeyIndex config of
+      Just count -> do
+        let
+          manyStakeKeys = createManyStakeKeys acctK net count
+        eResult <- liftIO $ runTest localNodeConnInfo net manyStakeKeys rich_addr
+        case eResult of
+          Right (notRegistered, notDelegated, delegated, stakeDistrib) -> do
+            putStrLn $ format ("these stake key indexes are not registered: " % sh) $ sort $ stakeAddressesToIndex manyStakeKeys notRegistered
+            putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ stakeAddressesToIndex manyStakeKeys notDelegated
+            liftIO $ showDelegatedStakeKeys manyStakeKeys delegated
+            --mapM_ (putStrLn . encode) notRegistered
+            when True $ mapM_ (printStakeKey stakeDistrib) $ sortOn (\(_,idx,_,_) -> idx) $ stakeAddressLookup manyStakeKeys Prelude.id notDelegated
+            pure ()
+          Left _ -> do
+            putStrLn @Text "error querying node"
+            pure ()
+      Nothing -> do
+        putStrLn @Text "staking disabled in config"
     pure ()
   case eResult of
     Right _ -> pure ()
     Left err -> putStrLn $ renderFaucetError err
+  where
+    convertValue :: TxOutValue era -> Lovelace
+    convertValue (TxOutValue _ val) = selectLovelace val
+    convertValue (TxOutAdaOnly _ lovelace) = lovelace
+
+    convertKey :: (TxOutValue era, StakeCredential) -> (StakeCredential, Lovelace)
+    convertKey (val, cred) = (cred, convertValue val)
+
+    totalUpStake :: [(StakeCredential, Lovelace)] -> Map StakeCredential Lovelace
+    totalUpStake input = Map.fromListWith (<>) input
+
+    hasStakeKey :: TxOut ctx era -> Maybe (TxOutValue era, StakeCredential)
+    hasStakeKey (TxOut (AddressInEra _ addr) val _ _) = do
+      ShelleyAddress _ _ (Shelley.StakeRefBase cred) <- Just addr
+      Just (val, fromShelleyStakeCredential cred)
+
+    printStakeKey :: Map StakeCredential Lovelace -> (StakeAddress, Word32, SigningKey StakeExtendedKey, StakeCredential) -> ExceptT FaucetError IO ()
+    printStakeKey stakeDistrib (addr, index, _skey, creds) = do
+      putStrLn $ format ("index: "%sh%" addr: "%sh%" stake: "%sh) index (serialiseAddress addr) (Map.lookup creds stakeDistrib)
+
+    runTest :: LocalNodeConnectInfo CardanoMode -> NetworkId -> ManyStakeKeys -> AddressAny -> IO (Either AcquireFailure ([StakeAddress], [StakeAddress], [(StakeAddress, Lovelace, PoolId)], Map StakeCredential Lovelace))
+    runTest localNodeConnInfo net manyStakeKeys rich_addr = do
+      executeLocalStateQueryExpr localNodeConnInfo Nothing $ \_ntcVersion -> populateQuery net manyStakeKeys rich_addr
+    populateQuery :: NetworkId -> ManyStakeKeys -> AddressAny -> LocalStateQueryExpr block point (QueryInMode CardanoMode) r IO ([StakeAddress], [StakeAddress], [(StakeAddress, Lovelace, PoolId)], Map StakeCredential Lovelace)
+    populateQuery net manyStakeKeys rich_addr = do
+      rawEra <- determineEraExpr defaultCModeParams
+      withEra rawEra $ \era -> do
+        let
+          allCredentials :: [StakeCredential]
+          allCredentials = map (\(_index, _skey, cred) -> cred) $ Map.elems $ unMany manyStakeKeys
+          sbe = shelleyBasedEra
+          eraInMode = fromJust $ toEraInMode era CardanoMode
+        eRichUtxo <- queryExpr $ QueryInEra eraInMode $ QueryInShelleyBasedEra sbe $ QueryUTxO $ QueryUTxOByAddress $ Set.singleton rich_addr
+        print eRichUtxo
+        eEntireUtxo <- queryExpr $ QueryInEra eraInMode $ QueryInShelleyBasedEra sbe $ QueryUTxO QueryUTxOWhole
+        stakeDistrib <- case eEntireUtxo of
+          Right entireUtxo -> do
+            let
+              utxoWithStake = mapMaybe hasStakeKey $ Map.elems $ unUTxO entireUtxo
+              converted = map convertKey utxoWithStake
+              stakeDistrib :: Map StakeCredential Lovelace
+              stakeDistrib = totalUpStake converted
+            pure stakeDistrib
+          Left _ -> do
+            putStrLn @Text "failed to query utxo"
+            pure mempty
+        eResult <- queryExpr (queryManyStakeAddr net (toEraInMode era CardanoMode) allCredentials)
+        (notRegistered, notDelegated, delegated) <- case eResult of
+          Right result -> do
+            let
+              (notRegistered, notDelegated, delegated) = sortStakeKeys result manyStakeKeys
+            pure (notRegistered, notDelegated, delegated)
+          Left _ -> do
+            putStrLn @Text "failed to query stake keys"
+            pure $ ([], [], [])
+        pure (notRegistered, notDelegated, delegated, stakeDistrib)
 
 unmaybe :: Maybe Prelude.String -> ExceptT FaucetError IO Prelude.String
 unmaybe (Just path) = pure path
@@ -140,14 +224,27 @@ runQueryThen query queryDone = do
         queryDone result
     }
 
-sortStakeKeys :: (Map StakeAddress Lovelace, Map StakeAddress PoolId) -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) -> ([Word32],[(Word32, SigningKey StakeExtendedKey, StakeCredential)],[(Word32, Lovelace, PoolId)])
-sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
+stakeAddressesToIndex :: ManyStakeKeys -> [StakeAddress] -> [Word32]
+stakeAddressesToIndex (ManyStakeKeys m) ks = map (\(a,_,_) -> a) $ mapMaybe (\k -> Map.lookup k m) ks
+
+stakeAddressLookup :: ManyStakeKeys -> ((StakeAddress, Word32, SigningKey StakeExtendedKey, StakeCredential) -> a) -> [StakeAddress] -> [a]
+stakeAddressLookup (ManyStakeKeys m) fn ks = map fn $ mapMaybe fixMaybe $ map (\k -> (k, Map.lookup k m)) ks
+  where
+    fixMaybe :: (StakeAddress, Maybe (Word32, SigningKey StakeExtendedKey, StakeCredential)) -> Maybe (StakeAddress, Word32, SigningKey StakeExtendedKey, StakeCredential)
+    fixMaybe (_, Nothing) = Nothing
+    fixMaybe (addr, Just (index, skey, cred)) = Just (addr, index, skey, cred)
+
+showDelegatedStakeKeys :: ManyStakeKeys -> [(StakeAddress, Lovelace, PoolId)] -> IO ()
+showDelegatedStakeKeys manyStakeKeys delegated = putStrLn $ format ("these stake keys are delegated: " % sh) $ sort $ stakeAddressesToIndex manyStakeKeys $ map (\(a,_,_) -> a) delegated
+
+sortStakeKeys :: (Map StakeAddress Lovelace, Map StakeAddress PoolId) -> ManyStakeKeys -> ([StakeAddress],[StakeAddress],[(StakeAddress, Lovelace, PoolId)])
+sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) (ManyStakeKeys manyStakeKeys) = do
   let
     intermediateMerge :: Map StakeAddress StakeKeyIntermediateState
     intermediateMerge = Map.merge
-      (mapMissing $ \_ (index, _skey, _vkey) -> StakeKeyIntermediateStateNotRegistered index)
+      (mapMissing $ \_ _ -> StakeKeyIntermediateStateNotRegistered)
       dropMissing
-      (zipWithMaybeAMatched $ \_key (index, skey, vkey) reward -> pure $ Just $ StakeKeyIntermediateStateRegistered (index, skey, vkey, reward))
+      (zipWithMaybeAMatched $ \_key (_index, _skey, _vkey) reward -> pure $ Just $ StakeKeyIntermediateStateRegistered reward)
       manyStakeKeys registeredStakeKeys
 
     finalMerge :: Map StakeAddress StakeKeyState
@@ -160,37 +257,37 @@ sortStakeKeys (registeredStakeKeys, delegatedStakeKeys) manyStakeKeys = do
 
     finalMergeValues = Map.elems finalMerge
 
-    notRegistered :: [Word32]
+    notRegistered :: [StakeAddress]
     notRegistered = sort $ mapMaybe filterOnlyNotRegistered finalMergeValues
 
-    notDelegated :: [(Word32, SigningKey StakeExtendedKey, StakeCredential)]
+    notDelegated :: [StakeAddress]
     notDelegated = mapMaybe filterOnlyRegistered finalMergeValues
 
-    delegated :: [(Word32, Lovelace, PoolId)]
+    delegated :: [(StakeAddress, Lovelace, PoolId)]
     delegated = mapMaybe filterOnlyDelegated finalMergeValues
   (notRegistered,notDelegated,delegated)
   where
     -- this key is not delegated
     onlyRegistered :: StakeAddress -> StakeKeyIntermediateState -> StakeKeyState
     -- and is registered, then we can use it
-    onlyRegistered _key (StakeKeyIntermediateStateRegistered (index, skey, vkey, reward)) = StakeKeyRegistered index skey vkey reward
+    onlyRegistered key (StakeKeyIntermediateStateRegistered _) = StakeKeyRegistered key
     -- but isnt registered
-    onlyRegistered _key (StakeKeyIntermediateStateNotRegistered index) = StakeKeyNotRegistered index
+    onlyRegistered key StakeKeyIntermediateStateNotRegistered = StakeKeyNotRegistered key
     -- this key is delegated
     registeredAndDelegated :: StakeAddress -> StakeKeyIntermediateState -> PoolId -> Identity (Maybe StakeKeyState)
     -- and registered
-    registeredAndDelegated _key (StakeKeyIntermediateStateRegistered (index, _skey, _vkey, rewards)) poolid = pure $ Just $ StakeKeyDelegated index rewards poolid
+    registeredAndDelegated key (StakeKeyIntermediateStateRegistered rewards) poolid = pure $ Just $ StakeKeyDelegated key rewards poolid
     -- delegated but not registered!?
-    registeredAndDelegated _key (StakeKeyIntermediateStateNotRegistered _) _ = pure Nothing
+    registeredAndDelegated _key StakeKeyIntermediateStateNotRegistered _ = pure Nothing
 
-    filterOnlyNotRegistered :: StakeKeyState -> Maybe Word32
-    filterOnlyNotRegistered (StakeKeyNotRegistered index) = Just index
+    filterOnlyNotRegistered :: StakeKeyState -> Maybe StakeAddress
+    filterOnlyNotRegistered (StakeKeyNotRegistered addr) = Just addr
     filterOnlyNotRegistered _ = Nothing
-    filterOnlyRegistered :: StakeKeyState -> Maybe (Word32, SigningKey StakeExtendedKey, StakeCredential)
-    filterOnlyRegistered (StakeKeyRegistered index skey vkey _rewards) = Just (index, skey, vkey)
+    filterOnlyRegistered :: StakeKeyState -> Maybe StakeAddress
+    filterOnlyRegistered (StakeKeyRegistered addr) = Just addr
     filterOnlyRegistered _ = Nothing
-    filterOnlyDelegated :: StakeKeyState -> Maybe (Word32, Lovelace, PoolId)
-    filterOnlyDelegated (StakeKeyDelegated index reward poolid) = Just (index, reward, poolid)
+    filterOnlyDelegated :: StakeKeyState -> Maybe (StakeAddress, Lovelace, PoolId)
+    filterOnlyDelegated (StakeKeyDelegated addr reward poolid) = Just (addr, reward, poolid)
     filterOnlyDelegated _ = Nothing
 
 submissionClient :: Bool -> TQueue (TxInMode CardanoMode, ByteString) -> Net.Tx.LocalTxSubmissionClient (TxInMode CardanoMode) reject IO a2
@@ -258,10 +355,9 @@ _newQueryClient port config txQueue = do
     case fcfMaxStakeKeyIndex config of
       Just count -> do
         let
-          manyStakeKeys :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
           manyStakeKeys = createManyStakeKeys (fsAcctKey faucetState) (fcfNetwork config) count
           x :: [StakeCredential]
-          x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
+          x = Map.elems $ map (\(_,_,v) -> v) $ unMany manyStakeKeys
         eResult <- queryExpr (queryManyStakeAddr (fcfNetwork config) (toEraInMode era CardanoMode) x)
         print eResult
         case eResult of
@@ -270,12 +366,18 @@ _newQueryClient port config txQueue = do
               (notRegistered, notDelegated, delegated) = sortStakeKeys result manyStakeKeys
             case fcfDebug config of
               True -> do
-                putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
-                putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
-                putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
+                putStrLn $ format ("these stake key indexes are not registered: " % sh) $ stakeAddressesToIndex manyStakeKeys notRegistered
+                putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ stakeAddressesToIndex manyStakeKeys notDelegated
+                liftIO $ showDelegatedStakeKeys manyStakeKeys delegated
               False -> do
                 putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-            liftIO $ atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
+            let
+              delegatedIndexes :: [Word32]
+              delegatedIndexes = stakeAddressesToIndex manyStakeKeys (map (\(a,_,_) -> a) delegated)
+              delegationInfo :: [(Lovelace, PoolId)]
+              delegationInfo = map (\(_, a, b) -> (a,b)) delegated
+              reassembled = map (\(a, (b, pool)) -> (a,b,pool)) $ zip delegatedIndexes delegationInfo
+            liftIO $ atomically $ putTMVar (fsStakeTMVar faucetState) (stakeAddressLookup manyStakeKeys (\(_,a,b,cred) -> (a,b,cred)) notDelegated, reassembled)
           Left err -> print err
       Nothing -> pure ()
     pure ()
@@ -316,22 +418,28 @@ queryClient config txQueue port = LocalStateQueryClient $ do
                 Nothing -> finish
                 Just count -> do
                   let
-                    manyStakeKeys :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
                     manyStakeKeys = createManyStakeKeys (fsAcctKey faucetState) (fcfNetwork config) count
                     x :: [StakeCredential]
-                    x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
+                    x = Map.elems $ map (\(_,_,v) -> v) $ unMany manyStakeKeys
+                  print $ map (\(idx,_skey,cred) -> (idx,makeStakeAddressRegistrationCertificate cred)) $ Map.elems $ unMany manyStakeKeys
                   runQueryThen (queryManyStakeAddr (fcfNetwork config) (toEraInMode era3 CardanoMode) x) $ \case
                     Right stakeKeyResults -> do
                       let (notRegistered,notDelegated,delegated) = sortStakeKeys stakeKeyResults manyStakeKeys
 
                       case fcfDebug config of
                         True -> do
-                          putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
-                          putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
-                          putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
+                          putStrLn $ format ("these stake key indexes are not registered: " % sh) $ stakeAddressesToIndex manyStakeKeys notRegistered
+                          putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ stakeAddressesToIndex manyStakeKeys notDelegated
+                          liftIO $ showDelegatedStakeKeys manyStakeKeys delegated
                         False -> do
                           putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-                      atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
+                      let
+                        delegatedIndexes :: [Word32]
+                        delegatedIndexes = stakeAddressesToIndex manyStakeKeys (map (\(a,_,_) -> a) delegated)
+                        delegationInfo :: [(Lovelace, PoolId)]
+                        delegationInfo = map (\(_, a, b) -> (a,b)) delegated
+                        reassembled = map (\(a, (b, pool)) -> (a,b,pool)) $ zip delegatedIndexes delegationInfo
+                      atomically $ putTMVar (fsStakeTMVar faucetState) (stakeAddressLookup manyStakeKeys (\(_,a,b,cred) -> (a,b,cred)) notDelegated, reassembled)
                       finish
                     Left _ -> Prelude.error "not handled"
             Left _e -> Prelude.error "not handled"
@@ -383,3 +491,14 @@ main = do
   case eResult of
     Right msg -> print msg
     Left err -> putStrLn $ renderFaucetError err
+
+loadvkey :: Prelude.String -> IO SomeAddressVerificationKey
+loadvkey filepath = do
+  orDie (T.pack . Prelude.show) $ (readAddressVerificationKeyTextOrFile . VktofVerificationKeyFile . VerificationKeyFile) filepath
+
+_loadskey :: IO SomeWitness
+_loadskey = do
+  let
+    foo :: WitnessSigningData
+    foo = KeyWitnessSigningData (SigningKeyFile "/home/clever/iohk/cardano-node/pay.skey") Nothing
+  orDie (T.pack . Prelude.show) $ readWitnessSigningData foo

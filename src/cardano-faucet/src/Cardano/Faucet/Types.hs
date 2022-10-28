@@ -11,7 +11,7 @@ module Cardano.Faucet.Types where
 import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey, Index, DerivationType(Hardened, Soft))
 import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
-import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..))
+import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..), StakeAddress)
 import Cardano.CLI.Environment (EnvSocketError)
 import Cardano.CLI.Shelley.Key (InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
@@ -38,6 +38,8 @@ import Web.Internal.FormUrlEncoded (ToForm(toForm), fromEntriesByKey)
 newtype SiteKey = SiteKey { unSiteKey :: Text } deriving Show
 newtype SecretKey = SecretKey { unSecretKey :: Text } deriving Show
 newtype CaptchaToken = CaptchaToken Text
+
+newtype ManyStakeKeys = ManyStakeKeys { unMany :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) }
 
 instance FromHttpApiData CaptchaToken where
   parseHeader bs = mapRight CaptchaToken (parseHeader bs)
@@ -132,11 +134,11 @@ data SendMoneySent = SendMoneySent
   , amount :: FaucetValue
   }
 
-data StakeKeyIntermediateState = StakeKeyIntermediateStateNotRegistered Word32 | StakeKeyIntermediateStateRegistered (Word32, SigningKey StakeExtendedKey, StakeCredential, Lovelace)
+data StakeKeyIntermediateState = StakeKeyIntermediateStateNotRegistered | StakeKeyIntermediateStateRegistered Lovelace
 
-data StakeKeyState = StakeKeyRegistered Word32 (SigningKey StakeExtendedKey) StakeCredential Lovelace
-  | StakeKeyDelegated Word32 Lovelace PoolId
-  | StakeKeyNotRegistered Word32 deriving Show
+data StakeKeyState = StakeKeyRegistered StakeAddress
+  | StakeKeyDelegated StakeAddress Lovelace PoolId
+  | StakeKeyNotRegistered StakeAddress deriving Show
 
 -- the full reply type for /send-money
 data SendMoneyReply = SendMoneyReplySuccess SendMoneySent

@@ -75,7 +75,7 @@ in
         packagesExes =
           let
             project = haskell-nix.cabalProject' {
-              inherit (config) name src compiler-nix-name cabalProjectLocal;
+              inherit (config) name src compiler-nix-name cabalProjectLocal inputMap;
             };
             packages = haskellLib.selectProjectPackages project.hsPkgs;
           in
