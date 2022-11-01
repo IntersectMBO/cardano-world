@@ -200,11 +200,11 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         "--out-file",
         tx_body.name,
         "--tx-in",
-        txin,
-        "--tx-out",
-        f"{delegation_address}+{delegation_amount}",
+        txin[0],
         "--tx-out",
         f"{change_address}+{new_lovelace}",
+        "--tx-out",
+        f"{delegation_address}+{delegation_amount}",
         "--certificate",
         stake_reg_cert.name,
         *network_args
@@ -215,7 +215,6 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         print(f"died at tx file: {out_file}")
         raise Exception(f"Unknown error creating transaction")
     txid = signTx(tx_body, payment_signing_key, out_file)
-    value =
     return (f"{txid}#0", new_lovelace)
 
 def getLargestUtxoForAddress(address):
