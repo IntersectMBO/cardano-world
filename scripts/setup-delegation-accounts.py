@@ -205,9 +205,10 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         f"{change_address}+{new_lovelace}",
         "--tx-out",
         f"{delegation_address}+{delegation_amount}",
+        "--fee"
+        "200000"
         "--certificate",
-        stake_reg_cert.name,
-        *network_args
+        stake_reg_cert.name
     ]
     p = subprocess.run(cli_args, input=None, capture_output=True, text=True)
     if p.returncode != 0:
