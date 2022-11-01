@@ -191,10 +191,11 @@ def generateStakeRegistration(stake_vkey, file):
 def createTx(txin, stake_vkey, delegation_address, change_address, payment_signing_key, out_file, delegation_amount=1000000000000):
   with tempfile.NamedTemporaryFile("w+") as stake_reg_cert, tempfile.NamedTemporaryFile("w+") as tx_body:
     generateStakeRegistration(stake_vkey, stake_reg_cert)
+    new_lovelace = txin[1] - 2000000 - 200000
     cli_args = [
         "cardano-cli",
         "transaction",
-        "build",
+        "build-raw",
         "--babbage-era",
         "--out-file",
         tx_body.name,
@@ -202,8 +203,8 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         txin,
         "--tx-out",
         f"{delegation_address}+{delegation_amount}",
-        "--change-address",
-        change_address,
+        "--tx-out",
+        f"{change_address}+{new_lovelace}",
         "--certificate",
         stake_reg_cert.name,
         *network_args
@@ -214,7 +215,8 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         print(f"died at tx file: {out_file}")
         raise Exception(f"Unknown error creating transaction")
     txid = signTx(tx_body, payment_signing_key, out_file)
-    return f"{txid}#0"
+    value =
+    return (f"{txid}#0", new_lovelace)
 
 def getLargestUtxoForAddress(address):
     p = subprocess.run(["cardano-cli", "query", "utxo", "--out-file", "tmp_utxo.json", *network_args, "--address", address])
@@ -232,7 +234,7 @@ def getLargestUtxoForAddress(address):
     if txin == None:
       print("No suitable utxo could be found")
       exit(1)
-    return txin[0]
+    return txin
 
 def signTx(tx_body, utxo_signing_key, out_file):
   cli_args = [ "cardano-cli", "transaction", "sign", "--tx-body-file", tx_body.name, "--out-file", out_file, "--signing-key-file", utxo_signing_key]
@@ -269,12 +271,12 @@ payment_addr = derive_payment_address_cli_skey(utxo_signing_key)
 
 txin = getLargestUtxoForAddress(payment_addr)
 
-for i in range(11, num_accounts):
+for i in range(2, num_accounts):
   with tempfile.NamedTemporaryFile("w+") as registration_cert:
     stake_vkey_ext = derive_child_key(wallet_account_vkey, f"2/{i}", public=True, chain_code=True)
     stake_vkey = derive_child_key(wallet_account_vkey, f"2/{i}", public=True, chain_code=False)
     stake_address = derive_stake_address(stake_vkey_ext)
     delegation_address = derive_delegation_address(payment_addr, stake_vkey_ext)
     txin = createTx(txin, stake_vkey, delegation_address, payment_addr, utxo_signing_key,f"tx-deleg-account-{i}.txsigned")
+    print(f"setting up delegation for {i}")
     sendTx(f"tx-deleg-account-{i}.txsigned")
-    sleep(120)
