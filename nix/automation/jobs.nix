@@ -516,6 +516,21 @@ in {
       ${updateProposalTemplate}
     '';
   };
+  update-proposal-mainnet-params = writeShellApplication {
+    name = "update-proposal-hf";
+    runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+    text = ''
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
+      PROPOSAL_ARGS=(
+        "--max-block-body-size" "90112"
+        "--number-of-pools" "500"
+        "--max-block-execution-units" '(40000000000,62000000)'
+        "--max-tx-execution-units" '(10000000000,14000000)'
+
+      )
+      ${updateProposalTemplate}
+    '';
+  };
   release = let
     ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
     release-notes = nixpkgs.writeText "release-notes" ''
