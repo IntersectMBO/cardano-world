@@ -191,7 +191,7 @@ def generateStakeRegistration(stake_vkey, file):
 def createTx(txin, stake_vkey, delegation_address, change_address, payment_signing_key, out_file, delegation_amount=1000000000000):
   with tempfile.NamedTemporaryFile("w+") as stake_reg_cert, tempfile.NamedTemporaryFile("w+") as tx_body:
     generateStakeRegistration(stake_vkey, stake_reg_cert)
-    new_lovelace = txin[1] - 2000000 - 200000
+    new_lovelace = txin[1] - 2000000 - 200000 - delegation_amount
     cli_args = [
         "cardano-cli",
         "transaction",
@@ -205,8 +205,8 @@ def createTx(txin, stake_vkey, delegation_address, change_address, payment_signi
         f"{change_address}+{new_lovelace}",
         "--tx-out",
         f"{delegation_address}+{delegation_amount}",
-        "--fee"
-        "200000"
+        "--fee",
+        "200000",
         "--certificate",
         stake_reg_cert.name
     ]
@@ -271,7 +271,7 @@ payment_addr = derive_payment_address_cli_skey(utxo_signing_key)
 
 txin = getLargestUtxoForAddress(payment_addr)
 
-for i in range(2, num_accounts):
+for i in range(0, num_accounts):
   with tempfile.NamedTemporaryFile("w+") as registration_cert:
     stake_vkey_ext = derive_child_key(wallet_account_vkey, f"2/{i}", public=True, chain_code=True)
     stake_vkey = derive_child_key(wallet_account_vkey, f"2/{i}", public=True, chain_code=False)
