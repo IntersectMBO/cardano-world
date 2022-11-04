@@ -63,14 +63,14 @@
     # --- Bride Heads ----------------------------------------------
     # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35.4-rc1";
+      url = "github:input-output-hk/cardano-node/1.35.3";
     };
     # TODO: remove when faucet is CHaP'd and no longer depends on source from cardano-node
     cardano-node-src = {
       url = "github:input-output-hk/cardano-node/1.35.3";
       flake = false;
     };
-    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
+    cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.5";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     ogmios = {
       url = "github:CardanoSolutions/ogmios/v5.5.5";
