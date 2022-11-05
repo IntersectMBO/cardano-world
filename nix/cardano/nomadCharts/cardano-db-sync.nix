@@ -49,7 +49,12 @@ in
             value = "true";
           }
         ];
-        spread = [{attribute = "\${node.datacenter}";}];
+        spread = [
+          {
+            attribute = "\${node.datacenter}";
+            weight = "100";
+          }
+        ];
         # ----------
         # Update
         # ----------

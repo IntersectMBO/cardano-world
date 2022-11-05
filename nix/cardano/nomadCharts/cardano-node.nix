@@ -44,7 +44,12 @@ in
             operator = "is_set";
           }
         ];
-        spread = [{attribute = "\${attr.platform.aws.placement.availability-zone}";}];
+        spread = [
+          {
+            attribute = "\${attr.platform.aws.placement.availability-zone}";
+            weight = "100";
+          }
+        ];
         # ----------
         # Update
         # ----------

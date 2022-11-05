@@ -30,7 +30,12 @@ in {
           value = "${nodeClass}";
         }
       ];
-      spread = [{attribute = "\${node.datacenter}";}];
+      spread = [
+        {
+          attribute = "\${node.datacenter}";
+          weight = "100";
+        }
+      ];
       # ----------
       # Update
       # ----------
