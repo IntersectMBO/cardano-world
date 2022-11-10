@@ -600,6 +600,10 @@ in {
     text = ''
       # shellcheck source=/dev/null
       source ${nixpkgs.cacert}/nix-support/setup-hook
+      while [ ! -S "$CARDANO_NODE_SOCKET_PATH" ]; do
+        echo "Waiting for cardano node socket to become available"
+        sleep 15
+      done
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
     '';
   };
