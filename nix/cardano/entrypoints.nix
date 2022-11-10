@@ -595,7 +595,7 @@ in {
 
   cardano-faucet = writeShellApplication {
     debugInputs = [packages.cardano-cli];
-    runtimeInputs = [nixpkgs.cacert];
+    runtimeInputs = prelude-runtime ++ [nixpkgs.cacert];
     name = "entrypoint";
     text = ''
       # shellcheck source=/dev/null
