@@ -72,12 +72,12 @@ Upgrade Strategy:
 - Hard forks - all nodes
 - Community requested to only deploy release candidates and official releases
 
-Changes Requested by: Release Manager
-Approvals Required: SRE Director, Head of Delivery
+Changes Requested by: Release Squad Lead
+Approvals Required: SRE Tribe Lead, Cardano Head of Engineering, Cardano Head of Architecture
 
-Responsible: IOG SRE, CF SRE
-Accountable: SRE Director/Release Manager
-Consulted: Release Manager
+Responsible: IOG SRE
+Accountable: Head of SRE/Release Squad Lead
+Consulted: SPOs
 Informed: Cardano Core Tribe, COO, Director of Engineering
 
 - [Node Config](environments/preview/config.json)
@@ -101,12 +101,12 @@ Upgrade Strategy:
 - Hard forks - all nodes
 - Community requested to only deploy release candidates and official releases
 
-Changes Requested by: Release Manager
-Approvals Required: SRE Director, Head of Delivery, COO, Director of Engineering, VP Community
+Changes Requested by: Release Squad Lead
+Approvals Required: SRE Tribe Lead, Cardano Head of Engineering, Cardano Head of Architecture, CF Representative
 
-Responsible: IOG SRE, CF SRE
-Accountable: SRE Director/QA Manager
-Consulted: Release Manager
+Responsible: IOG SRE
+Accountable: Head of SRE/Release Squad Lead
+Consulted: SPOs, IOG Tribes
 Informed: Cardano Core Tribe, COO, Director of Engineering, VP Community
 
 - [Node Config](environments/preprod/config.json)
@@ -126,13 +126,14 @@ Upgrade Strategy:
 - Official Releases - Deploy 1 pool and it's relays every 24 hours
 - Community requested to only deploy official releases
 
-Changes Requested by: Release Manager, Tribe Leads
-Approvals Required: CEO, COO, SRE Director, Head of Delivery, Director of Engineering, VP Community
 
-Responsible: IOG SRE, CF SRE
-Accountable: SRE Director/QA Manager
-Consulted: Release Manager
-Informed: Cardano Core Tribe, COO, Director of Engineering, VP Community
+Changes Requested by: Release Squad Lead
+Approvals Required: SRE Tribe Lead, IOG Executive Team, CF Executive Team
+
+Responsible: IOG SRE
+Accountable: Head of SRE/Release Squad Lead
+Consulted: SPOs, IOG Tribes, IOG Executive Team
+Informed: Cardano Core Tribe, COO, IOG Director of Engineering, IOG VP Community
 
 - [Node Config](environments/mainnet/config.json)
 - [DB Sync Config](environments/mainnet/db-sync-config.json)
