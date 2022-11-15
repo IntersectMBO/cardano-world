@@ -11,7 +11,7 @@ Options:
     -t --testnet-magic <INT>     Testnet Magic
     -s --signing-key-file <FILE> Signing Key
     -a --address <STRING>        Receiving address
-    -p --payments-json <FILE>    JSON file containing payments to make
+    -p --payments-json <FILE>    JSON file containing payments to make (List of attrs, where each attr is a single address:amount)
 
 """
 
