@@ -308,8 +308,12 @@ in {
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        if jq -e 'has("$ENVIRONMENT")' > /dev/null < "$snapshots"; then
+           SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
+           SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        else
+           echo "Warning: No snapshot is being used, there isn't one for $ENVIRONMENT"
+        fi
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
@@ -451,8 +455,12 @@ in {
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        if jq -e 'has("$ENVIRONMENT")' > /dev/null < "$snapshots"; then
+           SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
+           SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        else
+           echo "Warning: No snapshot is being used, there isn't one for $ENVIRONMENT"
+        fi
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         [ -z "''${PGPASSFILE-}" ] && echo "PGPASSFILE env var must be set (either manually or via vault kv discovery) -- aborting" && exit 1
