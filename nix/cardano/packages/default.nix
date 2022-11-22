@@ -10,7 +10,6 @@ let
     nixpkgs
     iohk-nix
     cardano-node
-    cardano-node-src
     cardano-wallet
     cardano-db-sync
     ogmios

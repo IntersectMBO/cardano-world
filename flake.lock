@@ -2347,16 +2347,16 @@
         "utils": "utils_39"
       },
       "locked": {
-        "lastModified": 1666810931,
-        "narHash": "sha256-/SGqmlWj2G2F4vYKgL8anyJx5syk2ueABZ7I5wqS5bg=",
+        "lastModified": 1667644902,
+        "narHash": "sha256-WRRzfpDc+YVmTNbN9LNYY4dS8o21p/6NoKxtcZmoAcg=",
         "owner": "input-output-hk",
         "repo": "cardano-node",
-        "rev": "54998e843cf7d54eb1594ce191a261a112429ead",
+        "rev": "ebc7be471b30e5931b35f9bbc236d21c375b91bb",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "1.35.4-rc1",
+        "ref": "1.35.4",
         "repo": "cardano-node",
         "type": "github"
       }
@@ -2555,23 +2555,6 @@
         "owner": "input-output-hk",
         "repo": "cardano-node",
         "rev": "30d62b86e7b98da28ef8ad9412e4e00a1ba1231d",
-        "type": "github"
-      }
-    },
-    "cardano-node-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1659625017,
-        "narHash": "sha256-4IrheFeoWfvkZQndEk4fGUkOiOjcVhcyXZ6IqmvkDgg=",
-        "owner": "input-output-hk",
-        "repo": "cardano-node",
-        "rev": "950c4e222086fed5ca53564e642434ce9307b0b9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "input-output-hk",
-        "ref": "1.35.3",
-        "repo": "cardano-node",
         "type": "github"
       }
     },
@@ -7851,11 +7834,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1666358508,
-        "narHash": "sha256-ediFkDOBP7yVquw1XtHiYfuXKoEnvKGjTIAk9mC6qxo=",
+        "lastModified": 1667394105,
+        "narHash": "sha256-YhS7zGd6jK/QM/+wWyj0zUBZmE3HOXAL/kpJptGYIWg=",
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "4848df60660e21fbb3fe157d996a8bac0a9cf2d6",
+        "rev": "7fc7625a9ab2ba137bc70ddbc89a13d3fdb78c8b",
         "type": "github"
       },
       "original": {
@@ -13855,7 +13838,6 @@
         "cardano-explorer-app": "cardano-explorer-app",
         "cardano-graphql": "cardano-graphql",
         "cardano-node": "cardano-node",
-        "cardano-node-src": "cardano-node-src",
         "cardano-wallet": "cardano-wallet",
         "data-merge": "data-merge_3",
         "flake-compat": "flake-compat_13",

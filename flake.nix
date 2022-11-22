@@ -61,14 +61,8 @@
     capsules.url = "github:input-output-hk/devshell-capsules";
     # --------------------------------------------------------------
     # --- Bride Heads ----------------------------------------------
-    # TODO: remove cardano-node (and use self) when mono-repo branch is merged:
     cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35.4-rc1";
-    };
-    # TODO: remove when faucet is CHaP'd and no longer depends on source from cardano-node
-    cardano-node-src = {
-      url = "github:input-output-hk/cardano-node/1.35.3";
-      flake = false;
+      url = "github:input-output-hk/cardano-node/1.35.4";
     };
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
