@@ -9,25 +9,23 @@
   }: {
     preset = {
       nix.enable = true;
-      github-ci = {
-        enable = config.action.facts != {};
-        repo = "input-output-hk/cardano-world";
-        sha = config.preset.github-ci.lib.getRevision "GitHub event" "HEAD";
-        clone = false;
+
+      github.ci = {
+        enable = config.actionRun.facts != {};
+        repository = "input-output-hk/cardano-world";
+        revision = config.preset.github.lib.readRevision inputs.cells.cloud.library.actionCiInputName null;
       };
     };
 
-    command.text = let
-      flakeUrl = lib.escapeShellArg (
-        with config.preset.github-ci;
-          if enable
-          then "github:${repo}/${sha}"
-          else "."
-      );
-    in ''
-      system=$(nix eval --raw --impure --expr __currentSystem)
-      nix build -L ${flakeUrl}#"$system".automation.hydraJobs.required
-    '';
+    command.text = config.preset.github.status.lib.reportBulk {
+      bulk.text = ''
+        nix eval .#hydraJobs --json \
+          --apply 'jobs: __attrNames (removeAttrs jobs [ "required" ])' \
+        | nix-systems -i
+      '';
+      each.text = ''nix build -L .#hydraJobs."$1".required'';
+      skippedDescription = lib.escapeShellArg "No nix builder available for this system";
+    };
 
     memory = 1024 * 6;
     nomad.resources.cpu = 10000;
