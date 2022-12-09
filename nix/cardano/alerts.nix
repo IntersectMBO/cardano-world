@@ -316,4 +316,17 @@ in
         }
       ];
   };
+  faucet = {
+    datasource = "vm";
+    rules = [
+      {
+        alert = "faucet_utxo_empty";
+        expr = ''faucet_utxo{is_valid="1"} < 100'';
+        for = "1m";
+        labels = {
+          severity = "page";
+        };
+      }
+    ];
+  };
 }

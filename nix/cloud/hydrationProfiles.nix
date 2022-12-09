@@ -167,6 +167,7 @@ in {
             (cells.cardano.alerts)
             node
             dbsync
+            faucet
             ;
           # Upstream alerts
           inherit
