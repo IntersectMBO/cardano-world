@@ -87,14 +87,14 @@ in
         }
         {
           alert = "cardano_new_node_blockheight_unchanged";
-          expr = "rate(cardano_node_metrics_blockNum_int[10m]) == 0";
-          for = "5m";
+          expr = "rate(cardano_node_metrics_blockNum_int[1m]) == 0";
+          for = "10m";
           labels = {
             severity = "page";
           };
           annotations = {
-            summary = "{{$labels.alias}}: cardano-node blockheight unchanged for more than 5 minutes";
-            description = "{{$labels.alias}}: cardano-node blockheight unchanged for more than 5 minutes at a 1 minute rate resolution";
+            summary = "{{$labels.alias}}: cardano-node blockheight unchanged for more than 10 minutes";
+            description = "{{$labels.alias}}: cardano-node blockheight unchanged for more than 10 minutes at a 1 minute rate resolution";
           };
         }
         {
