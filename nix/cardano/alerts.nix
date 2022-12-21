@@ -39,7 +39,7 @@ in
         }
         {
           alert = "chain_quality_degraded";
-          expr = "quantile(0.2, (cardano_node_metrics_density_real / on(alias) cardano_node_genesis_activeSlotsCoeff * 100)) < ${chainDensityLow}";
+          expr = "quantile(0.2, (cardano_node_metrics_density_real / on(alias) * 20)) < ${chainDensityLow}";
           for = "5m";
           labels = {
             severity = "page";
@@ -124,111 +124,39 @@ in
           };
         } */
         {
-          alert = "cardano_new_node_KES_expiration_metric_10day_notice";
-          expr = "cardano_node_genesis_slotLength * cardano_node_genesis_slotsPerKESPeriod * on (alias) cardano_node_metrics_remainingKESPeriods_int < (10 * 24 * 3600) + 1";
+          alert = "cardano_new_node_KES_expiration_metric_10period_notice";
+          expr = "cardano_node_metrics_remainingKESPeriods_int <= 10";
           for = "5m";
           labels = {
             severity = "page";
           };
           annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 days until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 days until KES expiration; calculated from node metrics";
+            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 periods until KES expiration";
+            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 periods until KES expiration; calculated from node metrics";
           };
         }
         {
-          alert = "cardano_new_node_KES_expiration_metric_5day_notice";
-          expr = "cardano_node_genesis_slotLength * cardano_node_genesis_slotsPerKESPeriod * on (alias) cardano_node_metrics_remainingKESPeriods_int < (5 * 24 * 3600) + 1";
+          alert = "cardano_new_node_KES_expiration_metric_5period_notice";
+          expr = "cardano_node_metrics_remainingKESPeriods_int <= 5";
           for = "5m";
           labels = {
             severity = "page";
           };
           annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 days until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 days until KES expiration; calculated from node metrics";
+            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 periods until KES expiration";
+            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 periods until KES expiration; calculated from node metrics";
           };
         }
         {
-          alert = "cardano_new_node_KES_expiration_metric_1day_warning";
-          expr = "cardano_node_genesis_slotLength * cardano_node_genesis_slotsPerKESPeriod * on (alias) cardano_node_metrics_remainingKESPeriods_int < (24 * 3600) + 1";
+          alert = "cardano_new_node_KES_expiration_metric_1period_warning";
+          expr = "cardano_node_metrics_remainingKESPeriods_int <= 1";
           for = "5m";
           labels = {
             severity = "page";
           };
           annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 day until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 day until KES expiration; calculated from node metrics";
-          };
-        }
-        {
-          alert = "cardano_new_node_KES_expiration_metric_4hour_critical";
-          expr = "cardano_node_genesis_slotLength * cardano_node_genesis_slotsPerKESPeriod * on (alias) cardano_node_metrics_remainingKESPeriods_int < (4 * 3600) + 1";
-          for = "5m";
-          labels = {
-            severity = "page";
-          };
-          annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration warning: less than 4 hours until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration warning: less than 4 hours until KES expiration; calculated from node metrics";
-          };
-        }
-        {
-          alert = "cardano_new_node_KES_expiration_decoded_10day_notice";
-          expr =
-            "(cardano_node_genesis_slotLength * (cardano_node_genesis_slotsPerKESPeriod "
-            + "* ((cardano_node_decode_kesCreatedPeriod > -1) + cardano_node_genesis_maxKESEvolutions)) "
-            + "- on(alias) (cardano_node_genesis_slotLength * on (alias) cardano_node_metrics_slotNum_int)) < (10 * 24 * 3600) + 1";
-          for = "5m";
-          labels = {
-            severity = "page";
-          };
-          annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 days until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 10 days until KES expiration; calculated from opcert decoding";
-          };
-        }
-        {
-          alert = "cardano_new_node_KES_expiration_decoded_5day_notice";
-          expr =
-            "(cardano_node_genesis_slotLength * (cardano_node_genesis_slotsPerKESPeriod "
-            + "* ((cardano_node_decode_kesCreatedPeriod > -1) + cardano_node_genesis_maxKESEvolutions)) "
-            + "- on(alias) (cardano_node_genesis_slotLength * on (alias) cardano_node_metrics_slotNum_int)) < (5 * 24 * 3600) + 1";
-          for = "5m";
-          labels = {
-            severity = "page";
-          };
-          annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 days until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration notice: less than 5 days until KES expiration; calculated from opcert decoding";
-          };
-        }
-        {
-          alert = "cardano_new_node_KES_expiration_decoded_1day_warning";
-          expr =
-            "(cardano_node_genesis_slotLength * (cardano_node_genesis_slotsPerKESPeriod "
-            + "* ((cardano_node_decode_kesCreatedPeriod > -1) + cardano_node_genesis_maxKESEvolutions)) "
-            + "- on(alias) (cardano_node_genesis_slotLength * on (alias) cardano_node_metrics_slotNum_int)) < (24 * 3600) + 1";
-          for = "5m";
-          labels = {
-            severity = "page";
-          };
-          annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 day until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 day until KES expiration; calculated from opcert decoding";
-          };
-        }
-        {
-          alert = "cardano_new_node_KES_expiration_decoded_4hour_critical";
-          expr =
-            "(cardano_node_genesis_slotLength * (cardano_node_genesis_slotsPerKESPeriod "
-            + "* ((cardano_node_decode_kesCreatedPeriod > -1) + cardano_node_genesis_maxKESEvolutions)) "
-            + "- on(alias) (cardano_node_genesis_slotLength * on (alias) cardano_node_metrics_slotNum_int)) < (4 * 3600) + 1";
-          for = "5m";
-          labels = {
-            severity = "page";
-          };
-          annotations = {
-            summary = "{{$labels.alias}}: cardano-node KES expiration warning: less than 4 hours until KES expiration";
-            description = "{{$labels.alias}}: cardano-node KES expiration warning: less than 4 hours until KES expiration; calculated from opcert decoding";
+            summary = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 periods until KES expiration";
+            description = "{{$labels.alias}}: cardano-node KES expiration warning: less than 1 periods until KES expiration; calculated from node metrics";
           };
         }
         {
