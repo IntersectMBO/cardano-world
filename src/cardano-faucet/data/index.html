@@ -1,34 +1,119 @@
 <html>
-  <head>
+
+<head>
     <script src="/get-site-key"></script>
     <script>
-      function onLoadCallback() {
-        grecaptcha.render("payment", { sitekey: site_key });
-        grecaptcha.render("delegate", { sitekey: site_key });
-      }
+        function onLoadCallback() {
+            grecaptcha.render("payment", { sitekey: site_key });
+            grecaptcha.render("delegate", { sitekey: site_key });
+        }
     </script>
-    <script
-      src="https://www.google.com/recaptcha/api.js?onload=onLoadCallback&render=explicit"
-      async
-      defer
-    ></script>
-  </head>
-  <body>
-    <form action="/send-money" method="get">
-      <div id="payment"></div>
-      <select name="type">
-        <option value="default">10 ada</option>
-        <!--<option value="test">10 ada + 10 tokens</option>--></select
-      ><br />
-      address(required): <input type="text" name="address" size="50" /><br />
-      api key(optional): <input type="text" name="api_key" /><br />
-      <input type="submit" />
-    </form>
-    <form action="/delegate" method="get">
-      <div id="delegate"></div>
-      pool(required): <input type="text" name="poolid" size="50" /><br />
-      api key(optional): <input type="text" name="api_key" /><br />
-      <input type="submit" />
-    </form>
-  </body>
+    <script src="https://www.google.com/recaptcha/api.js?onload=onLoadCallback&render=explicit" async defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="style.css"> -->
+    <style>* {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Chivo&display=swap');
+    
+    body {
+        background-color: white;
+        font-family: 'Chivo', sans-serif;
+    }
+    
+    .content {
+        display: flex;
+        justify-content: center;
+        max-width: 1040px;
+        margin: auto;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .header {
+        background-color: #0033AD;
+        height: 70px;
+        display: flex;
+        color: white;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .logo-img {
+        height: 2em;
+        margin-top: 1em;
+    }
+    
+    .faucet-text {
+        margin-top: 0.97em;
+        font-size: 1.30em;
+        margin-left: 0.3em;
+    }
+    
+    .form-wrapper {
+        background-color: #eeeeee;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        border-radius: 1em;
+        margin-top: 1em;
+        padding: 1em;
+    }
+    
+    form {
+        margin-top: 1em;
+    }
+    
+    input[type=submit] {
+        background-color: #0033AD;
+        color: white;
+        font-size: 1em;
+        border-style: none;
+        padding-bottom: 16px;
+        padding-top: 16px;
+        padding-left: 40px;
+        padding-right: 40px;
+        margin-top: 0.75em;
+        font-weight: 600;
+        border-radius: 3em;
+    }
+    
+    input[type=text] {
+        margin-top: 0.75em;
+    }</style>
+</head>
+
+<body>
+    <div class="header">
+        <div>
+            <img class="logo-img"
+                src="https://ucarecdn.com/c1477310-438e-4141-bbf8-b866dd0b258a/-/format/webp/-/resize/1000/" alt="">
+        </div>
+        <div class="faucet-text">
+            <span>FAUCET</span>
+        </div>
+    </div>
+    <div class="content">
+        <div class="form-wrapper">
+            <form action="/send-money" method="get">
+                <div id="payment"></div>
+                <select name="type">
+                    <option value="default">10 ada</option>
+                    <!--<option value="test">10 ada + 10 tokens</option>-->
+                </select><br />
+                address(required): <input type="text" name="address" size="50" /><br />
+                api key(optional): <input type="text" name="api_key" /><br />
+                <input type="submit" />
+            </form>
+            <form action="/delegate" method="get">
+                <div id="delegate"></div>
+                pool(required): <input type="text" name="poolid" size="50" /><br />
+                api key(optional): <input type="text" name="api_key" /><br />
+                <input type="submit" />
+            </form>
+        </div>
+    </div>
+</body>
+
 </html>
