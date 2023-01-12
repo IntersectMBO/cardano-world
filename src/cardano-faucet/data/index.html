@@ -96,6 +96,11 @@
     <div class="content">
         <div class="form-wrapper">
             <form action="/send-money" method="get">
+                <div id="payment"></div>
+                <select name="type">
+                    <option value="default">ada</option>
+                    <!--<option value="test">10 ada + 10 tokens</option>-->
+                </select><br />
                 address(required): <input type="text" name="address" size="50" /><br />
                 api key(optional): <input type="text" name="api_key" /><br />
                 <input type="submit" />
