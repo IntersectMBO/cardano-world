@@ -130,7 +130,7 @@ in
                 kill_timeout = "30s";
                 resources = {
                   cpu = 1000;
-                  memory = 1024;
+                  memory = 8192;
                 };
                 volume_mount = {
                   destination = persistanceMount;

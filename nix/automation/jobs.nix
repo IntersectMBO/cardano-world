@@ -454,6 +454,49 @@ in {
       '';
     }
     // {after = ["gen-custom-node-config"];};
+    rotate-kes-pools =
+    writeShellApplication {
+      name = "rotate-kes-pools";
+      runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
+      text = ''
+        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME, $CURRENT_KES_PERIOD
+        export ENV_NAME=''${ENV_NAME:-"custom-env"}
+        END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+        pushd "$STAKE_POOL_DIR"
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
+          do
+            cardano-cli node key-gen-KES --signing-key-file sp-"$i"-kes.skey --verification-key-file sp-"$i"-kes.vkey
+            cardano-cli node issue-op-cert \
+              --kes-verification-key-file sp-"$i"-kes.vkey \
+              --cold-signing-key-file sp-"$i"-cold.skey \
+              --operational-certificate-issue-counter-file sp-"$i"-cold.counter \
+              --kes-period "$CURRENT_KES_PERIOD" \
+              --out-file sp-"$i".opcert
+            jq -n \
+              --argjson cold    "$(< sp-"$i"-cold.skey)" \
+              --argjson vrf     "$(< sp-"$i"-vrf.skey)" \
+              --argjson kes     "$(< sp-"$i"-kes.skey)" \
+              --argjson opcert  "$(< sp-"$i".opcert)" \
+              --argjson counter "$(< sp-"$i"-cold.counter)" \
+              '{
+                "kes.skey": $kes,
+                "vrf.skey": $vrf,
+                "opcert.json": $opcert,
+                "cold.skey": $cold,
+                "cold.counter": $counter
+              }' > "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME/sp-$i.json"
+          done
+        popd
+        pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
+          do
+            sops -e "sp-$i.json" > "sp-$i.enc.json" && rm "sp-$i.json"
+          done
+        popd
+      '';
+    }
+    // {after = ["gen-custom-node-config"];};
   move-genesis-utxo = writeShellApplication {
     name = "move-genesis-utxo";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
