@@ -1,46 +1,17 @@
 {
   description = "Cardano World";
 
-  inputs.nix-inclusive.url = "github:input-output-hk/nix-inclusive";
-
-  inputs.flake-compat = {
-    url = "github:edolstra/flake-compat";
-    flake = false;
-  };
-
   inputs = {
-    std = {
-      url = "github:divnix/std";
-      # inputs.nixpkgs.follows = "nixpkgs"; # doesn't have `conform` yet
-    };
-    n2c.url = "github:nlewo/nix2container";
-    haskell-nix = {
-      url = "github:input-output-hk/haskell.nix";
-      inputs = {
-        hackage.follows = "hackage";
-      };
-    };
-    hackage = {
-      url = "github:input-output-hk/hackage.nix";
-      flake = false;
-    };
+    std.url = "github:divnix/std";
+    data-merge.follows = "std/dmerge";
+    n2c.follows = "std/n2c";
 
-    CHaP = {
-      url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
-      flake = false;
-    };
-
-    iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    data-merge.url = "github:divnix/data-merge";
-    byron-chain = {
-      url = "github:input-output-hk/cardano-mainnet-mirror";
-      flake = false;
-    };
     # --- Bitte Stack ----------------------------------------------
-    bitte.url = "github:input-output-hk/bitte";
+    bitte = {
+      url = "github:input-output-hk/bitte";
+      inputs.capsules.follows = "capsules";
+    };
+
     bitte-cells = {
       url = "github:input-output-hk/bitte-cells";
       inputs = {
@@ -54,36 +25,86 @@
         cardano-wallet.follows = "cardano-wallet";
       };
     };
+
+    tullia.url = "github:input-output-hk/tullia";
     # --------------------------------------------------------------
+
     # --- Auxiliaries ----------------------------------------------
+
+    # TODO: REMOVE COMMENT ON BITTE BUMP
+    # nixpkgs.follows = "bitte/nixpkgs";
+    # nix.follows = "bitte/nix";
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
     nixpkgs-haskell.follows = "haskell-nix/nixpkgs-unstable";
-    capsules.url = "github:input-output-hk/devshell-capsules";
+
+    capsules = {
+      url = "github:input-output-hk/devshell-capsules";
+
+      # To obtain latest available bitte-cli
+      inputs.bitte.follows = "bitte";
+    };
+
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
     # --------------------------------------------------------------
-    # --- Bride Heads ----------------------------------------------
-    cardano-node = {
-      url = "github:input-output-hk/cardano-node/1.35.4";
+
+    # --- App Supporting Inputs ------------------------------------
+    byron-chain = {
+      url = "github:input-output-hk/cardano-mainnet-mirror";
+      flake = false;
     };
+
+    CHaP = {
+      url = "github:input-output-hk/cardano-haskell-packages?ref=repo";
+      flake = false;
+    };
+
+    hackage = {
+      url = "github:input-output-hk/hackage.nix";
+      flake = false;
+    };
+
+    haskell-nix = {
+      url = "github:input-output-hk/haskell.nix";
+      inputs.hackage.follows = "hackage";
+    };
+
+    iohk-nix = {
+      url = "github:input-output-hk/iohk-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-inclusive.url = "github:input-output-hk/nix-inclusive";
+    # --------------------------------------------------------------
+
+    # --- Bridge Heads----------------------------------------------
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
+    cardano-node.url = "github:input-output-hk/cardano-node/1.35.4";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
-    ogmios = {
-      url = "github:CardanoSolutions/ogmios/v5.5.5";
-      flake = false;
-    };
-    cardano-graphql = {
-      url = "github:input-output-hk/cardano-graphql";
-      flake = false;
-    };
+
     cardano-explorer-app = {
       url = "github:input-output-hk/cardano-explorer-app/fix-nix-system";
       flake = false;
     };
+
+    cardano-graphql = {
+      url = "github:input-output-hk/cardano-graphql";
+      flake = false;
+    };
+
     #cardano-rosetta = {
     #  url = "github:input-output-hk/cardano-rosetta";
     #  flake = false;
     #};
+
+    ogmios = {
+      url = "github:CardanoSolutions/ogmios/v5.5.5";
+      flake = false;
+    };
     # --------------------------------------------------------------
-    tullia.url = "github:input-output-hk/tullia";
   };
   outputs = inputs: let
     inherit (inputs.nixpkgs) lib;
@@ -147,7 +168,8 @@
         then bitte
         else {}
     )
-    # 2) renderes nomad environments (TODO: `std`ize as actions)
+
+    # 2) renders nomad environments (TODO: `std`ize as actions)
     (let
       mkNomadJobs = let
         pkgs = inputs.nixpkgs.legacyPackages.${system};
@@ -170,6 +192,7 @@
       preview = mkNomadJobs cloud."namespaces/preview";
       pv8 = mkNomadJobs cloud."namespaces/pv8";
     })
+
     # 3) hydra jobs
     (
       let
@@ -189,24 +212,29 @@
           };
       }
     )
+
     # 4) oci-images re-export due to image tag changes stemming from bitte-cells follows
     {
       vector.oci-images = inputs.std.harvest inputs.bitte-cells ["vector" "oci-images"];
     }
+
     # 5) tullia tasks and cicero actions
     (inputs.tullia.fromStd {
       actions = inputs.std.harvest inputs.self ["cloud" "actions"];
       tasks = inputs.std.harvest inputs.self ["automation" "pipelines"];
     });
+
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
     extra-substituters = [
       # TODO: spongix
       "https://cache.iog.io"
     ];
+
     extra-trusted-public-keys = [
       "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
     ];
+
     # post-build-hook = "./upload-to-cache.sh";
     allow-import-from-derivation = "true";
   };
