@@ -2,8 +2,9 @@
   inputs,
   cell,
 }: let
-  inherit (inputs.std) std;
   inherit (inputs) capsules bitte-cells bitte nixpkgs;
+  inherit (inputs.std) std;
+  inherit (inputs.std.lib) dev;
   inherit (inputs.cells) cardano;
 
   # FIXME: this is a work around just to get access
@@ -40,8 +41,18 @@
         bitte'.clusters.cardano._proto.config.cluster.awsAutoScalingGroups;
     };
   };
+
+  # To ensure the hashistack bins in use on cli are version matched to deployed binary versions.
+  # Otherwise, the default devshell-capsules are not necessarily version consistent with what is deployed across all clusters.
+  # Utilized where capsules.cloud is included in the devshell.
+  commands = [
+    {category = "hashibins"; package = nixpkgs.lib.hiPrio bitte.legacyPackages.x86_64-linux.consul;}
+    {category = "hashibins"; package = nixpkgs.lib.hiPrio bitte.legacyPackages.x86_64-linux.nomad;}
+    {category = "hashibins"; package = nixpkgs.lib.hiPrio bitte.legacyPackages.x86_64-linux.vault-bin;}
+  ];
 in {
-  dev = std.lib.mkShell {
+  dev = dev.mkShell {
+    inherit commands;
     imports = [
       cardanoWorld
       capsules.base
@@ -51,7 +62,8 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  devops = std.lib.mkShell {
+  devops = dev.mkShell {
+    inherit commands;
     imports = [
       cardanoWorld
       capsules.base
@@ -60,7 +72,8 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  ops = std.lib.mkShell {
+  ops = dev.mkShell {
+    inherit commands;
     imports = [
       cardanoWorld
       capsules.base
@@ -72,13 +85,13 @@ in {
       inputs.cells.cardano.devshellProfiles.world
     ];
   };
-  monorepo = std.lib.mkShell {
+  monorepo = dev.mkShell {
     imports = [
       cardanoWorld
       inputs.cells.cardano.devshellProfiles.monorepo
     ];
   };
-  minimal = std.lib.mkShell {
+  minimal = dev.mkShell {
     imports = [
       cardanoWorld
       inputs.cells.cardano.devshellProfiles.minimal
