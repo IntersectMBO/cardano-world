@@ -8,7 +8,7 @@
 
     # --- Bitte Stack ----------------------------------------------
     bitte = {
-      url = "github:input-output-hk/bitte";
+      url = "github:input-output-hk/bitte/nixpkgs-2211";
       inputs.capsules.follows = "capsules";
     };
 
@@ -16,7 +16,6 @@
       url = "github:input-output-hk/bitte-cells";
       inputs = {
         std.follows = "std";
-        nixpkgs.follows = "nixpkgs";
         n2c.follows = "n2c";
         data-merge.follows = "data-merge";
         cardano-iohk-nix.follows = "iohk-nix";
@@ -30,12 +29,7 @@
     # --------------------------------------------------------------
 
     # --- Auxiliaries ----------------------------------------------
-
-    # TODO: REMOVE COMMENT ON BITTE BUMP
-    # nixpkgs.follows = "bitte/nixpkgs";
-    # nix.follows = "bitte/nix";
-
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.05";
+    nixpkgs.follows = "bitte/nixpkgs";
     nixpkgs-haskell.follows = "haskell-nix/nixpkgs-unstable";
 
     capsules = {
