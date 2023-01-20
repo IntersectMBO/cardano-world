@@ -12,19 +12,7 @@
       inputs.capsules.follows = "capsules";
     };
 
-    bitte-cells = {
-      url = "github:input-output-hk/bitte-cells";
-      inputs = {
-        std.follows = "std";
-        n2c.follows = "n2c";
-        data-merge.follows = "data-merge";
-        cardano-iohk-nix.follows = "iohk-nix";
-        cardano-node.follows = "cardano-node";
-        cardano-db-sync.follows = "cardano-db-sync";
-        cardano-wallet.follows = "cardano-wallet";
-      };
-    };
-
+    bitte-cells.url = "github:input-output-hk/bitte-cells";
     tullia.url = "github:input-output-hk/tullia";
     # --------------------------------------------------------------
 

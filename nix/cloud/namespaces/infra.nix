@@ -10,7 +10,7 @@
   WALG_S3_PREFIX = "s3://iog-cardano-bitte/backups/infra/walg";
 in {
   documentation = docs.nomadCharts.documentation constants.envs.infra;
-  database = data-merge.merge (patroni.nomadJob.default (constants.envs.infra
+  database = data-merge.merge (patroni.nomadCharts.default (constants.envs.infra
     // {
       datacenters = ["eu-central-1"];
     })) {

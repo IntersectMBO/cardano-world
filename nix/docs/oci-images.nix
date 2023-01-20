@@ -11,7 +11,7 @@ in {
     name = "registry.ci.iog.io/cardano-public-documentation";
     maxLayers = 25;
     layers = [(n2c.buildLayer {deps = [nixpkgs.mdbook];})];
-    contents = [nixpkgs.bashInteractive];
+    copyToRoot = [nixpkgs.bashInteractive];
     config.Cmd = [
       "${entrypoints.public-documentation-serve}/bin/entrypoint"
     ];
