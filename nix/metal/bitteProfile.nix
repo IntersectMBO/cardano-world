@@ -29,11 +29,6 @@ in {
   in {
     secrets.encryptedRoot = ./encrypted;
 
-    nix = {
-      binaryCaches = ["https://cache.iog.io"];
-      binaryCachePublicKeys = ["hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="];
-    };
-
     cluster = {
       s3CachePubKey = lib.fileContents ./encrypted/nix-public-key-file;
       flakePath = "${inputs.self}";
@@ -215,10 +210,15 @@ in {
           modules = [
             (bitte + /profiles/monitoring.nix)
             {
-              services.loki.configuration.table_manager = {
-                retention_deletes_enabled = true;
-                retention_period = "28d";
-              };
+              # No longer effective; needs manual purging until a monitoring PR update
+              # services.loki.configuration.table_manager = {
+              #   retention_deletes_enabled = true;
+              #   retention_period = "28d";
+              # };
+
+              # Change to true if/when we want tempo enabled for this cluster.
+              # See also corresponding tempo option on the routing server.
+              services.monitoring.useTempo = false;
             }
           ];
         };
@@ -242,9 +242,11 @@ in {
             (bitte + /profiles/routing.nix)
             {
               services.oauth2_proxy.email.domains = ["iohk.io"];
-              services.traefik.acmeDnsCertMgr = false;
-              services.traefik.useVaultBackend = true;
-              services.traefik.useDockerRegistry = false;
+
+              # Change to true if/when we want tempo enabled for this cluster.
+              # See also corresponding tempo option on the monitoring server.
+              services.traefik.enableTracing = false;
+
               services.traefik.staticConfigOptions = {
                 entryPoints =
                   lib.pipe {

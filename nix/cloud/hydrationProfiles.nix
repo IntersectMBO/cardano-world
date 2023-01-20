@@ -30,6 +30,7 @@ in {
       extraAcmeSANs = [];
       kms = "arn:aws:kms:eu-central-1:052443713844:key/c1d7a205-5d3d-4ca7-8842-9f7fb2ccc847";
       s3Bucket = "iog-cardano-bitte";
+      s3Tempo = "iog-cardano-tempo";
     };
     services = {
       nomad.namespaces = {
