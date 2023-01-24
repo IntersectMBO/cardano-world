@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs;
+  inherit (inputs) openziti nixpkgs;
 in {
   default = {
     self,
@@ -24,6 +24,10 @@ in {
         http
         https
         routing
+        ziti-controller-mgmt
+        ziti-controller-rest
+        ziti-router-edge
+        ziti-router-fabric
         ;
     };
   in {
@@ -33,6 +37,17 @@ in {
       s3CachePubKey = lib.fileContents ./encrypted/nix-public-key-file;
       flakePath = "${inputs.self}";
       vbkBackend = "local";
+      infraType = "awsExt";
+      transitGateway = {
+        enable = true;
+        transitRoutes = [
+          # Equinix, cardano project
+          {
+            gatewayCoreNodeName = "zt";
+            cidrRange = "10.12.171.0/24";
+          }
+        ];
+      };
 
       autoscalingGroups = let
         defaultModules = [(bitte + "/profiles/client.nix")];
@@ -316,6 +331,116 @@ in {
             throughput = 125; # 125..1000 MiB/s
           };
         };
+
+        zt = {
+          # https://support.netfoundry.io/hc/en-us/articles/360025875331-Edge-Router-VM-Sizing-Guide
+          instanceType = "c5.large";
+          privateIP = "172.16.0.100";
+          subnet = cluster.vpc.subnets.core-1;
+          volumeSize = 100;
+          route53.domains = ["zt.${cluster.domain}"];
+          sourceDestCheck = false;
+
+          modules = [
+            inputs.bitte.profiles.common
+            inputs.bitte.profiles.consul-common
+            inputs.bitte.profiles.vault-cache
+            openziti.nixosModules.ziti-controller
+            openziti.nixosModules.ziti-router
+            openziti.nixosModules.ziti-console
+            openziti.nixosModules.ziti-edge-tunnel
+            ./ziti.nix
+            ./ziti-register.nix
+          ];
+
+          securityGroupRules = {
+            inherit
+              (sr)
+              internal
+              internet
+              ssh
+              ziti-controller-mgmt
+              ziti-controller-rest
+              ziti-router-edge
+              ziti-router-fabric
+              ;
+          };
+        };
+      };
+
+      awsExtNodes = let
+        # For each new machine provisioning to equinix:
+        #   1) TF plan/apply in the `equinix` workspace to get the initial machine provisioning done after declaration
+        #      `nix run .#clusters.cardano.tf.equinix.[plan|apply]
+        #   2) Record the privateIP attr that the machine is assigned in the nix metal code
+        #   3) Add the provisioned machine to ssh config for deploy-rs to utilize
+        #   4) Update the encrypted ssh config file with the new machine so others can easily pull the ssh config
+        #   5) Deploy again with proper private ip, provisioning configuration and bitte stack modules applied
+        #      `deploy -s .#$CLUSTER_NAME-$MACHINE_NAME --auto-rollback false --magic-rollback false
+        deployType = "awsExt";
+        node_class = "equinix";
+        primaryInterface = "bond0";
+        role = "client";
+
+        # Equinix TF specific attrs
+        project = config.cluster.name;
+        plan = "m3.large.x86";
+
+        baseEquinixMachineConfig = machineName:
+          if builtins.pathExists ./equinix/${machineName}/configuration.nix != false
+          then [./equinix/${machineName}/configuration.nix]
+          else [];
+
+        baseEquinixModuleConfig = [
+          (bitte + /profiles/client.nix)
+          (bitte + /profiles/multicloud/aws-extended.nix)
+          (bitte + /profiles/multicloud/equinix.nix)
+          openziti.nixosModules.ziti-edge-tunnel
+          ({
+            pkgs,
+            lib,
+            config,
+            ...
+          }: {
+            services.ziti-edge-tunnel.enable = true;
+
+            # Temporarily disable nomad to avoid conflict with buildkite resource consumption.
+            services.nomad.enable = lib.mkForce false;
+
+            services.resolved = {
+              # Vault agent does not seem to recognize successful lookups while resolved is in dnssec allow-downgrade mode
+              dnssec = "false";
+
+              # Ensure dnsmasq stays as the primary resolver while resolved is in use
+              extraConfig = "Domains=~.";
+            };
+
+            # Utilize swap only as a last resort
+            boot.kernel.sysctl."vm.swappiness" = 1;
+
+            # Extra prem diagnostic utils
+            environment.systemPackages = with pkgs; [
+              conntrack-tools
+              ethtool
+              icdiff
+              iptstate
+              tshark
+            ];
+          })
+        ];
+
+        mkExplorer = name: privateIP: extra: lib.recursiveUpdate {
+          inherit deployType node_class primaryInterface role privateIP;
+          equinix = {inherit plan project;};
+
+          modules =
+            baseEquinixModuleConfig
+            ++ (baseEquinixMachineConfig name);
+        } extra;
+      in {
+        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" {};
+        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" {};
+        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" {};
       };
     };
   };

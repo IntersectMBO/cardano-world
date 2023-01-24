@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) capsules bitte-cells bitte nixpkgs;
+  inherit (inputs) capsules bitte-cells bitte deploy-rs nixpkgs;
   inherit (inputs.std) std;
   inherit (inputs.std.lib) dev;
   inherit (inputs.cells) cardano;
@@ -73,7 +73,6 @@ in {
     ];
   };
   ops = dev.mkShell {
-    inherit commands;
     imports = [
       cardanoWorld
       capsules.base
@@ -83,6 +82,9 @@ in {
       capsules.tools
       bitte-cells.patroni.devshellProfiles.default
       inputs.cells.cardano.devshellProfiles.world
+    ];
+    commands = commands ++ [
+      {category = "metal"; package = deploy-rs.defaultPackage;}
     ];
   };
   monorepo = dev.mkShell {

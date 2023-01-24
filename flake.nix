@@ -31,6 +31,9 @@
       url = "github:edolstra/flake-compat";
       flake = false;
     };
+
+    openziti.url = "github:johnalotoski/openziti-bins";
+    deploy-rs.url = "github:serokell/deploy-rs";
     # --------------------------------------------------------------
 
     # --- App Supporting Inputs ------------------------------------
