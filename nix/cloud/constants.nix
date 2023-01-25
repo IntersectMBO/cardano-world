@@ -21,7 +21,6 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
-
     shelley-qa = {
       namespace = "shelley-qa";
       domain = "shelley-qa.${baseDomain}";
@@ -49,6 +48,12 @@ in {
     pv8 = {
       namespace = "pv8";
       domain = "pv8.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
+    private = {
+      namespace = "private";
+      domain = "private.${baseDomain}";
       nodeClass = "qa";
       scaling = 3;
     };

@@ -23,6 +23,7 @@ in {
       adminNames = [
         "samuel.leathers"
         "david.arnold"
+        "john.lotoski"
       ];
       developerGithubNames = [];
       developerGithubTeamNames = ["cardano-devs"];
@@ -41,6 +42,7 @@ in {
         preprod.description = "Cardano Pre-Production Environment";
         preview.description = "Cardano Preview Environment";
         pv8.description = "Cardano Mixed Environment";
+        private.description = "Cardano Private Testing Environment";
       };
     };
 
@@ -71,6 +73,10 @@ in {
             intentions = "write";
           };
           service_prefix."pv8-" = {
+            policy = "write";
+            intentions = "write";
+          };
+          service_prefix."private-" = {
             policy = "write";
             intentions = "write";
           };
@@ -148,12 +154,24 @@ in {
               "alloc-lifecycle"
             ];
           };
+          namespace.private = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           host_volume."mainnet-*".policy = "write";
           host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
           host_volume."preprod-*".policy = "write";
           host_volume."preview-*".policy = "write";
           host_volume."pv8-*".policy = "write";
+          host_volume."private-*".policy = "write";
         };
       };
     };

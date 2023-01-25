@@ -149,6 +149,16 @@ in {
                     ["pv8-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["private-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["private-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
                   # for scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];
@@ -270,6 +280,7 @@ in {
                     shelley-qa = 30003;
                     vasil-dev = 30001;
                     pv8 = 30006;
+                    private = 30007;
                   } [
                     (
                       lib.mapAttrsToList (
