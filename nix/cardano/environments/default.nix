@@ -224,7 +224,6 @@
     };
     private = rec {
       useByronWallet = false;
-      # TODO: verify bool
       private = true;
       relaysNew = "private-node.world.dev.cardano.org";
       explorerUrl = "https://private-explorer.world.dev.cardano.org";
@@ -241,7 +240,6 @@
       ];
       submitApiConfig = mkSubmitApiConfig "private" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "private" nodeConfig;
-      # TODO: verify value
       usePeersFromLedgerAfterSlot = 32000;
     };
 
