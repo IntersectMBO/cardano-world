@@ -395,10 +395,10 @@ in {
 
         # Equinix TF specific attrs
         project = config.cluster.name;
-        plan = "m3.large.x86";
+        plan = lib.mkDefault "m3.large.x86";
 
         baseEquinixMachineConfig = machineName:
-          if builtins.pathExists ./equinix/${machineName}/configuration.nix != false
+          if builtins.pathExists ./equinix/${machineName}/configuration.nix
           then [./equinix/${machineName}/configuration.nix]
           else [];
 
@@ -440,14 +440,17 @@ in {
           })
         ];
 
-        mkExplorer = name: privateIP: extra: lib.recursiveUpdate {
-          inherit deployType node_class primaryInterface role privateIP;
-          equinix = {inherit plan project;};
+        mkExplorer = name: privateIP: extra: lib.mkMerge [
+          {
+            inherit deployType node_class primaryInterface role privateIP;
+            equinix = {inherit plan project;};
 
-          modules =
-            baseEquinixModuleConfig
-            ++ (baseEquinixMachineConfig name);
-        } extra;
+            modules =
+              baseEquinixModuleConfig
+              ++ (baseEquinixMachineConfig name);
+          }
+          extra
+        ];
       in {
         explorer-1 = mkExplorer "explorer-1" "10.12.171.129" {};
         # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" {};
