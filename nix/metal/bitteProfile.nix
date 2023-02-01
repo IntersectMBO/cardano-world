@@ -440,6 +440,22 @@ in {
           })
         ];
 
+        baseExplorerModuleConfig = privateIP: [
+          (import ./explorer/base-service.nix privateIP)
+          ({pkgs, config, ...}: let
+            cfg = config.services.cardano-node;
+          in {
+            services.cardano-node = {
+              topology = builtins.toFile "topology.yaml"
+                (builtins.toJSON {Producers = [{addr = "europe.relays-new.cardano-mainnet.iohk.io"; port = cfg.port; valency = 2;}];});
+
+              # m3.large.x86 has 64 logical cpu and 256 GB RAM
+              totalCpuCores = 64;
+              totalMaxHeapSizeMbytes = 256 * 1024 * 0.15;
+            };
+          })
+        ];
+
         mkExplorer = name: privateIP: extra: lib.mkMerge [
           {
             inherit deployType node_class primaryInterface role privateIP;
@@ -447,7 +463,8 @@ in {
 
             modules =
               baseEquinixModuleConfig
-              ++ (baseEquinixMachineConfig name);
+              ++ (baseEquinixMachineConfig name)
+              ++ (baseExplorerModuleConfig privateIP);
           }
           extra
         ];
