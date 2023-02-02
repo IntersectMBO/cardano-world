@@ -38,6 +38,7 @@ let
       BYRON_GENESIS_PATH = toString environmentConfig.nodeConfig.ByronGenesisFile;
     }));
 
+  nodePkgs = self.inputs.cardano-node.legacyPackages.${cfg.system}.cardanoNodePackages;
 in
 {
   imports = [(self.inputs.cardano-node.outPath + "/nix/nixos")];
@@ -63,7 +64,7 @@ in
   };
 
   config = {
-    environment.systemPackages = with self.${cfg.system}.cardano.packages; [ cardano-cli cardano-ping ];
+    environment.systemPackages = with nodePkgs; [ cardano-cli cardano-ping ];
     environment.variables = environmentVariables // {CARDANO_NODE_SOCKET_PATH = cfg.socketPath;};
 
     networking.firewall.allowedTCPPorts = [nodePort];
@@ -78,7 +79,7 @@ in
       environment = environmentName;
       environments.${environmentName} = environmentConfig;
 
-      cardanoNodePackages = lib.mkDefault self.${cfg.system}.cardano.packages;
+      cardanoNodePackages = lib.mkDefault nodePkgs;
 
       hostAddr = privateIP;
 
@@ -114,7 +115,7 @@ in
         serviceConfig = {
           # Allow time to uncompress when restoring db
           TimeoutStartSec = "1h";
-          # MemoryMax = "${toString (1.15 * cfg.totalMaxHeapSizeMbytes / cfg.instances)}M";
+          MemoryMax = "${toString (1.15 * cfg.totalMaxHeapSizeMbytes / cfg.instances)}M";
           LimitNOFILE = "65535";
         };
       };

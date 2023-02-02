@@ -442,10 +442,14 @@ in {
 
         baseExplorerModuleConfig = privateIP: [
           (import ./explorer/base-service.nix privateIP)
+          ./explorer/db-sync.nix
+          ./explorer/explorer.nix
+          (bitte + /modules/zfs-client-options.nix)
           ({pkgs, config, ...}: let
             cfg = config.services.cardano-node;
           in {
             services.cardano-node = {
+              # m3.large.x86 in am6 facility
               topology = builtins.toFile "topology.yaml"
                 (builtins.toJSON {Producers = [{addr = "europe.relays-new.cardano-mainnet.iohk.io"; port = cfg.port; valency = 2;}];});
 
@@ -453,6 +457,11 @@ in {
               totalCpuCores = 64;
               totalMaxHeapSizeMbytes = 256 * 1024 * 0.15;
             };
+
+            services.cardano-db-sync.restoreSnapshot =
+              "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13/db-sync-snapshot-schema-13-block-8291499-x86_64.tgz";
+
+            services.zfs-client-options.enable = lib.mkForce true;
           })
         ];
 
