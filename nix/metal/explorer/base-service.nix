@@ -8,43 +8,44 @@ let
   cardanoNodePrometheusExporterPort = 12798;
 
   environments = self.${cfg.system}.cardano.environments;
-  environmentName = "mainnet";
-  environmentConfig = environments.${environmentName};
+  environmentConfig = environments.${cfg.environmentName};
 
-  domain = "cardano-mainnet.iohk.io";
+  environmentVariables = let
+    genesisFile = environmentConfig.nodeConfig.ShelleyGenesisFile;
+    genesis =  builtins.fromJSON (builtins.readFile genesisFile);
+  in rec {
+    ENVIRONMENT = cfg.environmentName;
+    RELAYS = environmentConfig.relaysNew;
+    DOMAIN = environmentConfig.domain;
 
-  environmentVariables = lib.optionalAttrs (builtins.pathExists ./globals.nix) (
-    let
-      genesisFile = environmentConfig.nodeConfig.ShelleyGenesisFile;
-      genesis =  builtins.fromJSON (builtins.readFile genesisFile);
-    in rec {
-      ENVIRONMENT = environmentName;
-      RELAYS = environmentConfig.relaysNew;
-      DOMAIN = domain;
+    GENESIS_PATH = toString genesisFile;
 
-      GENESIS_PATH = toString genesisFile;
+    # Network parameters.
+    NETWORK_MAGIC = toString genesis.networkMagic;
+    EPOCH_LENGTH = toString genesis.epochLength;
+    SLOT_LENGTH = toString genesis.slotLength;
+    K = toString genesis.securityParam;
+    F = toString genesis.activeSlotsCoeff;
+    MAX_SUPPLY = toString genesis.maxLovelaceSupply;
+  } // (lib.optionalAttrs (builtins.pathExists genesisFile) {
+    SYSTEM_START = genesis.systemStart;
+    # End: Network parameters.
+  }) // (lib.optionalAttrs (environmentConfig.nodeConfig ? ByronGenesisFile) {
+    BYRON_GENESIS_PATH = toString environmentConfig.nodeConfig.ByronGenesisFile;
+  });
 
-      # Network parameters.
-      NETWORK_MAGIC = toString genesis.networkMagic;
-      EPOCH_LENGTH = toString genesis.epochLength;
-      SLOT_LENGTH = toString genesis.slotLength;
-      K = toString genesis.securityParam;
-      F = toString genesis.activeSlotsCoeff;
-      MAX_SUPPLY = toString genesis.maxLovelaceSupply;
-    } // (lib.optionalAttrs (builtins.pathExists genesisFile) {
-      SYSTEM_START = genesis.systemStart;
-      # End: Network parameters.
-    }) // (lib.optionalAttrs (environmentConfig.nodeConfig ? ByronGenesisFile) {
-      BYRON_GENESIS_PATH = toString environmentConfig.nodeConfig.ByronGenesisFile;
-    }));
-
-  nodePkgs = self.inputs.cardano-node.legacyPackages.${cfg.system}.cardanoNodePackages;
+  nodePkgs = self.inputs.explorer-cardano-node.legacyPackages.${cfg.system}.cardanoNodePackages;
 in
 {
-  imports = [(self.inputs.cardano-node.outPath + "/nix/nixos")];
+  imports = [(self.inputs.explorer-cardano-node + "/nix/nixos")];
 
   options = {
     services.cardano-node = {
+      environmentName = mkOption {
+        # Required to build the correct environment
+        type = types.str;
+      };
+
       totalCpuCores = mkOption {
         type = types.int;
         default = 2 * cfg.instances;
@@ -76,8 +77,8 @@ in
       # https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime_control.html
       rtsArgs = [ "-N${toString (cfg.totalCpuCores / cfg.instances)}" "-A16m" "-qg" "-qb" "-M${toString (cfg.totalMaxHeapSizeMbytes / cfg.instances)}M" ];
 
-      environment = environmentName;
-      environments.${environmentName} = environmentConfig;
+      environment = cfg.environmentName;
+      environments.${cfg.environmentName} = environmentConfig;
 
       cardanoNodePackages = lib.mkDefault nodePkgs;
 
@@ -127,7 +128,7 @@ in
       preStart = ''
         cd $STATE_DIRECTORY
         if [ -f db-restore.tar.gz ]; then
-          rm -rf db-${environmentName}*
+          rm -rf db-${cfg.environmentName}*
           tar xzf db-restore.tar.gz
           rm db-restore.tar.gz
         fi

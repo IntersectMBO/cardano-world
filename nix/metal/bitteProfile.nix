@@ -446,20 +446,32 @@ in {
           ./explorer/explorer.nix
           (bitte + /modules/zfs-client-options.nix)
           ({pkgs, config, ...}: let
-            cfg = config.services.cardano-node;
+            environmentName = "mainnet";
           in {
-            services.cardano-node = {
+            services.cardano-node = let
+              cfg = config.services.cardano-node;
+            in {
+              inherit environmentName;
+
               # m3.large.x86 in am6 facility
               topology = builtins.toFile "topology.yaml"
                 (builtins.toJSON {Producers = [{addr = "europe.relays-new.cardano-mainnet.iohk.io"; port = cfg.port; valency = 2;}];});
 
-              # m3.large.x86 has 64 logical cpu and 256 GB RAM
+              # m3.large.x86 has 64 logical cpu and 256 GB RAM, allocate RAM 15% for cardano-node
               totalCpuCores = 64;
               totalMaxHeapSizeMbytes = 256 * 1024 * 0.15;
             };
 
-            services.cardano-db-sync.restoreSnapshot =
-              "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13/db-sync-snapshot-schema-13-block-8291499-x86_64.tgz";
+            services.cardano-db-sync = {
+              inherit environmentName;
+              restoreSnapshot =
+                "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13/db-sync-snapshot-schema-13-block-8291499-x86_64.tgz";
+            };
+
+            services.explorer = {
+              inherit environmentName;
+              totalMachineMemoryGB = 256;
+            };
 
             services.zfs-client-options.enable = lib.mkForce true;
           })

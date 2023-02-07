@@ -7,16 +7,15 @@ let
 
   cardanoNodeConfigPath = builtins.toFile "cardano-node-config.json" (builtins.toJSON nodeCfg.nodeConfig);
 
-  environments = self.x86_64-linux.cardano.environments;
-  environmentName = "mainnet";
-  environmentConfig = environments.${environmentName};
+  environments = self.${cfg.system}.cardano.environments;
+  environmentConfig = environments.${cfg.environmentName};
 
-  dbSyncPkgs = self.inputs.cardano-db-sync.legacyPackages.x86_64-linux;
+  dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.${cfg.system};
   inherit (dbSyncPkgs) cardano-db-sync cardano-db-tool;
 in {
 
   imports = [
-    (self.inputs.cardano-db-sync.outPath + "/nix/nixos")
+    (self.inputs.explorer-cardano-db-sync + "/nix/nixos")
     ./cardano-postgres.nix
   ];
 
@@ -25,6 +24,16 @@ in {
       additionalDbUsers = mkOption {
         type = types.listOf types.str;
         default = [];
+      };
+
+      environmentName = mkOption {
+        # Required to build the correct environment
+        type = types.str;
+      };
+
+      system = mkOption {
+        type = types.str;
+        default = "x86_64-linux";
       };
     };
   };
@@ -66,7 +75,7 @@ in {
       inherit dbSyncPkgs;
       enable = true;
       package = cardano-db-sync;
-      cluster = environmentName;
+      cluster = cfg.environmentName;
       environment = environmentConfig;
       socketPath = nodeCfg.socketPath;
       explorerConfig = environmentConfig.dbSyncConfig;
