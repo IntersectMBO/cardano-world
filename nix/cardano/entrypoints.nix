@@ -11,6 +11,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
   packages = if args ? evalSystem then packages'.override { inherit evalSystem; } else packages';
 
   prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
+  prelude-runtime-nokv = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd];
 
   prelude = ''
     [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
@@ -41,6 +42,41 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       load_kv_config
       [ "''${producer:-}" == "1" ] && load_kv_secrets
 
+    # CASE: permissioned short running environment
+    else
+      echo "Using custom config: $NODE_CONFIG ..." >&2
+
+      [ -z "''${NODE_CONFIG:-}" ] && echo "NODE_CONFIG env var must be set -- aborting" && exit 1
+    fi
+  '';
+
+  # no legacy-kv-config-instrumentation functions && load_kv_secrets
+  prelude-nokv = ''
+    [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
+
+    mkdir -p "$DATA_DIR"
+    mkdir -p "$DATA_DIR/config"
+    chmod -R +w "$DATA_DIR/config"
+    mkdir -p "$DATA_DIR/config/custom"
+    chmod -R +w "$DATA_DIR/config/custom"
+
+    # the menu of environments that we ship as built-in envs
+    ${library.copyEnvsTemplate environments}
+
+    # CASE: built-in environment
+    if [ -n "''${ENVIRONMENT:-}" ]; then
+      echo "Using the preset environment $ENVIRONMENT ..." >&2
+
+      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
+      NODE_TOPOLOGY="''${NODE_TOPOLOGY:-$DATA_DIR/config/$ENVIRONMENT/topology.json}"
+
+    # CASE: premissioned long running environment
+    # elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
+    #   echo "Using a long running environment as defined by kv (consul & vault) ..." >&2
+    #
+    #   load_kv_config
+    #   [ "''${producer:-}" == "1" ] && load_kv_secrets
+    #
     # CASE: permissioned short running environment
     else
       echo "Using custom config: $NODE_CONFIG ..." >&2
@@ -358,6 +394,74 @@ in {
       fi
     '';
   };
+
+  cardano-node-nokv = writeShellApplication {
+    name = "entrypoint";
+    runtimeInputs = prelude-runtime-nokv ++ pull-snapshot-deps;
+    debugInputs = [packages.cardano-cli packages.cardano-node packages.cardano-ping];
+    text = ''
+      ${prelude-nokv}
+
+      DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
+
+      # Grap a snapshot
+      ${pull-snapshot}
+      if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
+        # we are using a standard environment that already has known snapshots
+        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+      fi
+      if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
+        pull_snapshot
+        extract_snapshot_tgz_to "$DB_DIR/node" 1
+      fi
+
+      # Build args array
+      args+=("--config" "$NODE_CONFIG")
+      args+=("--database-path" "$DB_DIR/node")
+      [ -n "''${HOST_ADDR:-}" ] && args+=("--host-addr" "$HOST_ADDR")
+      [ -n "''${HOST_IPV6_ADDR:-}" ] && args+=("--host-ipv6-addr" "$HOST_IPV6_ADDR")
+      [ -n "''${PORT:-}" ] && args+=("--port" "$PORT")
+      [ -n "''${SOCKET_PATH:-}" ] && args+=("--socket-path" "$SOCKET_PATH")
+
+      # Ignore RTS flags for now. Need to figure out best way to pass a list
+      #[ -n "''${RTS_FLAGS:-}" ] && args+=$RTS_FLAGS
+
+      [ -n "''${BYRON_DELEG_CERT:-}" ] && args+=("--byron-delegation-certificate" "$BYRON_DELEG_CERT")
+      [ -n "''${BYRON_SIGNING_KEY:-}" ] && args+=("--byron-signing-key" "$BYRON_SIGNING_KEY")
+      [ -n "''${SHELLEY_KES_KEY:-}" ] && args+=("--shelley-kes-key" "$SHELLEY_KES_KEY")
+      [ -n "''${SHELLEY_VRF_KEY:-}" ] && args+=("--shelley-vrf-key" "$SHELLEY_VRF_KEY")
+      [ -n "''${SHELLEY_OPCERT:-}" ] && args+=("--shelley-operational-certificate" "$SHELLEY_OPCERT")
+
+      # if [ -z "''${NODE_TOPOLOGY:-}" ]; then
+      #   echo "Doing legacy service discovery ..." >&2
+      #   srv_discovery
+      #   args+=("--topology" "$NODE_TOPOLOGY")
+      #
+      #   # turn on bash's job control
+      #   set -m
+      #
+      #   # Define handler for SIGINT
+      #   trap "kill" "''${sid[@]}" INT
+      #
+      #   # SIGHUP reloads --topology
+      #   echo Running node in background >&2
+      #   ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
+      #   CARDANO_PID="$!"
+      #   sid=("$CARDANO_PID")
+      #   echo Running service discovery loop >&2
+      #   watch_srv_discovery "$CARDANO_PID"
+      # else
+      #   [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
+      #   args+=("--topology" "$NODE_TOPOLOGY")
+      #   exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
+      # fi
+      args+=("--topology" "$NODE_TOPOLOGY")
+      exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
+    '';
+  };
+
 
   cardano-tracer = writeShellApplication {
     runtimeInputs = [nixpkgs.coreutils nixpkgs.jq];

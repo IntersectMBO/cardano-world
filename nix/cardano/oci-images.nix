@@ -33,6 +33,21 @@ in {
     ];
     config.User = "1000:1000";
   };
+  cardano-node-nokv = buildDebugImage entrypoints.cardano-node {
+    # name = "registry.ci.iog.io/cardano-node-nokv";
+    name = "docker.io/kranium/cardano-node-nokv";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = entrypoints.cardano-node-nokv.runtimeInputs;})
+      (n2c.buildLayer {deps = [packages.cardano-node];})
+    ];
+    copyToRoot = [nixpkgs.bashInteractive nixpkgs.iana-etc packages.cardano-node packages.cardano-cli];
+    config.Cmd = [
+      "${entrypoints.cardano-node-nokv}/bin/entrypoint"
+    ];
+    # FIXME: not sure how to run this with docker locally with perms
+    # config.User = "1000:1000";
+  };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
     maxLayers = 25;
