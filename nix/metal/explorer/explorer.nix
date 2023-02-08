@@ -1,17 +1,9 @@
-{self, pkgs, config, lib, etcEncrypted, ...}:
+{self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
   inherit (lib) mkOption types;
-  inherit (self.${cfg.system}.cardano.library) mkEdgeTopology;
+  inherit (self.${nodeCfg.system}.cardano.library) mkEdgeTopology;
 
-  # maintenanceMode = false;
-  # getSrc = name: variant.${name} or sourcePaths.${name};
-
-  # inherit (dbSyncPkgs) cardanoDbSyncHaskellPackages;
-  # inherit (cardanoDbSyncHaskellPackages.cardano-db-sync-extended.components.exes) cardano-db-sync-extended;
-  # inherit (cardanoNodePkgs) cardano-node cardano-cli;
-  # inherit (cardanoDbSyncHaskellPackages.cardano-db-tool.components.exes) cardano-db-tool;
-
-  # cardano-explorer-app-pkgs = import (getSrc "cardano-explorer-app");
+  maintenanceMode = false;
 
   deployType = config.currentCoreNode.deployType or config.currentAwsAutoScalingGroup.deployType;
   isSops = builtins.elem deployType ["aws" "awsExt"];
@@ -21,17 +13,23 @@ let
   nodeCfg = config.services.cardano-node;
   ogmiosCfg = config.services.cardano-ogmios;
 
-  # Check for extraneous
   environments = self.${nodeCfg.system}.cardano.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.x86_64-linux;
+  explorerAppPkgs = (import (self.inputs.explorer-cardano-explorer-app + "/nix/pkgs.nix") {inherit (nodeCfg) system;}).packages;
+  graphqlPkgs = self.inputs.explorer-cardano-graphql.${nodeCfg.system}.cardano-graphql.packages;
+  hasuraPkgs = self.inputs.explorer-cardano-graphql.${nodeCfg.system}.hasura.packages;
   nodePkgs = self.inputs.explorer-cardano-node.legacyPackages.${nodeCfg.system}.cardanoNodePackages;
+  opsPkgs = import (self.inputs.explorer-cardano-ops + "/nix") {inherit (nodeCfg) system;};
+  rosettaPkgs = self.inputs.explorer-cardano-rosetta.${nodeCfg.system}.cardano-rosetta.packages;
 
   cardanoNodeConfigPath = builtins.toFile "cardano-node-config.json" (builtins.toJSON nodeCfg.nodeConfig);
 
   inherit (dbSyncPkgs) cardano-smash-server-no-basic-auth;
   inherit (nodePkgs) cardano-node cardano-cli;
+  inherit (graphqlPkgs) cardano-graphql persistgraphql;
+  inherit (hasuraPkgs) graphql-engine hasura-cli hasura-cli-ext;
 in {
   imports = [
     (self.inputs.explorer-cardano-graphql + "/nix/nixos")
@@ -46,9 +44,22 @@ in {
         type = types.str;
       };
 
+      explorerHostName = mkOption {
+        # Required to build the correct environment
+        type = types.str;
+        default = if cfg.environmentName == "mainnet"
+          then "explorer.cardano.org"
+          else "explorer.${environmentConfig.domain}";
+      };
+
       totalMachineMemoryGB = mkOption {
         # Must be supplied to adjust varnish cache memory appropriately.
         type = types.int;
+      };
+
+      withSmash = mkOption {
+        type = types.bool;
+        default = false;
       };
 
       withSubmitApi = mkOption {
@@ -68,6 +79,7 @@ in {
 
     services.varnish = {
       enable = true;
+      package = opsPkgs.varnish70Packages.varnish;
       extraCommandLine = "-t ${toString (30 * 24 * 3600)} -s malloc,${toString (cfg.totalMachineMemoryGB * 1024 / 4)}M";
       config = ''
         vcl 4.1;
@@ -143,25 +155,40 @@ in {
       hostAddr = "127.0.0.1";
     };
 
-    # services.graphql-engine = {
-    #   enable = true;
-    # };
+    services.graphql-engine = {
+      enable = true;
+      package = graphql-engine;
+    };
 
-    # services.cardano-graphql = {
-    #   enable = true;
-    #   inherit cardanoNodeConfigPath;
-    #   allowListPath = cardano-explorer-app-pkgs.allowList;
-    #   metadataServerUri = globals.environmentConfig.metadataUrl or null;
-    #   ogmiosHost = ogmiosCfg.hostAddr;
-    #   ogmiosPort = ogmiosCfg.port;
-    #   #loggerMinSeverity = "trace";
-    # } // lib.optionalAttrs (options.services.cardano-graphql ? genesisByron) {
-    #   genesisByron = nodeCfg.nodeConfig.ByronGenesisFile;
-    #   genesisShelley = nodeCfg.nodeConfig.ShelleyGenesisFile;
-    # };
+    services.cardano-graphql = {
+      enable = true;
+      inherit cardanoNodeConfigPath;
+      frontendPkg = cardano-graphql;
+      persistPkg = persistgraphql;
+      allowListPath = explorerAppPkgs.allowList;
+      ogmiosHost = ogmiosCfg.hostAddr;
+      ogmiosPort = ogmiosCfg.port;
+      #loggerMinSeverity = "trace";
+    } // lib.optionalAttrs (options.services.cardano-graphql ? genesisByron) {
+      genesisByron = nodeCfg.nodeConfig.ByronGenesisFile;
+      genesisShelley = nodeCfg.nodeConfig.ShelleyGenesisFile;
+    };
+
+    services.cardano-graphql-background = {
+      enable = true;
+      frontendPkg = cardano-graphql;
+      persistPkg = persistgraphql;
+      hasuraCliPkg = hasura-cli;
+      hasuraCliExtPkg = hasura-cli-ext;
+      metadataServerUri = environmentConfig.metadataUrl or null;
+      ogmiosHost = ogmiosCfg.hostAddr;
+      ogmiosPort = ogmiosCfg.port;
+      loggerMinSeverity = "debug";
+    };
 
     services.cardano-rosetta-server = {
       enable = true;
+      package = rosettaPkgs.cardano-rosetta-server;
       topologyFilePath = mkEdgeTopology {
         edgeNodes = map (p: p.addr) nodeCfg.producers;
         port = nodeCfg.port;
@@ -201,31 +228,37 @@ in {
       SupplementaryGroups = "cardano-node";
     };
 
-    # systemd.services.cardano-graphql = {
-    #   environment = {
-    #     HOME = "/run/${config.systemd.services.cardano-graphql.serviceConfig.RuntimeDirectory}";
-    #   };
-    #   serviceConfig = {
-    #     RuntimeDirectory = "cardano-graphql";
-    #     DynamicUser = true;
+    systemd.services.cardano-graphql = {
+      environment = {
+        HOME = "/run/${config.systemd.services.cardano-graphql.serviceConfig.RuntimeDirectory}";
+      };
+      serviceConfig = {
+        LimitNOFILE = 65535;
+        RuntimeDirectory = "cardano-graphql";
+        DynamicUser = true;
+        Restart = "always";
+        RestartSec = "5";
+      };
+    };
 
-    #     # Required due to graphql-engine RuntimeMaxSec restarts for issue noted below
-    #     Restart = "always";
-    #     RestartSec = "30s";
-    #   };
-    # };
+    # Required due to graphql-engine RuntimeMaxSec restarts for issue noted below
+    systemd.services.cardano-graphql-background = {
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = "5";
+      };
+    };
 
-    # systemd.services.graphql-engine = {
-    #   environment = {
-    #     HASURA_GRAPHQL_LOG_LEVEL = "warn";
-    #   };
-    #   serviceConfig = {
-    #     # Force regular restart (every 3 hours) due to https://github.com/hasura/graphql-engine/issues/3388
-    #     # RuntimeMaxSec = 12 * 60 * 60;
-    #     #MemoryMax = "20G";
-    #     # TODO: run under dynamic user (remove sudo use)
-    #   };
-    # };
+    systemd.services.graphql-engine = {
+      environment = {
+        HASURA_GRAPHQL_LOG_LEVEL = "warn";
+      };
+      serviceConfig = {
+        LimitNOFILE = 65535;
+        Restart = "always";
+        RestartSec = "5";
+      };
+    };
 
     systemd.services.cardano-submit-api.serviceConfig = lib.mkIf cfg.withSubmitApi {
       # Put cardano-submit-api in "cardano-node" group so that it can write socket file:
@@ -251,10 +284,7 @@ in {
 
     users.groups.dump-registered-relays-topology = {};
 
-    systemd.services.dump-registered-relays-topology =
-    # TODO: switch back to gated
-    # in lib.mkIf config.services.nginx.enable {
-    {
+    systemd.services.dump-registered-relays-topology = lib.mkIf config.services.nginx.enable {
       path = with pkgs; config.environment.systemPackages
         ++ [ config.services.postgresql.package jq netcat curl dnsutils ];
       environment = config.environment.variables;
@@ -390,8 +420,6 @@ in {
         done
       '';
 
-      # 3 failures at max within 24h:
-      startLimitIntervalSec = 24 * 60 * 60;
       serviceConfig = {
         User = "dump-registered-relays-topology";
         # Need for cardano-cli:
@@ -403,259 +431,256 @@ in {
       };
     };
 
-    # services.nginx = {
-    #   enable = true;
-    #   package = nginxExplorer;
-    #   eventsConfig = ''
-    #     worker_connections 4096;
-    #   '';
-    #   appendConfig = ''
-    #     worker_rlimit_nofile 16384;
-    #   '';
-    #   recommendedGzipSettings = true;
-    #   recommendedOptimisation = true;
-    #   recommendedProxySettings = true;
-    #   commonHttpConfig = let
-    #     smashApiKeys = import ../static/smash-keys.nix;
-    #     smashAllowedOrigins = lib.optionals (builtins.pathExists ../static/smash-allow-origins.nix) (import ../static/smash-allow-origins.nix);
-    #   in ''
-    #     log_format x-fwd '$remote_addr - $remote_user [$time_local] '
-    #                      '"$request" "$http_accept_language" $status $body_bytes_sent '
-    #                      '"$http_referer" "$http_user_agent" "$http_x_forwarded_for"';
-    #     access_log syslog:server=unix:/dev/log x-fwd;
-    #     limit_req_zone $binary_remote_addr zone=apiPerIP:100m rate=1r/s;
-    #     limit_req_status 429;
-    #     map $http_accept_language $lang {
-    #             default en;
-    #             ~de de;
-    #             ~ja ja;
-    #     }
-    #     map $arg_apiKey $api_client_name {
-    #       default "";
-    #       ${lib.concatStringsSep "\n" (lib.mapAttrsToList (client: key: "\"${key}\" \"${client}\";") smashApiKeys)}
-    #     }
-    #     map $http_origin $origin_allowed {
-    #       default 0;
-    #       ${lib.concatStringsSep "\n" (map (origin: "${origin} 1;") smashAllowedOrigins)}
-    #     }
-    #     map $sent_http_x_cache $loggable_varnish {
-    #       "hit cached" 0;
-    #       default 1;
-    #     }
-    #     map $origin_allowed $origin {
-    #       default "";
-    #       1 $http_origin;
-    #     }
-    #     # set search paths for pure Lua external libraries (';;' is the default path):
-    #     lua_package_path '${luajit}/share/lua/${luajit.lua.luaversion}/?.lua;${luajit}/lib/lua/${luajit.lua.luaversion}/?.lua;;';
-    #     # set search paths for Lua external libraries written in C (can also use ';;'):
-    #     lua_package_cpath '${luajit}/lib/lua/${luajit.lua.luaversion}/?.so;${luajit}/share/lua/${luajit.lua.luaversion}/?.so;;';
-    #     init_by_lua_block {
-    #       json = require "cjson"
-    #     }
-    #   '';
-    #   virtualHosts = {
-    #     explorer = {
-    #       default = true;
-    #       locations = (if maintenanceMode then {
-    #         "/" = let
-    #           maintenanceFile = __toFile "maintenance.html" ''
-    #             <!doctype html>
-    #             <title>Site Maintenance</title>
-    #             <style>
-    #               body { text-align: center; padding: 150px; }
-    #               h1 { font-size: 50px; }
-    #               body { font: 20px Helvetica, sans-serif; color: #333; }
-    #               article { display: block; text-align: left; width: 650px; margin: 0 auto; }
-    #               a { color: #dc8100; text-decoration: none; }
-    #               a:hover { color: #333; text-decoration: none; }
-    #             </style>
-    #             <article>
-    #                 <h1>We&rsquo;ll be back soon!</h1>
-    #                 <div>
-    #                     <p>Sorry for the inconvenience, but we&rsquo;re performing some routine maintenance on the explorer at the moment. We&rsquo;ll be back online shortly!</p>
-    #                     <p>&mdash; IOHK DevOps</p>
-    #                 </div>
-    #             </article>
-    #           '';
-    #           rootDir = pkgs.runCommand "nginx-root-dir" {} ''
-    #             mkdir $out
-    #             cd $out
-    #             cp ${maintenanceFile} index.html;
-    #           '';
-    #         in {
-    #           extraConfig = ''
-    #             etag off;
-    #             add_header etag "\"${builtins.substring 11 32 rootDir}\"";
-    #             root ${rootDir};
-    #           '';
-    #           tryFiles = "$uri /index.html";
-    #         };
-    #       } else
-    #         let graphqlRewriter = query: postProcessing: ''
-    #           rewrite_by_lua_block {
-    #               ngx.req.read_body()
-    #               ngx.req.set_header("Content-Type", "application/json")
-    #               ngx.req.set_method(ngx.HTTP_POST)
-    #               ngx.req.set_uri("/graphql")
-    #               ngx.req.set_body_data("{\"query\":\"${query}\"}")
-    #             }
-    #             header_filter_by_lua_block {
-    #               ngx.header.content_length = nil
-    #             }
-    #             body_filter_by_lua_block {
-    #               local chunk, eof = ngx.arg[1], ngx.arg[2]
-    #               local buf = ngx.ctx.buf
-    #               if eof then
-    #                 if buf then
-    #                   local obj = json.decode(buf .. chunk)
-    #                   ngx.arg[1] = ${postProcessing}
-    #                 end
-    #               else
-    #                 if buf then
-    #                   ngx.ctx.buf = buf .. chunk
-    #                 else
-    #                   ngx.ctx.buf = chunk
-    #                 end
-    #                 ngx.arg[1] = nil
-    #               end
-    #             }
-    #           '';
-    #       in {
-    #         "/" = {
-    #           root = (cardano-explorer-app-pkgs.overrideScope'(self: super: {
-    #             static = super.static.override {
-    #               graphqlApiHost = globals.explorerHostName;
-    #               cardanoNetwork = globals.environmentName;
-    #               gaTrackingId = globals.static.gaTrackingId or null;
-    #             };
-    #           })).static;
-    #           tryFiles = "$uri $uri/index.html /index.html";
-    #           extraConfig = ''
-    #             rewrite /tx/([0-9a-f]+) $http_x_forwarded_proto://$host/$lang/transaction.html?id=$1 redirect;
-    #             rewrite /address/([0-9a-zA-Z]+) $http_x_forwarded_proto://$host/$lang/address.html?address=$1 redirect;
-    #             rewrite /block/([0-9a-zA-Z]+) $http_x_forwarded_proto://$host/$lang/block.html?id=$1 redirect;
-    #             rewrite /epoch/([0-9]+) $http_x_forwarded_proto://$host/$lang/epoch.html?number=$1 redirect;
-    #             rewrite ^([^.]*[^/])$ $http_x_forwarded_proto://$host$1.html redirect;
-    #           '';
-    #         };
-    #         # To avoid 502 alerts when withSubmitApi is false
-    #         "/api/submit/tx" = lib.mkIf globals.withSubmitApi {
-    #           proxyPass = "http://127.0.0.1:8101/api/submit/tx";
-    #         };
-    #         "/graphql" = {
-    #           proxyPass = "http://127.0.0.1:3100/";
-    #         };
-    #         "/rosetta/" = {
-    #           proxyPass = "http://127.0.0.1:8082/";
-    #         };
-    #         "/supply/total" = {
-    #           proxyPass = "http://127.0.0.1:3100/";
-    #           extraConfig = graphqlRewriter
-    #             "{ ada { supply { total } } }"
-    #             "obj.data.ada.supply.total / 1000000";
-    #         };
-    #         "/supply/circulating" = {
-    #           proxyPass = "http://127.0.0.1:3100/";
-    #           extraConfig = graphqlRewriter
-    #             "{ ada { supply { circulating } } }"
-    #             "obj.data.ada.supply.circulating / 1000000";
-    #         };
-    #       }) // {
-    #         "/relays" = {
-    #           root = "/var/lib/registered-relays-dump";
-    #         };
-    #         "/metrics2/cardano-graphql" = {
-    #           proxyPass = "http://127.0.0.1:3100/metrics";
-    #         };
-    #       };
-    #     };
-    #   } // (lib.optionalAttrs globals.withSmash {
-    #     smash = {
-    #       listen = [ {
-    #         addr = "0.0.0.0";
-    #         port = 81;
-    #       }];
-    #       default = true;
-    #       locations =
-    #         let
-    #         apiKeyConfig = ''
-    #           if ($arg_apiKey = "") {
-    #               return 401; # Unauthorized (please authenticate)
-    #           }
-    #           if ($api_client_name = "") {
-    #               return 403; # Forbidden (invalid API key)
-    #           }
-    #         '';
-    #         corsConfig = ''
-    #           add_header 'Vary' 'Origin' always;
-    #           add_header 'Access-Control-Allow-Origin' $origin always;
-    #           add_header 'Access-Control-Allow-Methods' 'GET, PATCH, OPTIONS' always;
-    #           add_header 'Access-Control-Allow-Headers' 'User-Agent,X-Requested-With,Content-Type' always;
-    #           if ($request_method = OPTIONS) {
-    #             add_header 'Access-Control-Max-Age' 1728000;
-    #             add_header 'Content-Type' 'text/plain; charset=utf-8';
-    #             add_header 'Content-Length' 0;
-    #             return 204;
-    #           }
-    #         '';
-    #         endpoints = [
-    #           "/swagger.json"
-    #           "/api/v1/metadata"
-    #           "/api/v1/errors"
-    #           "/api/v1/exists"
-    #           "/api/v1/enlist"
-    #           "/api/v1/delist"
-    #           "/api/v1/delisted"
-    #           "/api/v1/retired"
-    #           "/api/v1/status"
-    #           "/api/v1/tickers"
-    #         ];
-    #         in lib.recursiveUpdate (lib.genAttrs endpoints (p: {
-    #           proxyPass = "http://127.0.0.1:6081${p}";
-    #           extraConfig = corsConfig;
-    #         })) {
-    #           "/api/v1/delist".extraConfig = ''
-    #             ${corsConfig}
-    #             ${apiKeyConfig}
-    #           '';
-    #           "/api/v1/enlist".extraConfig = ''
-    #             ${corsConfig}
-    #             ${apiKeyConfig}
-    #           '';
-    #           "/api/v1/metadata".extraConfig = ''
-    #             ${corsConfig}
-    #           '';
-    #           "/api/v1/tickers".extraConfig = ''
-    #             ${corsConfig}
-    #             if ($request_method = GET) {
-    #               set $arg_apiKey "bypass";
-    #               set $api_client_name "bypass";
-    #             }
-    #             ${apiKeyConfig}
-    #           '';
-    #         };
-    #     };
-    #   });
-    # };
+    services.nginx = {
+      enable = true;
+      package = opsPkgs.nginxExplorer;
+      eventsConfig = ''
+        worker_connections 4096;
+      '';
+      appendConfig = ''
+        worker_rlimit_nofile 16384;
+      '';
+      recommendedGzipSettings = true;
+      recommendedOptimisation = true;
+      recommendedProxySettings = true;
+      # commonHttpConfig = let
+      #   smashApiKeys = import ../static/smash-keys.nix;
+      #   smashAllowedOrigins = lib.optionals (builtins.pathExists ../static/smash-allow-origins.nix) (import ../static/smash-allow-origins.nix);
+      #   luajit = opsPkgs.luajit;
+      #   luaversion = luajit.lua.luaversion;
+      # in ''
+      #   log_format x-fwd '$remote_addr - $remote_user [$time_local] '
+      #                    '"$request" "$http_accept_language" $status $body_bytes_sent '
+      #                    '"$http_referer" "$http_user_agent" "$http_x_forwarded_for"';
+      #   access_log syslog:server=unix:/dev/log x-fwd;
+      #   limit_req_zone $binary_remote_addr zone=apiPerIP:100m rate=1r/s;
+      #   limit_req_status 429;
+      #   map $http_accept_language $lang {
+      #           default en;
+      #           ~de de;
+      #           ~ja ja;
+      #   }
+      #   map $arg_apiKey $api_client_name {
+      #     default "";
+      #     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (client: key: "\"${key}\" \"${client}\";") smashApiKeys)}
+      #   }
+      #   map $http_origin $origin_allowed {
+      #     default 0;
+      #     ${lib.concatStringsSep "\n" (map (origin: "${origin} 1;") smashAllowedOrigins)}
+      #   }
+      #   map $sent_http_x_cache $loggable_varnish {
+      #     "hit cached" 0;
+      #     default 1;
+      #   }
+      #   map $origin_allowed $origin {
+      #     default "";
+      #     1 $http_origin;
+      #   }
+      #   # set search paths for pure Lua external libraries (';;' is the default path):
+      #   lua_package_path '${luajit}/share/lua/${luaversion}/?.lua;${luajit}/lib/lua/${luaversion}/?.lua;;';
+      #   # set search paths for Lua external libraries written in C (can also use ';;'):
+      #   lua_package_cpath '${luajit}/lib/lua/${luaversion}/?.so;${luajit}/share/lua/${luaversion}/?.so;;';
+      #   init_by_lua_block {
+      #     json = require "cjson"
+      #   }
+      # '';
+      virtualHosts = {
+        explorer = {
+          default = true;
+          locations = (if maintenanceMode then {
+            "/" = let
+              maintenanceFile = __toFile "maintenance.html" ''
+                <!doctype html>
+                <title>Site Maintenance</title>
+                <style>
+                  body { text-align: center; padding: 150px; }
+                  h1 { font-size: 50px; }
+                  body { font: 20px Helvetica, sans-serif; color: #333; }
+                  article { display: block; text-align: left; width: 650px; margin: 0 auto; }
+                  a { color: #dc8100; text-decoration: none; }
+                  a:hover { color: #333; text-decoration: none; }
+                </style>
+                <article>
+                    <h1>We&rsquo;ll be back soon!</h1>
+                    <div>
+                        <p>Sorry for the inconvenience, but we&rsquo;re performing some routine maintenance on the explorer at the moment. We&rsquo;ll be back online shortly!</p>
+                        <p>&mdash; IOHK DevOps</p>
+                    </div>
+                </article>
+              '';
+              rootDir = pkgs.runCommand "nginx-root-dir" {} ''
+                mkdir $out
+                cd $out
+                cp ${maintenanceFile} index.html;
+              '';
+            in {
+              extraConfig = ''
+                etag off;
+                add_header etag "\"${builtins.substring 11 32 rootDir}\"";
+                root ${rootDir};
+              '';
+              tryFiles = "$uri /index.html";
+            };
+          } else
+            let graphqlRewriter = query: postProcessing: ''
+              rewrite_by_lua_block {
+                  ngx.req.read_body()
+                  ngx.req.set_header("Content-Type", "application/json")
+                  ngx.req.set_method(ngx.HTTP_POST)
+                  ngx.req.set_uri("/graphql")
+                  ngx.req.set_body_data("{\"query\":\"${query}\"}")
+                }
+                header_filter_by_lua_block {
+                  ngx.header.content_length = nil
+                }
+                body_filter_by_lua_block {
+                  local chunk, eof = ngx.arg[1], ngx.arg[2]
+                  local buf = ngx.ctx.buf
+                  if eof then
+                    if buf then
+                      local obj = json.decode(buf .. chunk)
+                      ngx.arg[1] = ${postProcessing}
+                    end
+                  else
+                    if buf then
+                      ngx.ctx.buf = buf .. chunk
+                    else
+                      ngx.ctx.buf = chunk
+                    end
+                    ngx.arg[1] = nil
+                  end
+                }
+              '';
+          in {
+            "/" = {
+              root = (explorerAppPkgs.overrideScope'(self: super: {
+                static = super.static.override {
+                  graphqlApiHost = cfg.explorerHostName;
+                  cardanoNetwork = cfg.environmentName;
 
-    # systemd.services.nginx.serviceConfig = {
-    #   # Ensure the worker processes don't hit TCP file descriptor limits
-    #   LimitNOFILE = 65535;
-    #   # Avoid flooding (and rotating too quicky) default journal with nginx logs:
-    #   # nginx logs: journalctl --namespace nginx
-    #   LogNamespace = "nginx";
-    #   # Access to topology.json:
-    #   SupplementaryGroups = "dump-registered-relays-topology";
-    # };
+                  # Revisit how to add this via sops
+                  gaTrackingId = null;
+                  # gaTrackingId = globals.static.gaTrackingId or null;
+                };
+              })).static;
+              tryFiles = "$uri $uri/index.html /index.html";
+              extraConfig = ''
+                rewrite /tx/([0-9a-f]+) $http_x_forwarded_proto://$host/$lang/transaction.html?id=$1 redirect;
+                rewrite /address/([0-9a-zA-Z]+) $http_x_forwarded_proto://$host/$lang/address.html?address=$1 redirect;
+                rewrite /block/([0-9a-zA-Z]+) $http_x_forwarded_proto://$host/$lang/block.html?id=$1 redirect;
+                rewrite /epoch/([0-9]+) $http_x_forwarded_proto://$host/$lang/epoch.html?number=$1 redirect;
+                rewrite ^([^.]*[^/])$ $http_x_forwarded_proto://$host$1.html redirect;
+              '';
+            };
+            # To avoid 502 alerts when withSubmitApi is false
+            "/api/submit/tx" = lib.mkIf cfg.withSubmitApi {
+              proxyPass = "http://127.0.0.1:8101/api/submit/tx";
+            };
+            "/graphql" = {
+              proxyPass = "http://127.0.0.1:3100/";
+            };
+            "/rosetta/" = {
+              proxyPass = "http://127.0.0.1:8082/";
+            };
+            "/supply/total" = {
+              proxyPass = "http://127.0.0.1:3100/";
+              extraConfig = graphqlRewriter
+                "{ ada { supply { total } } }"
+                "obj.data.ada.supply.total / 1000000";
+            };
+            "/supply/circulating" = {
+              proxyPass = "http://127.0.0.1:3100/";
+              extraConfig = graphqlRewriter
+                "{ ada { supply { circulating } } }"
+                "obj.data.ada.supply.circulating / 1000000";
+            };
+          }) // {
+            "/relays" = {
+              root = "/var/lib/registered-relays-dump";
+            };
+            "/metrics2/cardano-graphql" = {
+              proxyPass = "http://127.0.0.1:3100/metrics";
+            };
+          };
+        };
+      } // (lib.optionalAttrs cfg.withSmash {
+        smash = {
+          listen = [ {
+            addr = "0.0.0.0";
+            port = 81;
+          }];
+          default = true;
+          locations =
+            let
+            apiKeyConfig = ''
+              if ($arg_apiKey = "") {
+                  return 401; # Unauthorized (please authenticate)
+              }
+              if ($api_client_name = "") {
+                  return 403; # Forbidden (invalid API key)
+              }
+            '';
+            corsConfig = ''
+              add_header 'Vary' 'Origin' always;
+              add_header 'Access-Control-Allow-Origin' $origin always;
+              add_header 'Access-Control-Allow-Methods' 'GET, PATCH, OPTIONS' always;
+              add_header 'Access-Control-Allow-Headers' 'User-Agent,X-Requested-With,Content-Type' always;
+              if ($request_method = OPTIONS) {
+                add_header 'Access-Control-Max-Age' 1728000;
+                add_header 'Content-Type' 'text/plain; charset=utf-8';
+                add_header 'Content-Length' 0;
+                return 204;
+              }
+            '';
+            endpoints = [
+              "/swagger.json"
+              "/api/v1/metadata"
+              "/api/v1/errors"
+              "/api/v1/exists"
+              "/api/v1/enlist"
+              "/api/v1/delist"
+              "/api/v1/delisted"
+              "/api/v1/retired"
+              "/api/v1/status"
+              "/api/v1/tickers"
+            ];
+            in lib.recursiveUpdate (lib.genAttrs endpoints (p: {
+              proxyPass = "http://127.0.0.1:6081${p}";
+              extraConfig = corsConfig;
+            })) {
+              "/api/v1/delist".extraConfig = ''
+                ${corsConfig}
+                ${apiKeyConfig}
+              '';
+              "/api/v1/enlist".extraConfig = ''
+                ${corsConfig}
+                ${apiKeyConfig}
+              '';
+              "/api/v1/metadata".extraConfig = ''
+                ${corsConfig}
+              '';
+              "/api/v1/tickers".extraConfig = ''
+                ${corsConfig}
+                if ($request_method = GET) {
+                  set $arg_apiKey "bypass";
+                  set $api_client_name "bypass";
+                }
+                ${apiKeyConfig}
+              '';
+            };
+        };
+      });
+    };
 
-    # services.monitoring-exporters.extraPrometheusExporters = lib.optional config.services.cardano-graphql.enable
-    #   {
-    #     job_name = "cardano-graphql-exporter";
-    #     scrape_interval = "10s";
-    #     metrics_path = "/metrics2/cardano-graphql";
-    #     labels = { alias = "cardano-graphql-exporter"; };
-    #   };
+    systemd.services.nginx.serviceConfig = {
+      # Ensure the worker processes don't hit TCP file descriptor limits
+      LimitNOFILE = 65535;
+      # Avoid flooding (and rotating too quicky) default journal with nginx logs:
+      # nginx logs: journalctl --namespace nginx
+      LogNamespace = "nginx";
+      # Access to topology.json:
+      SupplementaryGroups = "dump-registered-relays-topology";
+    };
 
     secrets.install.explorer = lib.mkIf isSops {
       source = "${etcEncrypted}/explorer.json";

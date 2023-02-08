@@ -98,24 +98,18 @@
     explorer-cardano-node.url = "github:input-output-hk/cardano-node/1.35.4";
 
     explorer-cardano-explorer-app = {
-      url = "github:input-output-hk/cardano-explorer-app?ref=1.6.0";
+      url = "github:input-output-hk/cardano-explorer-app/1.6.0-mods";
       flake = false;
     };
 
-    explorer-cardano-graphql = {
-      url = "github:input-output-hk/cardano-graphql/fixes/incl-test";
-      flake = false;
-    };
+    explorer-cardano-graphql.url = "github:input-output-hk/cardano-graphql/fixes/incl-test-mod";
 
-    explorer-cardano-rosetta = {
-      url = "github:input-output-hk/cardano-rosetta/1-8-stable";
-      flake = false;
-    };
+    explorer-cardano-rosetta.url = "github:input-output-hk/cardano-rosetta/1-8-stable-mods";
 
     explorer-ogmios.url = "github:input-output-hk/cardano-ogmios/2253ef350822f3d18bf6ac579c5abc2a99c2ac4c";
 
     explorer-cardano-ops = {
-      url = "github:input-output-hk/cardano-ops";
+      url = "github:input-output-hk/cardano-ops/master-graphql-mods";
       flake = false;
     };
     # --------------------------------------------------------------

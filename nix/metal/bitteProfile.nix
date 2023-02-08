@@ -418,6 +418,9 @@ in {
             # Temporarily disable nomad to avoid conflict with buildkite resource consumption.
             services.nomad.enable = lib.mkForce false;
 
+            # Disable gluster
+            services.glusterfs.enable = false;
+
             services.resolved = {
               # Vault agent does not seem to recognize successful lookups while resolved is in dnssec allow-downgrade mode
               dnssec = "false";
