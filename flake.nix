@@ -8,7 +8,7 @@
 
     # --- Bitte Stack ----------------------------------------------
     bitte = {
-      url = "github:input-output-hk/bitte";
+      url = "github:input-output-hk/bitte/nixpkgs-2211";
       inputs.capsules.follows = "capsules";
     };
 
