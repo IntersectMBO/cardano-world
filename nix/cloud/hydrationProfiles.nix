@@ -43,6 +43,7 @@ in {
         preview.description = "Cardano Preview Environment";
         pv8.description = "Cardano Mixed Environment";
         private.description = "Cardano Private Testing Environment";
+        perf.description = "Cardano Performance Testing Environment";
       };
     };
 
@@ -77,6 +78,10 @@ in {
             intentions = "write";
           };
           service_prefix."private-" = {
+            policy = "write";
+            intentions = "write";
+          };
+          service_prefix."perf-" = {
             policy = "write";
             intentions = "write";
           };
@@ -165,6 +170,17 @@ in {
               "alloc-lifecycle"
             ];
           };
+          namespace.perf = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           host_volume."mainnet-*".policy = "write";
           host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
@@ -172,6 +188,7 @@ in {
           host_volume."preview-*".policy = "write";
           host_volume."pv8-*".policy = "write";
           host_volume."private-*".policy = "write";
+          host_volume."perf-*".policy = "write";
         };
       };
     };

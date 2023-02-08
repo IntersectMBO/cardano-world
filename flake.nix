@@ -8,7 +8,7 @@
 
     # --- Bitte Stack ----------------------------------------------
     bitte = {
-      url = "github:input-output-hk/bitte/nixpkgs-2211";
+      url = "github:input-output-hk/bitte";
       inputs.capsules.follows = "capsules";
     };
 
@@ -111,6 +111,7 @@
         (inputs.std.data "namespaces/preview")
         (inputs.std.data "namespaces/pv8")
         (inputs.std.data "namespaces/private")
+        (inputs.std.data "namespaces/perf")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
@@ -178,6 +179,7 @@
       preview = mkNomadJobs cloud."namespaces/preview";
       pv8 = mkNomadJobs cloud."namespaces/pv8";
       private = mkNomadJobs cloud."namespaces/private";
+      perf = mkNomadJobs cloud."namespaces/perf";
     })
 
     # 3) hydra jobs

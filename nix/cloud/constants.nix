@@ -57,5 +57,11 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    perf = {
+      namespace = "perf";
+      domain = "perf.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
   };
 }
