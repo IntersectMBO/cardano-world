@@ -59,7 +59,7 @@ in {
 
       withSmash = mkOption {
         type = types.bool;
-        default = false;
+        default = true;
       };
 
       withSubmitApi = mkOption {
@@ -166,6 +166,7 @@ in {
       frontendPkg = cardano-graphql;
       persistPkg = persistgraphql;
       allowListPath = explorerAppPkgs.allowList;
+      # allowListPath = lib.mkForce null;
       ogmiosHost = ogmiosCfg.hostAddr;
       ogmiosPort = ogmiosCfg.port;
       #loggerMinSeverity = "trace";
@@ -433,6 +434,7 @@ in {
 
     services.nginx = {
       enable = true;
+      enableReload = true;
       package = opsPkgs.nginxExplorer;
       eventsConfig = ''
         worker_connections 4096;
@@ -443,47 +445,45 @@ in {
       recommendedGzipSettings = true;
       recommendedOptimisation = true;
       recommendedProxySettings = true;
-      # commonHttpConfig = let
-      #   smashApiKeys = import ../static/smash-keys.nix;
-      #   smashAllowedOrigins = lib.optionals (builtins.pathExists ../static/smash-allow-origins.nix) (import ../static/smash-allow-origins.nix);
-      #   luajit = opsPkgs.luajit;
-      #   luaversion = luajit.lua.luaversion;
-      # in ''
-      #   log_format x-fwd '$remote_addr - $remote_user [$time_local] '
-      #                    '"$request" "$http_accept_language" $status $body_bytes_sent '
-      #                    '"$http_referer" "$http_user_agent" "$http_x_forwarded_for"';
-      #   access_log syslog:server=unix:/dev/log x-fwd;
-      #   limit_req_zone $binary_remote_addr zone=apiPerIP:100m rate=1r/s;
-      #   limit_req_status 429;
-      #   map $http_accept_language $lang {
-      #           default en;
-      #           ~de de;
-      #           ~ja ja;
-      #   }
-      #   map $arg_apiKey $api_client_name {
-      #     default "";
-      #     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (client: key: "\"${key}\" \"${client}\";") smashApiKeys)}
-      #   }
-      #   map $http_origin $origin_allowed {
-      #     default 0;
-      #     ${lib.concatStringsSep "\n" (map (origin: "${origin} 1;") smashAllowedOrigins)}
-      #   }
-      #   map $sent_http_x_cache $loggable_varnish {
-      #     "hit cached" 0;
-      #     default 1;
-      #   }
-      #   map $origin_allowed $origin {
-      #     default "";
-      #     1 $http_origin;
-      #   }
-      #   # set search paths for pure Lua external libraries (';;' is the default path):
-      #   lua_package_path '${luajit}/share/lua/${luaversion}/?.lua;${luajit}/lib/lua/${luaversion}/?.lua;;';
-      #   # set search paths for Lua external libraries written in C (can also use ';;'):
-      #   lua_package_cpath '${luajit}/lib/lua/${luaversion}/?.so;${luajit}/share/lua/${luaversion}/?.so;;';
-      #   init_by_lua_block {
-      #     json = require "cjson"
-      #   }
-      # '';
+      commonHttpConfig = let
+        luajit = opsPkgs.luajit;
+        luaversion = luajit.lua.luaversion;
+      in ''
+        log_format x-fwd '$remote_addr - $remote_user [$time_local] '
+                         '"$request" "$http_accept_language" $status $body_bytes_sent '
+                         '"$http_referer" "$http_user_agent" "$http_x_forwarded_for"';
+        access_log syslog:server=unix:/dev/log x-fwd;
+        limit_req_zone $binary_remote_addr zone=apiPerIP:100m rate=1r/s;
+        limit_req_status 429;
+        map $http_accept_language $lang {
+                default en;
+                ~de de;
+                ~ja ja;
+        }
+        map $arg_apiKey $api_client_name {
+          default "";
+          SED_MARKER_SMASH_API_KEYS
+        }
+        map $http_origin $origin_allowed {
+          default 0;
+          SED_MARKER_SMASH_ALLOWED_ORIGINS
+        }
+        map $sent_http_x_cache $loggable_varnish {
+          "hit cached" 0;
+          default 1;
+        }
+        map $origin_allowed $origin {
+          default "";
+          1 $http_origin;
+        }
+        # set search paths for pure Lua external libraries (';;' is the default path):
+        lua_package_path '${luajit}/share/lua/${luaversion}/?.lua;${luajit}/lib/lua/${luaversion}/?.lua;;';
+        # set search paths for Lua external libraries written in C (can also use ';;'):
+        lua_package_cpath '${luajit}/lib/lua/${luaversion}/?.so;${luajit}/share/lua/${luaversion}/?.so;;';
+        init_by_lua_block {
+          json = require "cjson"
+        }
+      '';
       virtualHosts = {
         explorer = {
           default = true;
@@ -555,12 +555,13 @@ in {
             "/" = {
               root = (explorerAppPkgs.overrideScope'(self: super: {
                 static = super.static.override {
+                  # For testing
+                  graphqlApiProtocol = "http";
+                  graphqlApiPort = 80;
+
                   graphqlApiHost = cfg.explorerHostName;
                   cardanoNetwork = cfg.environmentName;
-
-                  # Revisit how to add this via sops
                   gaTrackingId = null;
-                  # gaTrackingId = globals.static.gaTrackingId or null;
                 };
               })).static;
               tryFiles = "$uri $uri/index.html /index.html";
@@ -672,14 +673,50 @@ in {
       });
     };
 
-    systemd.services.nginx.serviceConfig = {
-      # Ensure the worker processes don't hit TCP file descriptor limits
-      LimitNOFILE = 65535;
-      # Avoid flooding (and rotating too quicky) default journal with nginx logs:
-      # nginx logs: journalctl --namespace nginx
-      LogNamespace = "nginx";
-      # Access to topology.json:
-      SupplementaryGroups = "dump-registered-relays-topology";
+    # To enable the transformation of sops nginx secrets into nginx config.
+    # Lua substitution approach doesn't work due to substitution stanza location.
+    # Envsubst doesn't work due to common use of nginx variables greedily substituted.
+    # Nginx enableReload is set true above to access the base config for susbstitution here.
+    systemd.services.nginx = let
+      script = pkgs.writeShellApplication {
+        name = "nginx-prep";
+        runtimeInputs = with pkgs; [gnused jq nginx-config-formatter];
+        text = ''
+          set -x
+          cd /var/lib/nginx
+          cp /etc/nginx/nginx.conf nginx.conf
+          chmod +w nginx.conf
+          jq -r '.smashApiKeys | to_entries[] | "\"\(.value)\" \"\(.key)\";"' < /etc/explorer/explorer.json > smash-api-keys
+          jq -r '.smashAllowedOrigins | .[] | . + " 1;"' < /etc/explorer/explorer.json > smash-allowed-origins
+          sed -e '/SED_MARKER_SMASH_API_KEYS/ {' -e 'r smash-api-keys' -e 'd' -e '}' nginx.conf > nginx-subst-partial.conf
+          sed -e '/SED_MARKER_SMASH_ALLOWED_ORIGINS/ {' -e 'r smash-allowed-origins' -e 'd' -e '}' nginx-subst-partial.conf > nginx-subst.conf
+          nginxfmt nginx.conf
+          nginxfmt nginx-subst.conf
+          rm nginx-subst-partial.conf
+
+          ${opsPkgs.nginxExplorer}/bin/nginx -c /var/lib/nginx/nginx-subst.conf -t
+        '';
+      };
+    in {
+      preStart = lib.mkForce "${script}/bin/nginx-prep";
+      serviceConfig = {
+        # Ensure the worker processes don't hit TCP file descriptor limits
+        LimitNOFILE = 65535;
+
+        # Avoid flooding (and rotating too quicky) default journal with nginx logs:
+        # nginx logs: journalctl --namespace nginx
+        LogNamespace = "nginx";
+
+        # Access to topology.json:
+        SupplementaryGroups = "dump-registered-relays-topology";
+
+        StateDirectory = "nginx";
+        ExecStart = lib.mkForce "${opsPkgs.nginxExplorer}/bin/nginx -c /var/lib/nginx/nginx-subst.conf";
+        ExecReload = lib.mkForce [
+          "${script}/bin/nginx-prep"
+          "${pkgs.coreutils}/bin/kill -HUP $MAINPID"
+        ];
+      };
     };
 
     secrets.install.explorer = lib.mkIf isSops {
