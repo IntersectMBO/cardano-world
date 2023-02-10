@@ -102,7 +102,7 @@
       flake = false;
     };
 
-    explorer-cardano-graphql.url = "github:input-output-hk/cardano-graphql/fixes/incl-test-mod";
+    explorer-cardano-graphql.url = "github:input-output-hk/cardano-graphql/fixes/incl-test-mod-master";
 
     explorer-cardano-rosetta.url = "github:input-output-hk/cardano-rosetta/1-8-stable-mods";
 

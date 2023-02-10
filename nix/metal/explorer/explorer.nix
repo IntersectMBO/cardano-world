@@ -169,7 +169,7 @@ in {
       # allowListPath = lib.mkForce null;
       ogmiosHost = ogmiosCfg.hostAddr;
       ogmiosPort = ogmiosCfg.port;
-      #loggerMinSeverity = "trace";
+      loggerMinSeverity = "trace";
     } // lib.optionalAttrs (options.services.cardano-graphql ? genesisByron) {
       genesisByron = nodeCfg.nodeConfig.ByronGenesisFile;
       genesisShelley = nodeCfg.nodeConfig.ShelleyGenesisFile;
@@ -232,6 +232,7 @@ in {
     systemd.services.cardano-graphql = {
       environment = {
         HOME = "/run/${config.systemd.services.cardano-graphql.serviceConfig.RuntimeDirectory}";
+        POLLING_INTERVAL_ADA_SUPPLY = "3600000";
       };
       serviceConfig = {
         LimitNOFILE = 65535;
@@ -276,7 +277,11 @@ in {
       cardanoNodePackages = nodePkgs;
     };
 
-    # networking.firewall.allowedTCPPorts = [ 80 81 ];
+    networking.firewall.extraCommands = ''
+      # Accept an upstream explorer gateway's requests over wireguard
+      iptables -I nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -j nixos-fw-accept
+      iptables -I nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -j nixos-fw-accept
+    '';
 
     users.users.dump-registered-relays-topology = {
       isSystemUser = true;

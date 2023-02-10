@@ -7774,16 +7774,16 @@
         "tullia": "tullia_3"
       },
       "locked": {
-        "lastModified": 1675807059,
-        "narHash": "sha256-nZEp1kCmkIcsDH/yEi4QZ9Uaqj6WIOHO4l4vJ6zaZWI=",
+        "lastModified": 1675971599,
+        "narHash": "sha256-bYVruR3DRfiBc32yNdV8Qkgljtdny6gKeMjUeNi4Q+o=",
         "owner": "input-output-hk",
         "repo": "cardano-graphql",
-        "rev": "55a2024d64589d190b6defefc00970a37865ace2",
+        "rev": "4ae91cc457129d3a22e3e2ad11e5423eee2253c2",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "fixes/incl-test-mod",
+        "ref": "fixes/incl-test-mod-master",
         "repo": "cardano-graphql",
         "type": "github"
       }

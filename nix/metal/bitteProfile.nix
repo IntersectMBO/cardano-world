@@ -443,14 +443,13 @@ in {
           })
         ];
 
-        baseExplorerModuleConfig = privateIP: [
+        baseExplorerModuleConfig = name: privateIP: environmentName: [
+          (import ./explorer/wireguard.nix name environmentName)
           (import ./explorer/base-service.nix privateIP)
           ./explorer/db-sync.nix
           ./explorer/explorer.nix
           (bitte + /modules/zfs-client-options.nix)
-          ({pkgs, config, ...}: let
-            environmentName = "mainnet";
-          in {
+          ({pkgs, config, ...}: {
             services.cardano-node = let
               cfg = config.services.cardano-node;
             in {
@@ -480,7 +479,7 @@ in {
           })
         ];
 
-        mkExplorer = name: privateIP: extra: lib.mkMerge [
+        mkExplorer = name: privateIP: environmentName: extra: lib.mkMerge [
           {
             inherit deployType node_class primaryInterface role privateIP;
             equinix = {inherit plan project;};
@@ -488,14 +487,14 @@ in {
             modules =
               baseEquinixModuleConfig
               ++ (baseEquinixMachineConfig name)
-              ++ (baseExplorerModuleConfig privateIP);
+              ++ (baseExplorerModuleConfig name privateIP environmentName);
           }
           extra
         ];
       in {
-        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" {};
-        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" {};
-        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" {};
+        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
+        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
+        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" "mainnet" {};
       };
     };
   };
