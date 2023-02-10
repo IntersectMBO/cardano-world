@@ -1,4 +1,4 @@
-{self, pkgs, config, lib, etcEncrypted, options, ...}:
+name: privateIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
   inherit (lib) mkOption types;
   inherit (self.${nodeCfg.system}.cardano.library) mkEdgeTopology;
@@ -278,9 +278,15 @@ in {
     };
 
     networking.firewall.extraCommands = ''
+      # Allow scrapes for metrics to the private IP from the monitoring server
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9113 -m comment --comment "nginx metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9131 -m comment --comment "varnish metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9586 -m comment --comment "wireguard metrics exporter" -j nixos-fw-accept
+
       # Accept an upstream explorer gateway's requests over wireguard
-      iptables -I nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -j nixos-fw-accept
-      iptables -I nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -j nixos-fw-accept
+      iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
+      iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
     '';
 
     users.users.dump-registered-relays-topology = {
@@ -447,6 +453,16 @@ in {
       appendConfig = ''
         worker_rlimit_nofile 16384;
       '';
+      appendHttpConfig = ''
+        vhost_traffic_status_zone;
+        server {
+          listen ${privateIP}:9113;
+          location /status {
+            vhost_traffic_status_display;
+            vhost_traffic_status_display_format html;
+          }
+        }
+      '';
       recommendedGzipSettings = true;
       recommendedOptimisation = true;
       recommendedProxySettings = true;
@@ -560,9 +576,9 @@ in {
             "/" = {
               root = (explorerAppPkgs.overrideScope'(self: super: {
                 static = super.static.override {
-                  # For testing
-                  graphqlApiProtocol = "http";
-                  graphqlApiPort = 80;
+                  # For testing with ssh tunnel and no frontend gateway
+                  # graphqlApiProtocol = "http";
+                  # graphqlApiPort = 80;
 
                   graphqlApiHost = cfg.explorerHostName;
                   cardanoNetwork = cfg.environmentName;
@@ -721,6 +737,58 @@ in {
           "${script}/bin/nginx-prep"
           "${pkgs.coreutils}/bin/kill -HUP $MAINPID"
         ];
+      };
+    };
+
+    services.prometheus.exporters = {
+      # Firewall handling is done in the networking.firewall.extraCommands block above
+      node = {
+        enable = true;
+        listenAddress = privateIP;
+        port = 9100;
+        enabledCollectors = [
+          "bonding"
+          "conntrack"
+          "cpu"
+          "cpufreq"
+          "diskstats"
+          "edac"
+          "entropy"
+          "filefd"
+          "filesystem"
+          "ksmd"
+          "loadavg"
+          "logind"
+          "meminfo"
+          "netdev"
+          "netstat"
+          "processes"
+          "pressure"
+          "nvme"
+          "sockstat"
+          "stat"
+          "systemd"
+          "tcpstat"
+          "time"
+          "timex"
+          "vmstat"
+        ];
+      };
+
+      # Nginx exporter is already enabled directly with the nginx vts module provided in appendHttpConfig above
+
+      varnish = {
+        enable = true;
+        listenAddress = privateIP;
+        port = 9131;
+        group = "varnish";
+        instance = "/var/spool/varnish/${name}";
+      };
+
+      wireguard = {
+        enable = true;
+        listenAddress = privateIP;
+        port = 9586;
       };
     };
 

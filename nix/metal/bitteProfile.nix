@@ -244,6 +244,28 @@ in {
               # Change to true if/when we want tempo enabled for this cluster.
               # See also corresponding tempo option on the routing server.
               services.monitoring.useTempo = false;
+
+              # Monitor the explorers
+              services.vmagent.promscrapeConfig = let
+                mkTarget = ip: port: machine: {
+                  targets = ["${ip}:${toString port}"];
+                  labels.alias = machine;
+                };
+                mkExplorerTargets = explorerTargetList: [
+                  {
+                    job_name = "explorer-exporter";
+                    scrape_interval = "60s";
+                    metrics_path = "/metrics";
+                    static_configs = lib.flatten (map (attr: map (port: mkTarget attr.ip port attr.machine) [9100 9131 9586]) explorerTargetList);
+                  }
+                  {
+                    job_name = "explorer-nginx";
+                    scrape_interval = "60s";
+                    metrics_path = "/status/format/prometheus";
+                    static_configs = map (attr: mkTarget attr.ip 9113 attr.machine) explorerTargetList;
+                  }
+                ];
+              in (mkExplorerTargets [{ip = "10.12.171.129"; machine = "explorer-1";}]);
             }
           ];
         };
@@ -444,11 +466,11 @@ in {
         ];
 
         baseExplorerModuleConfig = name: privateIP: environmentName: [
+          (bitte + /modules/zfs-client-options.nix)
           (import ./explorer/wireguard.nix name environmentName)
+          (import ./explorer/explorer.nix name privateIP)
           (import ./explorer/base-service.nix privateIP)
           ./explorer/db-sync.nix
-          ./explorer/explorer.nix
-          (bitte + /modules/zfs-client-options.nix)
           ({pkgs, config, ...}: {
             services.cardano-node = let
               cfg = config.services.cardano-node;
@@ -475,7 +497,10 @@ in {
               totalMachineMemoryGB = 256;
             };
 
-            services.zfs-client-options.enable = lib.mkForce true;
+            services.zfs-client-options = {
+              enable = lib.mkForce true;
+              enableZfsSnapshots = false;
+            };
           })
         ];
 
