@@ -68,7 +68,7 @@
     # --- Bridge Heads----------------------------------------------
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.1.0.2";
     cardano-node.url = "github:input-output-hk/cardano-node/1.35.5";
-    cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
+    cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-12-14";
 
     cardano-explorer-app = {
       url = "github:input-output-hk/cardano-explorer-app/fix-nix-system";
