@@ -200,11 +200,11 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       echo "$json"|jq -e '."vrf.skey"'    > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
       echo "$json"|jq -e '."opcert.json"' > "$SHELLEY_OPCERT"  || unset SHELLEY_OPCERT
 
-      test -z "''${BYRON_DELEG_CERT:-}"  || chmod 0400 "$BYRON_DELEG_CERT"
-      test -z "''${BYRON_SIGNING_KEY:-}" || chmod 0400 "$BYRON_SIGNING_KEY"
-      test -z "''${SHELLEY_KES_KEY:-}"   || chmod 0400 "$SHELLEY_KES_KEY"
-      test -z "''${SHELLEY_VRF_KEY:-}"   || chmod 0400 "$SHELLEY_VRF_KEY"
-      test -z "''${SHELLEY_OPCERT:-}"    || chmod 0400 "$SHELLEY_OPCERT"
+      test -z "''${BYRON_DELEG_CERT:-}"  || chmod 0600 "$BYRON_DELEG_CERT"
+      test -z "''${BYRON_SIGNING_KEY:-}" || chmod 0600 "$BYRON_SIGNING_KEY"
+      test -z "''${SHELLEY_KES_KEY:-}"   || chmod 0600 "$SHELLEY_KES_KEY"
+      test -z "''${SHELLEY_VRF_KEY:-}"   || chmod 0600 "$SHELLEY_VRF_KEY"
+      test -z "''${SHELLEY_OPCERT:-}"    || chmod 0600 "$SHELLEY_OPCERT"
     }
   '';
 
@@ -230,7 +230,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       # TODO: make this part of the kv-config, etc
       echo '{}' | jq --arg LEDGER_SLOT "''${LEDGER_SLOT:-0}" '{
         useLedgerAfterSlot: $LEDGER_SLOT|tonumber
-      }' > ./topology-common.json
+      }' > ./local/topology-common.json
 
       # public roots -> SIGHUP
       # this contains also the "self" root, else we would need to filter that out
@@ -248,10 +248,10 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
           ],
           "advertise": false
         }
-      }] }') > ./topology-publics.json
+      }] }') > ./local/topology-publics.json
 
       # local roots -> SIGHUP
-      (srvaddr -json locals="$LOCAL_ROOTS_SRV_DNS" | jq '{
+      (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '{
         LocalRoots: {
           groups: [
             {
@@ -274,13 +274,13 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
             "valency": 1
           }
         ]
-      } }') > ./topology-locals.json
+      } }') > ./local/topology-locals.json
 
       # construe topology
       cat \
-        ./topology-common.json \
-        ./topology-locals.json \
-        ./topology-publics.json \
+        ./local/topology-common.json \
+        ./local/topology-locals.json \
+        ./local/topology-publics.json \
         | jq -s 'add' > "$NODE_TOPOLOGY"
     }
   '';
@@ -290,11 +290,10 @@ in {
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
     debugInputs = [packages.cardano-cli packages.cardano-node packages.cardano-ping];
     text = ''
-
       # in nomad: producer is always the node with index 0
       producer=0
       [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && [ -z "''${EDGE_NODE:-}" ] && producer=1
-      [ "''${EDGE_NODE:-}" -eq "1" ] && LEDGER_SLOT=-1
+      [ "''${EDGE_NODE:-0}" -eq "1" ] && LEDGER_SLOT=-1
 
       ${prelude}
 
@@ -308,8 +307,8 @@ in {
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$snapshots")"
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
@@ -382,8 +381,6 @@ in {
       ${prelude}
       DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
 
-      [ ! -d /tmp ] && mkdir -m 1777 /tmp
-
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
         while true
@@ -435,7 +432,7 @@ in {
         PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
         PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
         echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
-        test -z "''${PGPASSFILE:-}"            || chmod 0400 "$PGPASSFILE"
+        test -z "''${PGPASSFILE:-}" || chmod 0600 "$PGPASSFILE"
       }
 
       if [ -n "''${VAULT_KV_PATH:-}" ]; then
@@ -451,8 +448,8 @@ in {
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
         # we are using a standard environment that already has known snapshots
         snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CADRENV "$ENVIRONMENT" '.[$CADRENV].file_name' < "$snapshots")"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$snapshots")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$snapshots")"
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         [ -z "''${PGPASSFILE-}" ] && echo "PGPASSFILE env var must be set (either manually or via vault kv discovery) -- aborting" && exit 1

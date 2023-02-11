@@ -19,6 +19,7 @@
   ];
 
   buildDebugImage = ep: o: n2c.buildImage (_utils.library.mkDebugOCI ep o);
+  tmpdir = nixpkgs.runCommand "tmpdir" {} "mkdir -p $out/tmp";
 in {
   cardano-node = buildDebugImage entrypoints.cardano-node {
     name = "registry.ci.iog.io/cardano-node";
@@ -31,7 +32,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-node}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
   };
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
@@ -40,11 +41,18 @@ in {
       (n2c.buildLayer {deps = entrypoints.cardano-db-sync.runtimeInputs;})
       (n2c.buildLayer {deps = [packages.cardano-db-sync];})
     ];
-    copyToRoot = [nixpkgs.bashInteractive nixpkgs.iana-etc rootCACerts];
+    copyToRoot = [nixpkgs.bashInteractive nixpkgs.iana-etc rootCACerts tmpdir];
     config.Cmd = [
       "${entrypoints.cardano-db-sync}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
+    perms = [
+      {
+        path = tmpdir;
+        regex = ".*";
+        mode = "1777";
+      }
+    ];
   };
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
     name = "registry.ci.iog.io/cardano-wallet";
@@ -57,7 +65,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-wallet}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
   };
   cardano-submit-api = buildDebugImage entrypoints.cardano-submit-api {
     name = "registry.ci.iog.io/cardano-submit-api";
@@ -70,7 +78,7 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-submit-api}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
   };
   ogmios = buildDebugImage entrypoints.ogmios {
     name = "registry.ci.iog.io/ogmios";
@@ -83,7 +91,7 @@ in {
     config.Cmd = [
       "${entrypoints.ogmios}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
   };
   cardano-faucet = buildDebugImage entrypoints.cardano-faucet {
     name = "registry.ci.iog.io/cardano-faucet";
@@ -95,6 +103,6 @@ in {
     config.Cmd = [
       "${entrypoints.cardano-faucet}/bin/entrypoint"
     ];
-    config.User = "1000:1000";
+    config.User = "65534:65534";
   };
 }
