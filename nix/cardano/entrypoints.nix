@@ -584,6 +584,8 @@ in {
         args+=("--disable-ledger")
       fi
 
+      # FIXME: atala-preprod hack to find
+      [ -n "''${SKIP_PLUTUS_DATA_FIX:-}" ] && args+=("--skip-plutus-data-fix")
 
       if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
         # turn on bash's job control
