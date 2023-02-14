@@ -229,6 +229,7 @@ in {
             (cells.cardano.dashboards)
             application-metrics
             dbsync
+            faucet
             p2p
             performance
             ;
