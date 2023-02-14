@@ -150,7 +150,6 @@ in
                   env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
                   config.image = ociNamer oci-images.cardano-faucet;
                   config.ports = ["http"];
-                  user = "0:0";
                   driver = "docker";
                   kill_signal = "SIGINT";
                   kill_timeout = "30s";

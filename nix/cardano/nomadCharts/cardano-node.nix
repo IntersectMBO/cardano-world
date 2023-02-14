@@ -124,7 +124,6 @@ in
                 env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                 env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
                 config.image = ociNamer oci-images.cardano-node;
-                user = "0:0";
                 driver = "docker";
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
