@@ -204,6 +204,7 @@ in {
             node
             dbsync
             faucet
+            metal-explorer
             ;
           # Upstream alerts
           inherit
