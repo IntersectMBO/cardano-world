@@ -204,7 +204,9 @@ in {
             node
             dbsync
             faucet
+            metal-explorer
             ;
+
           # Upstream alerts
           inherit
             (inputs.bitte-cells.bitte.alerts)
@@ -230,9 +232,15 @@ in {
             application-metrics
             dbsync
             faucet
+            nginx-basic
+            nginx-vts
+            node-exporter
             p2p
             performance
+            varnish
+            wireguard
             ;
+
           inherit
             (inputs.bitte-cells.bitte.dashboards)
             bitte-consul

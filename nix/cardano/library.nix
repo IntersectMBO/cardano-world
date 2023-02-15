@@ -81,6 +81,8 @@
   in
     builtins.toFile "topology.yaml" (builtins.toJSON topology);
 in rec {
+  inherit mkEdgeTopology;
+
   copyEnvsTemplate = environments: let
     mkTopology = env: let
       legacyTopology = mkEdgeTopology {

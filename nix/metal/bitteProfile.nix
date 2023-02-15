@@ -244,6 +244,107 @@ in {
               # Change to true if/when we want tempo enabled for this cluster.
               # See also corresponding tempo option on the routing server.
               services.monitoring.useTempo = false;
+
+              services.prometheus.exporters.blackbox = lib.mkForce {
+                enable = true;
+                configFile = pkgs.toPrettyJSON "blackbox-exporter.yaml" {
+                  modules = rec {
+                    http_2xx = {
+                      prober = "http";
+                      timeout = "10s";
+                    };
+                    https_2xx = http_2xx // {http.fail_if_not_ssl = true;};
+                    https_explorer_post_2xx = lib.recursiveUpdate https_2xx {
+                      http = {
+                        method = "POST";
+                        headers.Content-Type = "application/json";
+                        body = ''{"query": "{\n  ada {\n    supply {\n      total\n    }\n  }\n}\n"}'';
+                      };
+                    };
+                  };
+                };
+              };
+
+              # Monitor the explorers
+              services.vmagent.promscrapeConfig = let
+                labels = machine: rec {
+                  alias = machine;
+
+                  # Adding these labels allows re-use of nomad-dashboards under a metal-* namespace
+                  nomad_alloc_name = alias;
+                  namespace = "metal-explorer-mainnet";
+                };
+
+                relabel_configs = [
+                  {
+                    source_labels = ["__address__"];
+                    target_label = "__param_target";
+                  }
+                  {
+                    source_labels = ["__param_target"];
+                    target_label = "instance";
+                  }
+                  {
+                    replacement = "127.0.0.1:9115";
+                    target_label = "__address__";
+                  }
+                ];
+
+                mkTarget = ip: port: machine: {
+                  labels = labels machine;
+                  targets = ["${ip}:${toString port}"];
+                };
+
+                mkBlackboxTarget = target: machine: {
+                  labels = labels machine;
+                  targets = [target];
+                };
+
+                mkExplorerTargets = explorerTargetList: [
+                  {
+                    job_name = "explorer-exporter";
+                    scrape_interval = "60s";
+                    metrics_path = "/metrics";
+                    static_configs = lib.flatten (map (attr: map (port: mkTarget attr.ip port attr.machine) [9100 9131 9586 12798]) explorerTargetList);
+                  }
+                  {
+                    job_name = "explorer-nginx";
+                    scrape_interval = "60s";
+                    metrics_path = "/status/format/prometheus";
+                    static_configs = map (attr: mkTarget attr.ip 9113 attr.machine) explorerTargetList;
+                  }
+                  {
+                    job_name = "explorer-dbsync";
+                    scrape_interval = "60s";
+                    metrics_path = "/";
+                    static_configs = map (attr: mkTarget attr.ip 8080 attr.machine) explorerTargetList;
+                  }
+                  {
+                    job_name = "blackbox-explorer-frontend";
+                    scrape_interval = "60s";
+                    metrics_path = "/probe";
+                    params.module = ["https_2xx"];
+                    static_configs = [{targets = ["https://explorer.cardano.org"]; labels = {};}];
+                    inherit relabel_configs;
+                  }
+                  {
+                    job_name = "blackbox-explorer-graphql";
+                    scrape_interval = "60s";
+                    metrics_path = "/probe";
+                    params.module = ["https_explorer_post_2xx"];
+                    static_configs = [{targets = ["https://explorer.cardano.org/graphql"]; labels = {};}];
+                    inherit relabel_configs;
+                  }
+                  {
+                    job_name = "blackbox-explorer-graphql-healthcheck";
+                    scrape_interval = "60s";
+                    metrics_path = "/probe";
+                    params.module = ["http_2xx"];
+                    static_configs = map (attr: mkBlackboxTarget "http://${attr.ip}:9999/healthz" attr.machine) explorerTargetList;
+                    inherit relabel_configs;
+                  }
+                ];
+              in (mkExplorerTargets [{ip = "10.12.171.129"; machine = "explorer-1";}]);
             }
           ];
         };
@@ -418,6 +519,9 @@ in {
             # Temporarily disable nomad to avoid conflict with buildkite resource consumption.
             services.nomad.enable = lib.mkForce false;
 
+            # Disable gluster
+            services.glusterfs.enable = false;
+
             services.resolved = {
               # Vault agent does not seem to recognize successful lookups while resolved is in dnssec allow-downgrade mode
               dnssec = "false";
@@ -440,21 +544,71 @@ in {
           })
         ];
 
-        mkExplorer = name: privateIP: extra: lib.mkMerge [
+        baseExplorerModuleConfig = name: privateIP: environmentName: [
+          (bitte + /modules/zfs-client-options.nix)
+          (import ./explorer/wireguard.nix name environmentName)
+          (import ./explorer/explorer.nix name privateIP)
+          (import ./explorer/base-service.nix privateIP)
+          ./explorer/db-sync.nix
+          ({pkgs, config, ...}: {
+            services.cardano-node = let
+              cfg = config.services.cardano-node;
+            in {
+              inherit environmentName;
+
+              # m3.large.x86 in am6 facility
+              topology = builtins.toFile "topology.yaml"
+                (builtins.toJSON {Producers = [{addr = "europe.relays-new.cardano-mainnet.iohk.io"; port = cfg.port; valency = 2;}];});
+
+              # m3.large.x86 has 64 logical cpu and 256 GB RAM, allocate RAM 15% for cardano-node
+              totalCpuCores = 64;
+              totalMaxHeapSizeMbytes = 256 * 1024 * 0.15;
+            };
+
+            services.cardano-db-sync = {
+              inherit environmentName;
+              restoreSnapshot =
+                "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13/db-sync-snapshot-schema-13-block-8291499-x86_64.tgz";
+            };
+
+            services.explorer = {
+              inherit environmentName;
+              totalMachineMemoryGB = 256;
+            };
+
+            services.zfs-client-options = {
+              enable = lib.mkForce true;
+              enableZfsSnapshots = false;
+            };
+          })
+        ];
+
+        mkExplorer = name: privateIP: environmentName: extra: lib.mkMerge [
           {
             inherit deployType node_class primaryInterface role privateIP;
-            equinix = {inherit plan project;};
+            equinix = {
+              inherit plan project;
+              tags = [
+                "Cluster:${config.cluster.name}"
+                "Name:${name}"
+                "UID:${config.cluster.name}-${name}"
+                "Consul:client"
+                "Vault:client"
+                "Billing:explorer"
+              ];
+            };
 
             modules =
               baseEquinixModuleConfig
-              ++ (baseEquinixMachineConfig name);
+              ++ (baseEquinixMachineConfig name)
+              ++ (baseExplorerModuleConfig name privateIP environmentName);
           }
           extra
         ];
       in {
-        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" {};
-        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" {};
-        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" {};
+        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
+        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
+        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" "mainnet" {};
       };
     };
   };

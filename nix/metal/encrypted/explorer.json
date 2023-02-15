@@ -1,0 +1,35 @@
+{
+	"gaTrackingId": "ENC[AES256_GCM,data:g+1B7Fk2HiKaORXuEgoJ,iv:AzPg1hHuZq4AjZ+Wh+JuNlyce4A5T2ZgF3gs+8K/dkM=,tag:wVv9XZUnoN7Kg0BRqrbFSA==,type:str]",
+	"poolsExcludeList": [
+		"ENC[AES256_GCM,data:4f4VkE0ZBO3Cl0aoT9YVxm5BoTxKRh/et/w7o80P/NutqihK4BB7CVi4WmKwU3ohM2fvBbc0lF8=,iv:m+f0G3PnQwWmOFSjjC16IwSnpBBKP+Q3ekRRbD/F/wU=,tag:EYvU7nvuxq15eNJ+g2HPUw==,type:str]"
+	],
+	"relaysExcludeList": [
+		"ENC[AES256_GCM,data:+QQ8JTDEWytVPFH8OlRb,iv:tf+H74CF+jFEraHTpgymTHq6rcewpSAUvAjvjxpk6C4=,tag:sb/DuEf+N5PhZVhMb8HoJg==,type:str]"
+	],
+	"smashAllowedOrigins": [
+		"ENC[AES256_GCM,data:XluKpeY1OlO/dTcbzr29VUajVKLCD+cD/UqRZpmh541wOatC1Q==,iv:9tNxWCp3XGS0QWcwQm2+RIFkz1/OV8MCFuI27IAlZfI=,tag:vdCXIy01H+GHyPvUqB9Kmg==,type:str]",
+		"ENC[AES256_GCM,data:rpjZDLzsBjMPcvOGhu5IoLa7EX0w4TSQMTajgvX541+YIj6zwgn9z1s=,iv:Mu6o4YMquKJYgUsVrFrX6AIzwR5k1p8tHmTfJZBbE48=,tag:LqvhL0HTYjuwAqi5Dl+kcA==,type:str]"
+	],
+	"smashApiKeys": {
+		"Devops": "ENC[AES256_GCM,data:IVQsOKTYYPlLPxKRC+cOMNuu6mck8Fn99bCliFfmODI=,iv:bZ7I2iQqcjmtICYspGzWhmzpzybQht8EJvuRsGy68/I=,tag:p4k+X8rbjHxcKwGj8LuA5g==,type:str]"
+	},
+	"sops": {
+		"kms": [
+			{
+				"arn": "arn:aws:kms:eu-central-1:052443713844:key/c1d7a205-5d3d-4ca7-8842-9f7fb2ccc847",
+				"created_at": "2023-02-06T18:57:41Z",
+				"enc": "AQICAHjXAo0MmHBo9Ef23uY+WgKmgXNZSxccZLpmGM+ubT+6GgHX2lNUWjlKObUDeL4w4id6AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMIMfofF2Iyefh/wBuAgEQgDt1mPWE+zZnZH+SLs/eyITMdzBWW8F7nJ5EtXVvakXGCiNUXj1MG5CqPIkHysJAMt0iDvfeVO13hwoxXw==",
+				"aws_profile": ""
+			}
+		],
+		"gcp_kms": null,
+		"azure_kv": null,
+		"hc_vault": null,
+		"age": null,
+		"lastmodified": "2023-02-08T20:16:02Z",
+		"mac": "ENC[AES256_GCM,data:ZqgEjKccT4jKiDYC+KRDVF9GvLWBuLvizzWpjRFYRl5K3ya5U1JRv1dA1e3157fw9zgHrh9eQFd0RlBGdG92vg+1gbENoWsm0wvlHhoL02m7KHbYMhoKxQ49bVo2lpf/sy60jbkUBCk7KtAY+dQtFW/Q67MzLC/LocpuQ79tk34=,iv:n3HLQwI/8CuYrwJJQm72QAQIGepoM3P4oKJ/edlyyl8=,tag:p+pId83FTsK/w/TVf849MA==,type:str]",
+		"pgp": null,
+		"unencrypted_suffix": "_unencrypted",
+		"version": "3.7.3"
+	}
+}

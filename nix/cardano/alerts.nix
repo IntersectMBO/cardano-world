@@ -4,6 +4,7 @@
 }:
 let
   chainDensityLow = toString 70;
+  chainDensityVeryLow = toString 50;
   highBlockUtilization = toString 95; # Alert if blocks are above that % full.
 
 in
@@ -39,7 +40,7 @@ in
         }
         {
           alert = "chain_quality_degraded";
-          expr = "100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real * 20)) < ${chainDensityLow}";
+          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real{namespace!="private"} * 20)) < ${chainDensityLow}'';
           for = "5m";
           labels = {
             severity = "page";
@@ -47,6 +48,18 @@ in
           annotations = {
             summary = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%) in namespace {{$labels.namespace}}.";
             description = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%) in namespace {{$labels.namespace}}.";
+          };
+        }
+        {
+          alert = "chain_quality_degraded_very_low";
+          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real * 20)) < ${chainDensityVeryLow}'';
+          for = "5m";
+          labels = {
+            severity = "page";
+          };
+          annotations = {
+            summary = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityVeryLow}%) in namespace {{$labels.namespace}}.";
+            description = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityVeryLow}%) in namespace {{$labels.namespace}}.";
           };
         }
         # {
@@ -251,6 +264,92 @@ in
               Faucet has no available UTxO in namespace {{$labels.namespace}} on alloc {{$labels.nomad_alloc_name}}.'';
           };
         }
+    ];
+  };
+
+  metal-explorer = {
+    datasource = "vm";
+    rules = [
+      {
+        alert = "node_down";
+        expr = ''up == 0'';
+        for = "5m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Node is down.";
+          description = "{{$labels.alias}} has been down for more than 5 minutes.";
+        };
+      }
+      {
+        alert = "node_systemd_service_failed";
+        expr = ''node_systemd_unit_state{state="failed"} == 1'';
+        for = "5m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Service {{$labels.name}} failed to start.";
+          description = "{{$labels.alias}} failed to (re)start service {{$labels.name}}.";
+        };
+      }
+      {
+        alert = "node_filesystem_full_90percent";
+        expr = ''sort(node_filesystem_free_bytes{device!="ramfs"} < node_filesystem_size_bytes{device!="ramfs"} * 0.1) / 1024^3'';
+        for = "5m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Filesystem is running out of space soon.";
+          description = "{{$labels.alias}} device {{$labels.device}} on {{$labels.mountpoint}} got less than 10% space left on its filesystem.";
+        };
+      }
+      {
+        alert = "node_filesystem_full_in_4h";
+        expr = ''predict_linear(node_filesystem_free_bytes{device!~"ramfs|tmpfs|none",fstype!~"autofs|ramfs|cd9660"}[4h], 4*3600) <= 0'';
+        for = "5m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Filesystem is running out of space in 4 hours.";
+          description = "{{$labels.alias}} device {{$labels.device}} on {{$labels.mountpoint}} is running out of space of in approx. 4 hours";
+        };
+      }
+      {
+        alert = "node_filedescriptors_full_in_3h";
+        expr = ''predict_linear(node_filefd_allocated[1h], 3*3600) >= node_filefd_maximum'';
+        for = "20m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}} is running out of available file descriptors in 3 hours.";
+          description = "{{$labels.alias}} is running out of available file descriptors in approx. 3 hours";
+        };
+      }
+      {
+        alert = "node_time_unsync";
+        expr = ''abs(node_timex_estimated_error_seconds) > 0.500'';
+        for = "5m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Clock out of sync with NTP";
+          description = "{{$labels.alias}} Local clock offset is too large or out of sync with NTP";
+        };
+      }
+      {
+        alert = "http_high_internal_error_rate";
+        expr = ''rate(nginx_vts_server_requests_total{code="5xx"}[5m]) * 50 > on(alias, host) rate(nginx_vts_server_requests_total{code="2xx"}[5m])'';
+        for = "15m";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: High http internal error (code 5xx) rate";
+          description = "{{$labels.alias}}  number of correctly served requests is less than 50 times the number of requests aborted due to an internal server error";
+        };
+      }
+      {
+        alert = "varnish cache too small or ttl too long";
+        expr = ''rate(varnish_main_n_lru_nuked[30m]) > 5 * rate(varnish_main_n_expired[30m])'';
+        for = "1h";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: Too many objects (5 times the number of expiring objects) are being forcefully evicted from varnish cache due to memory constraints.";
+          description = "{{$labels.alias}}: Consider increasing varnish malloc limit or decreasing beresp.ttl";
+        };
+      }
     ];
   };
 }

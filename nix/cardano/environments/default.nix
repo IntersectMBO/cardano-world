@@ -23,6 +23,7 @@
   environments = {
     mainnet = rec {
       useByronWallet = true;
+      domain = "cardano-mainnet.iohk.io";
       relays = "relays.cardano-mainnet.iohk.io";
       relaysNew = "relays-new.cardano-mainnet.iohk.io";
       explorerUrl = "https://explorer.cardano.org";
@@ -43,9 +44,11 @@
       submitApiConfig = mkSubmitApiConfig "mainnet" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "mainnet" nodeConfig;
       usePeersFromLedgerAfterSlot = 29691317;
+      auxConfig = import ./aux-config/mainnet-aux.nix inputs;
     };
     staging = rec {
       useByronWallet = true;
+      domain = "staging.cardano.org";
       relaysNew = "relays.staging.cardano.org";
       explorerUrl = "https://explorer.staging.cardano.org";
       smashUrl = "https://smash.staging.cardano.org";
@@ -67,6 +70,7 @@
     };
     testnet = rec {
       useByronWallet = true;
+      domain = "cardano-testnet.iohkdev.io";
       relays = "relays.cardano-testnet.iohkdev.io";
       relaysNew = "relays-new.cardano-testnet.iohkdev.io";
       explorerUrl = "https://explorer.cardano-testnet.iohkdev.io";
@@ -91,6 +95,7 @@
     p2p = rec {
       useByronWallet = false;
       private = false;
+      domain = "p2p.dev.cardano.org";
       relaysNew = "relays.p2p.dev.cardano.org";
       explorerUrl = "https://explorer.p2p.dev.cardano.org";
       smashUrl = "https://smash.p2p.dev.cardano.org";
@@ -112,6 +117,7 @@
     marlowe-pioneers = rec {
       useByronWallet = false;
       private = false;
+      domain = "marlowe-pioneers.dev.cardano.org";
       relaysNew = "relays.marlowe-pioneers.dev.cardano.org";
       explorerUrl = "https://explorer.marlowe-pioneers.dev.cardano.org";
       smashUrl = "https://smash.marlowe-pioneers.dev.cardano.org";
@@ -128,6 +134,7 @@
     shelley_qa = rec {
       useByronWallet = false;
       private = true;
+      domain = "shelley-qa.dev.cardano.org";
       relaysNew = "relays-new.shelley-qa.dev.cardano.org";
       relaysOld = "shelley-qa-node.world.dev.cardano.org";
       explorerUrl = "https://explorer.shelley-qa.dev.cardano.org";
@@ -144,6 +151,7 @@
     vasil-dev = rec {
       useByronWallet = false;
       private = false;
+      domain = "world.dev.cardano.org";
       relaysNew = "vasil-dev-node.world.dev.cardano.org";
       explorerUrl = "https://vasil-dev-explorer.world.dev.cardano.org";
       smashUrl = "https://vasil-dev-smash.world.dev.cardano.org";
@@ -165,6 +173,7 @@
     preprod = rec {
       useByronWallet = false;
       private = false;
+      domain = "world.dev.cardano.org";
       relaysNew = "preprod-node.world.dev.cardano.org";
       explorerUrl = "https://preprod-explorer.world.dev.cardano.org";
       smashUrl = "https://preprod-smash.world.dev.cardano.org";
@@ -185,6 +194,7 @@
     preview = rec {
       useByronWallet = false;
       private = false;
+      domain = "world.dev.cardano.org";
       relaysNew = "preview-node.world.dev.cardano.org";
       explorerUrl = "https://preview-explorer.world.dev.cardano.org";
       smashUrl = "https://preview-smash.world.dev.cardano.org";
@@ -205,6 +215,7 @@
     pv8 = rec {
       useByronWallet = false;
       private = false;
+      domain = "world.dev.cardano.org";
       relaysNew = "pv8-node.world.dev.cardano.org";
       explorerUrl = "https://pv8-explorer.world.dev.cardano.org";
       smashUrl = "https://pv8-smash.world.dev.cardano.org";
@@ -225,6 +236,7 @@
     private = rec {
       useByronWallet = false;
       private = true;
+      domain = "world.dev.cardano.org";
       relaysNew = "private-node.world.dev.cardano.org";
       explorerUrl = "https://private-explorer.world.dev.cardano.org";
       smashUrl = "https://private-smash.world.dev.cardano.org";
@@ -247,6 +259,7 @@
     sre = rec {
       useByronWallet = false;
       private = true;
+      domain = "sre.dev.cardano.org";
       relaysNew = "relays.sre.dev.cardano.org";
       explorerUrl = "https://explorer.sre.dev.cardano.org";
       smashUrl = "https://smash.sre.dev.cardano.org";

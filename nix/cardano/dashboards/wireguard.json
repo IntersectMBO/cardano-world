@@ -1,0 +1,397 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:37",
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Wireguard Dashboard",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": 12177,
+  "graphTooltip": 0,
+  "id": 78,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "hiddenSeries": false,
+      "id": 6,
+      "interval": "",
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "time()-wireguard_latest_handshake_seconds{namespace=\"$namespace\", alias=\"$alias\"}",
+          "format": "time_series",
+          "interval": "",
+          "legendFormat": "{{alias}}-{{public_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Peer Last Handshake",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:139",
+          "format": "s",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:140",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "hiddenSeries": false,
+      "id": 4,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "irate(wireguard_sent_bytes_total{namespace=\"$namespace\", alias=\"$alias\"}[1m])",
+          "interval": "",
+          "legendFormat": "{{alias}}-{{public_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Peer Transmit Bytes Total (1m)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:373",
+          "format": "bytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:374",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "hiddenSeries": false,
+      "id": 2,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "irate(wireguard_received_bytes_total{namespace=\"$namespace\", alias=\"$alias\"}[1m])",
+          "interval": "",
+          "legendFormat": "{{alias}}-{{public_key}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Peer Receive Bytes Total (1m)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:521",
+          "format": "bytes",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:522",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "metal-explorer-mainnet",
+          "value": "metal-explorer-mainnet"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "VictoriaMetrics"
+        },
+        "definition": "label_values(wireguard_latest_handshake_seconds, namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "query": "label_values(wireguard_latest_handshake_seconds, namespace)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "VictoriaMetrics"
+        },
+        "definition": "label_values(wireguard_latest_handshake_seconds, alias)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "alias",
+        "options": [],
+        "query": {
+          "query": "label_values(wireguard_latest_handshake_seconds, alias)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Wireguard",
+  "uid": "romYcXqZj",
+  "version": 1,
+  "weekStart": ""
+}
