@@ -4,6 +4,7 @@
 }:
 let
   chainDensityLow = toString 70;
+  chainDensityVeryLow = toString 50;
   highBlockUtilization = toString 95; # Alert if blocks are above that % full.
 
 in
@@ -39,7 +40,7 @@ in
         }
         {
           alert = "chain_quality_degraded";
-          expr = "100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real * 20)) < ${chainDensityLow}";
+          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real{namespace!="private"} * 20)) < ${chainDensityLow}'';
           for = "5m";
           labels = {
             severity = "page";
@@ -47,6 +48,18 @@ in
           annotations = {
             summary = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%) in namespace {{$labels.namespace}}.";
             description = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityLow}%) in namespace {{$labels.namespace}}.";
+          };
+        }
+        {
+          alert = "chain_quality_degraded_very_low";
+          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real * 20)) < ${chainDensityVeryLow}'';
+          for = "5m";
+          labels = {
+            severity = "page";
+          };
+          annotations = {
+            summary = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityVeryLow}%) in namespace {{$labels.namespace}}.";
+            description = "Degraded Chain Density: more than 20% of nodes have low chain density (<${chainDensityVeryLow}%) in namespace {{$labels.namespace}}.";
           };
         }
         # {
