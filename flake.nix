@@ -80,11 +80,6 @@
       flake = false;
     };
 
-    # cardano-rosetta = {
-    #   url = "github:input-output-hk/cardano-rosetta";
-    #   flake = false;
-    # };
-
     ogmios = {
       url = "github:CardanoSolutions/ogmios/v5.5.5";
       flake = false;

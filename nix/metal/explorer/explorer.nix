@@ -216,7 +216,7 @@ in {
       logConfig = {};
 
       postgres = {inherit (dbSyncCfg.postgres) port database user socketdir;};
-      delistedPools = (import (self.inputs.explorer-cardano-ops + "/globals-${cfg.environmentName}.nix") pkgs).smashDelistedPools;
+      delistedPools = environmentConfig.auxConfig.smashDelistedPools;
     };
 
     systemd.services.cardano-ogmios.serviceConfig = {

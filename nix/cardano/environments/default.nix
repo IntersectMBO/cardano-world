@@ -44,6 +44,7 @@
       submitApiConfig = mkSubmitApiConfig "mainnet" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "mainnet" nodeConfig;
       usePeersFromLedgerAfterSlot = 29691317;
+      auxConfig = import ./aux-config/mainnet-aux.nix inputs;
     };
     staging = rec {
       useByronWallet = true;
