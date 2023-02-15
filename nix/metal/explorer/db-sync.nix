@@ -46,7 +46,7 @@ in {
 
     services.cardano-postgres.enable = true;
     services.postgresql = {
-      ensureDatabases = ["cexplorer" "cgql"];
+      ensureDatabases = ["cexplorer"];
       initialScript = builtins.toFile "enable-pgcrypto.sql" ''
         \connect template1
         CREATE EXTENSION IF NOT EXISTS pgcrypto SCHEMA pg_catalog;
@@ -56,7 +56,6 @@ in {
           name = "cexplorer";
           ensurePermissions = {
             "DATABASE cexplorer" = "ALL PRIVILEGES";
-            "DATABASE cgql" = "ALL PRIVILEGES";
             "ALL TABLES IN SCHEMA information_schema" = "SELECT";
             "ALL TABLES IN SCHEMA pg_catalog" = "SELECT";
           };

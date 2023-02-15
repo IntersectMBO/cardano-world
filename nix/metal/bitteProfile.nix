@@ -586,7 +586,17 @@ in {
         mkExplorer = name: privateIP: environmentName: extra: lib.mkMerge [
           {
             inherit deployType node_class primaryInterface role privateIP;
-            equinix = {inherit plan project;};
+            equinix = {
+              inherit plan project;
+              tags = [
+                "Cluster:${config.cluster.name}"
+                "Name:${name}"
+                "UID:${config.cluster.name}-${name}"
+                "Consul:client"
+                "Vault:client"
+                "Billing:explorer"
+              ];
+            };
 
             modules =
               baseEquinixModuleConfig

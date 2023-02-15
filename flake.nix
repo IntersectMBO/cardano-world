@@ -9,7 +9,6 @@
     # --- Bitte Stack ----------------------------------------------
     bitte = {
       url = "github:input-output-hk/bitte";
-      # url = "path:/home/jlotoski/work/iohk/bitte-wt/nixpkgs-2211";
       inputs.capsules.follows = "capsules";
     };
 
