@@ -3,6 +3,7 @@
   cell,
 }: let
   inherit (inputs) cells bitte-cells;
+  inherit (inputs.nixpkgs) lib;
 in {
   # Bitte Hydrate Module
   # -----------------------------------------------------------------------
@@ -50,8 +51,38 @@ in {
     # cluster level (terraform)
     # --------------
     tf.hydrate-cluster.configuration = {
+      resource.vault_github_team.performance-tracing = {
+        backend = "\${vault_github_auth_backend.employee.path}";
+        team = "performance-tracing";
+        policies = ["perf"];
+      };
+
       # ... operator role policies
       locals.policies = {
+        vault = let
+          c = "create";
+          r = "read";
+          u = "update";
+          d = "delete";
+          l = "list";
+          s = "sudo";
+          caps = lib.mapAttrs (n: v: {capabilities = v;});
+        in {
+          perf.path = caps {
+            "auth/token/lookup" = [u];
+            "auth/token/lookup-self" = [r];
+            "auth/token/renew-self" = [u];
+            "sys/capabilities-self" = [u];
+            "kv/data/postgrest/*" = [r l];
+            "kv/metadata/postgrest/*" = [r l];
+            "nomad/creds/perf" = [r u];
+            "consul/creds/developer" = [r u];
+            "sops/keys/dev" = [r l];
+            "sops/decrypt/dev" = [r u l];
+            "sops/encrypt/dev" = [r u l];
+          };
+        };
+
         consul.developer = {
           service_prefix."mainnet-" = {
             policy = "write";
@@ -170,17 +201,6 @@ in {
               "alloc-lifecycle"
             ];
           };
-          namespace.perf = {
-            policy = "write";
-            capabilities = [
-              "submit-job"
-              "dispatch-job"
-              "read-logs"
-              "alloc-exec"
-              "alloc-node-exec"
-              "alloc-lifecycle"
-            ];
-          };
           host_volume."mainnet-*".policy = "write";
           host_volume."shelley-qa-*".policy = "write";
           host_volume."vasil-dev-*".policy = "write";
@@ -188,7 +208,31 @@ in {
           host_volume."preview-*".policy = "write";
           host_volume."pv8-*".policy = "write";
           host_volume."private-*".policy = "write";
+        };
+
+        nomad.perf = {
+          description = "Performance tracing and benchmarking policies";
+          namespace."*".policy = "deny";
+          namespace."perf" = {
+            policy = "write";
+            capabilities = [
+              "alloc-exec"
+              "alloc-lifecycle"
+              "alloc-node-exec"
+              "dispatch-job"
+              "list-jobs"
+              "list-scaling-policies"
+              "read-fs"
+              "read-job"
+              "read-job-scaling"
+              "read-logs"
+              "read-scaling-policy"
+              "scale-job"
+              "submit-job"
+            ];
+          };
           host_volume."perf-*".policy = "write";
+          node.policy = "read";
         };
       };
     };
