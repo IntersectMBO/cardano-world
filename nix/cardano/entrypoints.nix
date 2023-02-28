@@ -383,8 +383,14 @@ in {
 
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
+        local -i i
         while true
         do
+          i+=1
+          # renew credentials lease every 2 minutes
+          if [[ $(( i % 8 )) -eq 0 ]]; then
+            renew_lease
+          fi
           sleep 15
           echo "Service discovery heartbeat - every 15 seconds" >&2
           original_addr="$PSQL_ADDR0"
@@ -403,6 +409,7 @@ in {
         # PSQL_HOST0=domain
         # PSQL_PORT0=port
 
+        export PGPASSJSON=/secrets/pg.json
         export PGPASSFILE=/secrets/pgpass
         export PSQL_ADDR0
 
@@ -421,18 +428,60 @@ in {
 
         local cmd=(
           "curl"
+          "--silent"
           "$VAULT_ADDR/v1/$VAULT_KV_PATH"
           "--header" "X-Vault-Token: $VAULT_TOKEN"
           "--header" "Content-Type: application/json"
         )
 
-        local json
-        json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
+        local json quser qpass
+        if [[ -r $PGPASSJSON ]]; then
+          json=$(<"$PGPASSJSON")
+        else
+          json=$("''${cmd[@]}") 2>/dev/null
+          echo "$json" > $PGPASSJSON
+          if renewable "$json"; then
+            LEASE_ID=$(jq -r '.lease_id' <<<"$json")
+            LEASE_DURATION=$(jq -r '.lease_duration' <<<"$json")
+            export LEASE_ID LEASE_DURATION
+          fi
+        fi
 
-        PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
-        PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
+        if renewable "$json"; then
+          quser=username
+          qpass=password
+        fi
+
+        PGUSER=$(echo "$json"|jq -e -r ".data.''${quser:-data.pgUser}")
+        PGPASS=$(echo "$json"|jq -e -r ".data.''${qpass:-data.pgPass}")
         echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
         test -z "''${PGPASSFILE:-}" || chmod 0600 "$PGPASSFILE"
+      }
+
+      function renewable {
+        jq -e '.renewable' <<<"$1" >/dev/null
+      }
+
+      function renew_lease {
+        if [[ -v LEASE_ID ]]; then
+          local json
+          local cmd=(
+            "curl"
+            "--silent"
+            "$VAULT_ADDR/v1/sys/leases/renew"
+            "--header" "X-Vault-Token: $VAULT_TOKEN"
+            "--data" '{"lease_id": "'"$LEASE_ID"'", "increment": '"$LEASE_DURATION"'}'
+          )
+
+          json=$("''${cmd[@]}") 2>/dev/null
+
+          if renewable "$json"; then
+            echo "Extended DB credential lease until: $(date -d "$LEASE_DURATION sec" '+%T')." >&2
+          else
+            echo "Failed to extend DB credentials lease at $(date '+%T')." >&2
+            echo "Will try again in 2 minutes." >&2
+          fi
+        fi
       }
 
       if [ -n "''${VAULT_KV_PATH:-}" ]; then
