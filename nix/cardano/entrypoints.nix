@@ -13,6 +13,10 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
   prelude-runtime = [nixpkgs.coreutils nixpkgs.curl nixpkgs.jq nixpkgs.xxd srvaddr];
 
   prelude = ''
+    if [[ -v DEBUG_SCRIPT ]]; then
+      set -x
+    fi
+
     [ -z "''${DATA_DIR:-}" ] && echo "DATA_DIR env var must be set -- aborting" && exit 1
 
     mkdir -p "$DATA_DIR"
@@ -369,9 +373,8 @@ in {
   };
 
   cardano-db-sync = writeShellApplication {
-    runtimeInputs = prelude-runtime ++ pull-snapshot-deps ++ [nixpkgs.postgresql_12];
+    runtimeInputs = prelude-runtime ++ pull-snapshot-deps ++ [nixpkgs.postgresql_12 packages.cardano-db-sync];
     debugInputs = [
-      packages.cardano-db-sync
       packages.cardano-cli
       nixpkgs.strace # for debugging libq
     ];
@@ -380,24 +383,87 @@ in {
 
       ${prelude}
       DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
+      DB_SYNC=$(realpath "$(type -p cardano-db-sync)")
+      DB_SYNC_SCHEMA="''${DB_SYNC_SCHEMA:-${inputs.cardano-db-sync}/schema}"
+      PGPASSJSON=/secrets/pg.json
+      PGPASSFILE=/secrets/pgpass
+      export PGPASSFILE
+
+      function spawn_dbsync {
+        local -a args
+
+        # Build args array
+        args+=("--config" "$DB_SYNC_CONFIG")
+        args+=("--socket-path" "$SOCKET_PATH")
+        args+=("--state-dir" "$DB_DIR/db-sync")
+        args+=("--schema-dir" "$DB_SYNC_SCHEMA")
+        if [ -n "''${DISABLE_LEDGER:-}" ]; then
+          args+=("--disable-ledger")
+        fi
+
+        if [[ -v DB_SYNC_PID ]]; then
+          echo "Killing existing db-sync process: $DB_SYNC_PID" >&2
+          kill "$DB_SYNC_PID"
+        fi
+
+        echo "Running db-sync in background" >&2
+        "$DB_SYNC" "''${args[@]}" &
+        DB_SYNC_PID="$!"
+        export DB_SYNC_PID
+      }
 
       function watch_leader_discovery {
-        declare -i pid_to_signal=$1
-        local -i i
+        local -i loop_count
         while true
         do
-          i+=1
+          loop_count+=1
+
+          if ! [[ -d /proc/$DB_SYNC_PID ]]; then
+            echo "exiting: db-sync failed" >&2
+            exit 1
+          fi
+
           # renew credentials lease every 2 minutes
-          if [[ $(( i % 8 )) -eq 0 ]]; then
+          if [[ $(( loop_count % 8 )) -eq 0 ]]; then
             renew_lease
           fi
-          sleep 15
+
           echo "Service discovery heartbeat - every 15 seconds" >&2
           original_addr="$PSQL_ADDR0"
           pgpassfile_discovery
           new_addr="$PSQL_ADDR0"
-          [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
+          [ "$original_addr" != "$new_addr" ] && spawn_dbsync
+
+          sleep 15
         done
+      }
+
+      function acquire_db_creds {
+        [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
+        [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
+        [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
+
+        local json
+
+        if [[ -r $PGPASSJSON ]]; then
+          json=$(<"$PGPASSJSON")
+        else
+          echo "Retrieving db credentials from vault kv ..." >&2
+          local cmd=(
+            "curl"
+            "--silent"
+            "$VAULT_ADDR/v1/$VAULT_KV_PATH"
+            "--header" "X-Vault-Token: $VAULT_TOKEN"
+            "--header" "Content-Type: application/json"
+          )
+
+          json=$("''${cmd[@]}")
+
+          echo -n "$json" > "$PGPASSJSON"
+          echo "Pulled DB credentials successfully." >&2
+        fi
+
+        echo -n "$json"
       }
 
       function pgpassfile_discovery {
@@ -409,14 +475,7 @@ in {
         # PSQL_HOST0=domain
         # PSQL_PORT0=port
 
-        export PGPASSJSON=/secrets/pg.json
-        export PGPASSFILE=/secrets/pgpass
         export PSQL_ADDR0
-
-        echo "Retrieving db credentials from vault kv ..." >&2
-        [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
-        [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
-        [ -z "''${VAULT_TOKEN:-}" ] && echo "VAULT_TOKEN env var must be set -- aborting" && exit 1
 
         [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
         [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
@@ -426,34 +485,17 @@ in {
         export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
         export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
-        local cmd=(
-          "curl"
-          "--silent"
-          "$VAULT_ADDR/v1/$VAULT_KV_PATH"
-          "--header" "X-Vault-Token: $VAULT_TOKEN"
-          "--header" "Content-Type: application/json"
-        )
+        local creds quser qpass
 
-        local json quser qpass
-        if [[ -r $PGPASSJSON ]]; then
-          json=$(<"$PGPASSJSON")
-        else
-          json=$("''${cmd[@]}") 2>/dev/null
-          echo "$json" > $PGPASSJSON
-          if renewable "$json"; then
-            LEASE_ID=$(jq -r '.lease_id' <<<"$json")
-            LEASE_DURATION=$(jq -r '.lease_duration' <<<"$json")
-            export LEASE_ID LEASE_DURATION
-          fi
-        fi
+        creds=$(acquire_db_creds)
 
-        if renewable "$json"; then
+        if renewable "$creds"; then
           quser=username
           qpass=password
         fi
 
-        PGUSER=$(echo "$json"|jq -e -r ".data.''${quser:-data.pgUser}")
-        PGPASS=$(echo "$json"|jq -e -r ".data.''${qpass:-data.pgPass}")
+        PGUSER=$(echo "$creds"|jq -e -r ".data.''${quser:-data.pgUser}")
+        PGPASS=$(echo "$creds"|jq -e -r ".data.''${qpass:-data.pgPass}")
         echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
         test -z "''${PGPASSFILE:-}" || chmod 0600 "$PGPASSFILE"
       }
@@ -463,23 +505,41 @@ in {
       }
 
       function renew_lease {
-        if [[ -v LEASE_ID ]]; then
-          local json
-          local cmd=(
+        local json lease_id lease_duration lease cmd
+        json=$(<"$PGPASSJSON")
+        if renewable "$json"; then
+          lease_id=$(jq -r '.lease_id' <<<"$json")
+          lease_duration=$(jq -r '.lease_duration' <<<"$json")
+
+          cmd=(
             "curl"
             "--silent"
-            "$VAULT_ADDR/v1/sys/leases/renew"
+            "$VAULT_ADDR/v1/sys/leases/lookup"
             "--header" "X-Vault-Token: $VAULT_TOKEN"
-            "--data" '{"lease_id": "'"$LEASE_ID"'", "increment": '"$LEASE_DURATION"'}'
+            "--data" '{"lease_id": "'"$lease_id"'"}'
           )
 
-          json=$("''${cmd[@]}") 2>/dev/null
+          lease=$("''${cmd[@]}" | jq .data)
 
-          if renewable "$json"; then
-            echo "Extended DB credential lease until: $(date -d "$LEASE_DURATION sec" '+%T')." >&2
+          if renewable "$lease"; then
+            cmd=(
+              "curl"
+              "--fail"
+              "--silent"
+              "$VAULT_ADDR/v1/sys/leases/renew"
+              "--header" "X-Vault-Token: $VAULT_TOKEN"
+              "--data" '{"lease_id": "'"$lease_id"'", "increment": '"$lease_duration"'}'
+            )
+
+            if "''${cmd[@]}" > /dev/null; then
+              echo "Extended DB credential lease until: $(date -d "$lease_duration sec" '+%T')." >&2
+            fi
           else
             echo "Failed to extend DB credentials lease at $(date '+%T')." >&2
-            echo "Will try again in 2 minutes." >&2
+            echo "Attempting to renew them..." >&2
+            rm "$PGPASSJSON"
+            pgpassfile_discovery
+            spawn_dbsync
           fi
         fi
       }
@@ -517,30 +577,17 @@ in {
         fi
       fi
 
-      # Build args array
-      args+=("--config" "$DB_SYNC_CONFIG")
-      args+=("--socket-path" "$SOCKET_PATH")
-      args+=("--state-dir" "$DB_DIR/db-sync")
-      args+=("--schema-dir" "${inputs.cardano-db-sync + "/schema"}")
-      if [ -n "''${DISABLE_LEDGER:-}" ]; then
-        args+=("--disable-ledger")
-      fi
 
 
       if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
         # turn on bash's job control
         set -m
 
-        # Define handler for SIGINT
-        trap "kill" "''${sid[@]}" INT
+        trap 'kill $DB_SYNC_PID' EXIT
+        spawn_dbsync
 
-        # SIGHUP reloads --topology
-        echo Running db-sync in background >&2
-        ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}" &
-        DB_SYNC_PID="$!"
-        sid=("$DB_SYNC_PID")
         echo Running leader discovery loop >&2
-        watch_leader_discovery "$DB_SYNC_PID"
+        watch_leader_discovery
       else
         [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
         exec ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}"
