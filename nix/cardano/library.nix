@@ -57,23 +57,17 @@
       })
       edgeNodes;
     topology = {
-      LocalRoots = {
-        groups = [
-          {
-            localRoots = {
-              accessPoints = [];
-              advertise = false;
-            };
-            valency = 1;
-          }
-        ];
-      };
-      PublicRoots = [
+      localRoots = [
         {
-          publicRoots = {
-            accessPoints = mkPublicRootsAccessPoints;
-            advertise = false;
-          };
+           accessPoints = [];
+           advertise = false;
+           valency = 1;
+        }
+      ];
+      publicRoots = [
+        {
+          accessPoints = mkPublicRootsAccessPoints;
+          advertise = false;
         }
       ];
       inherit useLedgerAfterSlot;
