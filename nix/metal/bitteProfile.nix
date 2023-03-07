@@ -590,8 +590,7 @@ in {
         ];
       in {
         explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
-        # explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
-        # explorer-3 = mkExplorer "explorer-3" "10.12.171.133" "mainnet" {};
+        explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
       };
     };
   };
