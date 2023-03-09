@@ -1029,15 +1029,16 @@
         "utils": "utils_4"
       },
       "locked": {
-        "lastModified": 1675703137,
-        "narHash": "sha256-pIn6uOHkwdJkPESKWT3asESsG8UOMhKtWwNmcpADUTg=",
+        "lastModified": 1678376713,
+        "narHash": "sha256-aB02I5GmEVWPgc5CPHYk70utjO4mWuGYvmAd4nxUYfU=",
         "owner": "input-output-hk",
         "repo": "bitte",
-        "rev": "02ecec6a67e732f6b26f80da4927845d99884442",
+        "rev": "c6724952fb7336ad27dd4cd9cdd28992ae25ac55",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "bump-glusterfs",
         "repo": "bitte",
         "type": "github"
       }
@@ -26491,11 +26492,11 @@
     "ops-lib": {
       "flake": false,
       "locked": {
-        "lastModified": 1662056650,
-        "narHash": "sha256-byGyz8dnmypUfeVVyYvBA///SK0QDRaxlBx9QhZpnlw=",
+        "lastModified": 1675186784,
+        "narHash": "sha256-HqDtrvk1l7YeREzCSEpUtChtlEgT6Tww9WrJiozjukc=",
         "owner": "input-output-hk",
         "repo": "ops-lib",
-        "rev": "e4a5d3e2734e2aac8513c27ef3c76a0cda265419",
+        "rev": "5be29ed53b2a4cbbf4cf326fa2e9c1f2b754d26d",
         "type": "github"
       },
       "original": {
