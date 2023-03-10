@@ -1,5 +1,6 @@
 name: environmentName: {
   self,
+  pkgs,
   lib,
   config,
   etcEncrypted,
@@ -21,7 +22,16 @@ in {
         ips = ["192.168.254.${explorerNum}/32"];
         privateKeyFile = "/etc/wireguard/private.key";
         peers = [
-          # explorer gateway
+          # cardano-world explorer gateway
+          # wg pubkey < <(sops -d ../encrypted/wg/explorer-private)
+          {
+            publicKey = "4DEOtdKOu8h284ZwjOsd/cKqSmuQnI+Jy2yiUPxG9B8=";
+            allowedIPs = ["192.168.254.253/32"];
+            endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
+            persistentKeepalive = 30;
+          }
+          # mainnet explorer gateway
+          # wg pubkey < <(sops -d ../encrypted/wg/explorer-gateway-private)
           {
             publicKey = "tW/7xjjD2vobYtM4aK/2E3M7EjgfUhBWxISLy9CUVxw=";
             allowedIPs = ["192.168.254.254/32"];
@@ -37,14 +47,10 @@ in {
     source = "${etcEncrypted}/wg/explorer-${explorerNum}-private";
     target = "/etc/wireguard/private.key";
     outputType = "binary";
+    extraPackages = [pkgs.wireguard-tools];
     script = ''
       chmod 0400 /etc/wireguard/private.key
+      wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
     '';
-  };
-
-  secrets.install.wg-public = {
-    source = "${etcEncrypted}/wg/explorer-${explorerNum}-public";
-    target = "/etc/wireguard/public.key";
-    outputType = "binary";
   };
 }
