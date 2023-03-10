@@ -2,6 +2,22 @@ inputs:
 let
   inherit (inputs.nixpkgs) lib;
 in lib.recursiveUpdate (import ./default-aux.nix inputs) {
+  explorerHostName = "explorer.cardano.org";
+
+  # WG_PUBKEY: wg pubkey < <(sops -d nix/metal/encrypted/wg/$AWS_EXT_NODES_NODENAME-private)
+  # Attr struct: {name = $AWS_EXT_NODES_NODENAME; publicKey = $WG_PUBKEY;}
+  explorerActiveBackends = [
+    {name = "explorer-1"; publicKey = "81yzO/clOEPyRiBXNfVIEQqdcr/QrnA5fhIEJym3MxI=";}
+    {name = "explorer-2"; publicKey = "qs1gZ5UY+u00byONElCW7bZ37Kxt6+pr865cN+bhBnI=";}
+  ];
+
+  explorerRosettaActiveBackends = [
+    "explorer-1"
+    "explorer-2"
+  ];
+
+  smashHostName = "smash.cardano-mainnet.iohk.io";
+
   # Mainnet auxillary configuration parameters
   smashDelistedPools = [
     "b6f665ef4d02abc5ce551f3565ada97d870d603c724ba791c7975a6b"
