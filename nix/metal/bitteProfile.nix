@@ -250,14 +250,15 @@ in {
                 };
               };
 
-              # Monitor the explorers
+              # Monitor the mainnet explorers and explorer gateway
               services.vmagent.promscrapeConfig = let
+                environment = "mainnet";
                 labels = machine: rec {
                   alias = machine;
 
                   # Adding these labels allows re-use of nomad-dashboards under a metal-* namespace
                   nomad_alloc_name = alias;
-                  namespace = "metal-explorer-mainnet";
+                  namespace = "metal-explorer-${environment}";
                 };
 
                 relabel_configs = [
@@ -285,6 +286,31 @@ in {
                   targets = [target];
                 };
 
+                mkExplorerGatewayTargets = explorerTargetList: [
+                  {
+                    job_name = "explorer-exporter-gateway";
+                    scrape_interval = "60s";
+                    metrics_path = "/metrics";
+                    static_configs = lib.flatten (map (attr: map (port: mkTarget attr.ip port attr.machine) [9100 9586]) explorerTargetList);
+                  }
+                  {
+                    job_name = "blackbox-explorer-frontend";
+                    scrape_interval = "60s";
+                    metrics_path = "/probe";
+                    params.module = ["https_2xx"];
+                    static_configs = [{targets = ["https://explorer.cardano.org"]; labels = {};}];
+                    inherit relabel_configs;
+                  }
+                  {
+                    job_name = "blackbox-explorer-graphql";
+                    scrape_interval = "60s";
+                    metrics_path = "/probe";
+                    params.module = ["https_explorer_post_2xx"];
+                    static_configs = [{targets = ["https://explorer.cardano.org/graphql"]; labels = {};}];
+                    inherit relabel_configs;
+                  }
+                ];
+
                 mkExplorerTargets = explorerTargetList: [
                   {
                     job_name = "explorer-exporter";
@@ -305,22 +331,6 @@ in {
                     static_configs = map (attr: mkTarget attr.ip 8080 attr.machine) explorerTargetList;
                   }
                   {
-                    job_name = "blackbox-explorer-frontend";
-                    scrape_interval = "60s";
-                    metrics_path = "/probe";
-                    params.module = ["https_2xx"];
-                    static_configs = [{targets = ["https://explorer.cardano.org"]; labels = {};}];
-                    inherit relabel_configs;
-                  }
-                  {
-                    job_name = "blackbox-explorer-graphql";
-                    scrape_interval = "60s";
-                    metrics_path = "/probe";
-                    params.module = ["https_explorer_post_2xx"];
-                    static_configs = [{targets = ["https://explorer.cardano.org/graphql"]; labels = {};}];
-                    inherit relabel_configs;
-                  }
-                  {
                     job_name = "blackbox-explorer-graphql-healthcheck";
                     scrape_interval = "60s";
                     metrics_path = "/probe";
@@ -329,7 +339,15 @@ in {
                     inherit relabel_configs;
                   }
                 ];
-              in (mkExplorerTargets [{ip = "10.12.171.129"; machine = "explorer-1";}]);
+
+                inherit (self.x86_64-linux.cardano.environments.${environment}.auxConfig) explorerActiveBackends;
+              in (
+                (mkExplorerGatewayTargets [
+                  {ip = config.cluster.awsExtNodes.explorer.privateIP; machine = "explorer";}
+                ])
+                ++
+                (mkExplorerTargets (map (backend: {ip = config.cluster.awsExtNodes.${backend.name}.privateIP; machine = backend.name;}) explorerActiveBackends))
+              );
             }
           ];
         };
@@ -481,6 +499,15 @@ in {
         project = config.cluster.name;
         plan = lib.mkDefault "m3.large.x86";
 
+        tags = name: [
+          "Cluster:${config.cluster.name}"
+          "Name:${name}"
+          "UID:${config.cluster.name}-${name}"
+          "Consul:client"
+          "Vault:client"
+          "Billing:explorer"
+        ];
+
         baseEquinixMachineConfig = machineName:
           if builtins.pathExists ./equinix/${machineName}/configuration.nix
           then [./equinix/${machineName}/configuration.nix]
@@ -571,14 +598,7 @@ in {
             inherit deployType node_class primaryInterface role privateIP;
             equinix = {
               inherit plan project;
-              tags = [
-                "Cluster:${config.cluster.name}"
-                "Name:${name}"
-                "UID:${config.cluster.name}-${name}"
-                "Consul:client"
-                "Vault:client"
-                "Billing:explorer"
-              ];
+              tags = tags name;
             };
 
             modules =
@@ -588,7 +608,40 @@ in {
           }
           extra
         ];
+
+        baseExplorerGatewayModuleConfig = name: privateIP: environmentName: [
+          (bitte + /modules/zfs-client-options.nix)
+          (import ./explorer/explorer-gateway.nix name environmentName privateIP)
+          (import ./explorer/wireguard-gateway.nix name environmentName)
+          ({pkgs, config, ...}: {
+            services.zfs-client-options = {
+              enable = lib.mkForce true;
+              enableZfsSnapshots = false;
+            };
+          })
+        ];
+
+        mkExplorerGateway = name: privateIP: environmentName: extra: lib.mkMerge [
+          {
+            inherit deployType node_class primaryInterface role privateIP;
+            equinix = {
+              inherit project;
+              plan = "m3.small.x86";
+              tags = tags name;
+            };
+
+            modules =
+              baseEquinixModuleConfig
+              ++ (baseEquinixMachineConfig name)
+              ++ (baseExplorerGatewayModuleConfig name privateIP environmentName);
+          }
+          extra
+        ];
       in {
+        # Traefik explorer gateway
+        explorer = mkExplorerGateway "explorer" "10.12.171.133" "mainnet" {};
+
+        # Explorer backends
         explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
         explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
       };
