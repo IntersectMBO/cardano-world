@@ -1029,11 +1029,11 @@
         "utils": "utils_4"
       },
       "locked": {
-        "lastModified": 1678376713,
-        "narHash": "sha256-aB02I5GmEVWPgc5CPHYk70utjO4mWuGYvmAd4nxUYfU=",
+        "lastModified": 1678893832,
+        "narHash": "sha256-ApiVcpET8a/JSAyfPyQ3Eum84YDGAeBEoMvTRiuYVRw=",
         "owner": "input-output-hk",
         "repo": "bitte",
-        "rev": "c6724952fb7336ad27dd4cd9cdd28992ae25ac55",
+        "rev": "af351f6569508c8f31aba482d160ea06548da593",
         "type": "github"
       },
       "original": {
@@ -5036,7 +5036,7 @@
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "1.35.6-rc2",
+        "ref": "1.35.6",
         "repo": "cardano-node",
         "type": "github"
       }
