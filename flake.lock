@@ -25946,6 +25946,22 @@
         "type": "github"
       }
     },
+    "offchain-metadata-tools": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1670417282,
+        "narHash": "sha256-FtKcQ0EfwJNg34GNLTCCNHmJyeKqtzhU+Fa261WIQSI=",
+        "owner": "input-output-hk",
+        "repo": "offchain-metadata-tools",
+        "rev": "a73f2c8d93518470feae798b4d9f4a33906fadfc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "offchain-metadata-tools",
+        "type": "github"
+      }
+    },
     "ogmios": {
       "flake": false,
       "locked": {
@@ -27868,6 +27884,7 @@
           "haskell-nix",
           "nixpkgs-unstable"
         ],
+        "offchain-metadata-tools": "offchain-metadata-tools",
         "ogmios": "ogmios_2",
         "openziti": "openziti",
         "std": "std_8",

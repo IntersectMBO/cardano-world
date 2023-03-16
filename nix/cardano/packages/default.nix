@@ -14,6 +14,7 @@ let
     cardano-db-sync
     ogmios
     cardano-graphql
+    offchain-metadata-tools
     cardano-explorer-app
     nix-inclusive
     ;
@@ -71,6 +72,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
       }
     ];
   };
+  offchain-metadata-tools' = import offchain-metadata-tools { inherit (nixpkgs) system; };
 in
 {
   inherit project ogmiosProject;
@@ -79,6 +81,12 @@ in
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;
   inherit (cardano-db-sync.packages) cardano-db-sync cardano-db-tool;
+  inherit (offchain-metadata-tools')
+    metadata-server
+    metadata-sync
+    metadata-webhook
+    metadata-validator-github
+    token-metadata-creator;
   inherit (ogmiosProject.hsPkgs.ogmios.components.exes) ogmios;
   cardano-graphql = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.cardano-graphql;
   graphql-engine = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.graphql-engine;
