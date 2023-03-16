@@ -2051,8 +2051,8 @@
       {
         "current": {
           "selected": false,
-          "text": "vasil-dev",
-          "value": "vasil-dev"
+          "text": "preview",
+          "value": "preview"
         },
         "datasource": {
           "type": "prometheus",

@@ -46,90 +46,6 @@
       usePeersFromLedgerAfterSlot = 29691317;
       auxConfig = import ./aux-config/mainnet-aux.nix inputs;
     };
-    staging = rec {
-      useByronWallet = true;
-      domain = "staging.cardano.org";
-      relaysNew = "relays.staging.cardano.org";
-      explorerUrl = "https://explorer.staging.cardano.org";
-      smashUrl = "https://smash.staging.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      edgeNodes = [
-        "3.125.10.61"
-        "52.192.59.170"
-        "18.136.145.112"
-      ];
-      edgePort = 3001;
-      confKey = "mainnet_dryrun_full";
-      private = true;
-      networkConfig = import ./staging-config.nix;
-      nodeConfig = networkConfig // defaultLogConfig;
-      consensusProtocol = networkConfig.Protocol;
-      submitApiConfig = mkSubmitApiConfig "staging" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "staging" nodeConfig;
-      usePeersFromLedgerAfterSlot = 29444240;
-    };
-    testnet = rec {
-      useByronWallet = true;
-      domain = "cardano-testnet.iohkdev.io";
-      relays = "relays.cardano-testnet.iohkdev.io";
-      relaysNew = "relays-new.cardano-testnet.iohkdev.io";
-      explorerUrl = "https://explorer.cardano-testnet.iohkdev.io";
-      smashUrl = "https://smash.cardano-testnet.iohkdev.io";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      edgeNodes = [
-        "3.125.94.58"
-        "18.176.19.63"
-        "13.251.186.36"
-        "3.135.95.164"
-      ];
-      edgePort = 3001;
-      confKey = "testnet_full";
-      private = false;
-      networkConfig = import ./testnet-config.nix;
-      nodeConfig = networkConfig // defaultLogConfig;
-      consensusProtocol = networkConfig.Protocol;
-      submitApiConfig = mkSubmitApiConfig "testnet" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "testnet" nodeConfig;
-      usePeersFromLedgerAfterSlot = 26888469;
-    };
-    p2p = rec {
-      useByronWallet = false;
-      private = false;
-      domain = "p2p.dev.cardano.org";
-      relaysNew = "relays.p2p.dev.cardano.org";
-      explorerUrl = "https://explorer.p2p.dev.cardano.org";
-      smashUrl = "https://smash.p2p.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./p2p-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgeNodes = [
-        {
-          addr = relaysNew;
-          port = edgePort;
-        }
-      ];
-      edgePort = 3001;
-      submitApiConfig = mkSubmitApiConfig "p2p" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "p2p" nodeConfig;
-      usePeersFromLedgerAfterSlot = 14680;
-    };
-    marlowe-pioneers = rec {
-      useByronWallet = false;
-      private = false;
-      domain = "marlowe-pioneers.dev.cardano.org";
-      relaysNew = "relays.marlowe-pioneers.dev.cardano.org";
-      explorerUrl = "https://explorer.marlowe-pioneers.dev.cardano.org";
-      smashUrl = "https://smash.marlowe-pioneers.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./marlowe-pioneers-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgePort = 3001;
-      submitApiConfig = mkSubmitApiConfig "marlowe-pioneers" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "marlowe-pioneers" nodeConfig;
-      usePeersFromLedgerAfterSlot = 40000;
-    };
     # used for daedalus/cardano-wallet for local development
     shelley_qa = rec {
       useByronWallet = false;
@@ -139,7 +55,7 @@
       relaysOld = "shelley-qa-node.world.dev.cardano.org";
       explorerUrl = "https://explorer.shelley-qa.dev.cardano.org";
       smashUrl = "https://smash.shelley-qa.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      metadataUrl = "https://metadata.world.dev.cardano.org";
       networkConfig = import ./shelley_qa-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
@@ -148,28 +64,6 @@
       dbSyncConfig = mkDbSyncConfig "shelley_qa" nodeConfig;
       usePeersFromLedgerAfterSlot = 23574838;
     };
-    vasil-dev = rec {
-      useByronWallet = false;
-      private = false;
-      domain = "world.dev.cardano.org";
-      relaysNew = "vasil-dev-node.world.dev.cardano.org";
-      explorerUrl = "https://vasil-dev-explorer.world.dev.cardano.org";
-      smashUrl = "https://vasil-dev-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./vasil-dev-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgeNodes = [
-        {
-          addr = relaysNew;
-          port = 30001;
-        }
-      ];
-      edgePort = 30001;
-      submitApiConfig = mkSubmitApiConfig "vasil-dev" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "vasil-dev" nodeConfig;
-      usePeersFromLedgerAfterSlot = 60000;
-    };
     preprod = rec {
       useByronWallet = false;
       private = false;
@@ -177,7 +71,7 @@
       relaysNew = "preprod-node.world.dev.cardano.org";
       explorerUrl = "https://preprod-explorer.world.dev.cardano.org";
       smashUrl = "https://preprod-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      metadataUrl = "https://metadata.world.dev.cardano.org";
       networkConfig = import ./preprod-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
@@ -198,7 +92,7 @@
       relaysNew = "preview-node.world.dev.cardano.org";
       explorerUrl = "https://preview-explorer.world.dev.cardano.org";
       smashUrl = "https://preview-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      metadataUrl = "https://metadata.world.dev.cardano.org";
       networkConfig = import ./preview-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
@@ -212,27 +106,6 @@
       dbSyncConfig = mkDbSyncConfig "preview" nodeConfig;
       usePeersFromLedgerAfterSlot = 322000;
     };
-    pv8 = rec {
-      useByronWallet = false;
-      private = false;
-      domain = "world.dev.cardano.org";
-      relaysNew = "pv8-node.world.dev.cardano.org";
-      explorerUrl = "https://pv8-explorer.world.dev.cardano.org";
-      smashUrl = "https://pv8-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./pv8-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgeNodes = [
-        {
-          addr = relaysNew;
-          port = 30006;
-        }
-      ];
-      submitApiConfig = mkSubmitApiConfig "pv8" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "pv8" nodeConfig;
-      usePeersFromLedgerAfterSlot = 32000;
-    };
     private = rec {
       useByronWallet = false;
       private = true;
@@ -240,7 +113,7 @@
       relaysNew = "private-node.world.dev.cardano.org";
       explorerUrl = "https://private-explorer.world.dev.cardano.org";
       smashUrl = "https://private-smash.world.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
+      metadataUrl = "https://metadata.world.dev.cardano.org";
       networkConfig = import ./private-config.nix;
       consensusProtocol = networkConfig.Protocol;
       nodeConfig = defaultLogConfig // networkConfig;
@@ -253,24 +126,6 @@
       submitApiConfig = mkSubmitApiConfig "private" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "private" nodeConfig;
       usePeersFromLedgerAfterSlot = 32000;
-    };
-
-    # used for SRE development
-    sre = rec {
-      useByronWallet = false;
-      private = true;
-      domain = "sre.dev.cardano.org";
-      relaysNew = "relays.sre.dev.cardano.org";
-      explorerUrl = "https://explorer.sre.dev.cardano.org";
-      smashUrl = "https://smash.sre.dev.cardano.org";
-      metadataUrl = "https://metadata.cardano-testnet.iohkdev.io";
-      networkConfig = import ./shelley_qa-config.nix;
-      consensusProtocol = networkConfig.Protocol;
-      nodeConfig = defaultLogConfig // networkConfig;
-      edgePort = 3001;
-      submitApiConfig = mkSubmitApiConfig "sre" nodeConfig;
-      dbSyncConfig = mkDbSyncConfig "sre" nodeConfig;
-      usePeersFromLedgerAfterSlot = 122760;
     };
   };
 in

@@ -22,16 +22,6 @@ Accountable: SRE Director
 Consulted: Release Manager
 Informed: Cardano Core Tribe
 
-### PV8
-
-- [Node Config](environments/pv8/config.json)
-- [DB Sync Config](environments/pv8/db-sync-config.json)
-- [Submit API Config](environments/pv8/submit-api-config.json)
-- [Node Topology](environments/pv8/topology.json)
-- [Byron Genesis](environments/pv8/byron-genesis.json)
-- [Shelley Genesis](environments/pv8/shelley-genesis.json)
-- [Alonzo Genesis](environments/pv8/alonzo-genesis.json)
-
 ## Shelley-QA (Internal Only)
 
 Usage: Testing all new functionality. Ideally automatically deployed off of master on every commit
@@ -142,21 +132,3 @@ Informed: Cardano Core Tribe, COO, IOG Director of Engineering, IOG VP Community
 - [Byron Genesis](environments/mainnet/byron-genesis.json)
 - [Shelley Genesis](environments/mainnet/shelley-genesis.json)
 - [Alonzo Genesis](environments/mainnet/alonzo-genesis.json)
-
-## Legacy
-
-### Testnet
-
-- [Node Config](environments/testnet/config.json)
-- [Node Topology](environments/testnet/topology.json)
-- [Byron Genesis](environments/testnet/byron-genesis.json)
-- [Shelley Genesis](environments/testnet/shelley-genesis.json)
-- [Alonzo Genesis](environments/testnet/alonzo-genesis.json)
-
-### Staging (Internal Only)
-
-- [Node Config](environments/staging/config.json)
-- [Node Topology](environments/staging/topology.json)
-- [Byron Genesis](environments/staging/byron-genesis.json)
-- [Shelley Genesis](environments/staging/shelley-genesis.json)
-- [Alonzo Genesis](environments/staging/alonzo-genesis.json)

@@ -126,11 +126,9 @@
         (inputs.std.data "environments")
         (inputs.std.data "namespaces/infra")
         (inputs.std.data "namespaces/mainnet")
-        (inputs.std.data "namespaces/vasil-dev")
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
-        (inputs.std.data "namespaces/pv8")
         (inputs.std.data "namespaces/private")
         (inputs.std.data "namespaces/perf")
         (inputs.std.data "alerts")
@@ -194,11 +192,8 @@
     in {
       infra = mkNomadJobs cloud."namespaces/infra";
       mainnet = mkNomadJobs cloud."namespaces/mainnet";
-      vasil-qa = mkNomadJobs cloud."namespaces/vasil-qa";
-      vasil-dev = mkNomadJobs cloud."namespaces/vasil-dev";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
-      pv8 = mkNomadJobs cloud."namespaces/pv8";
       private = mkNomadJobs cloud."namespaces/private";
       perf = mkNomadJobs cloud."namespaces/perf";
     })

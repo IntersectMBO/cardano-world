@@ -102,7 +102,7 @@ in
   #cardano-rosetta-server = (import (cardano-rosetta + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.cardano-rosetta-server;
   cardano-config-html-public =
     let
-      publicEnvNames = [ "mainnet" "testnet" "shelley_qa" "vasil-dev" ];
+      publicEnvNames = [ "mainnet" "preview" "preprod" "shelley_qa" ];
       environments = lib.filterAttrs (_: v: !v.private) cardano.environments;
     in
     cardano.library.generateStaticHTMLConfigs environments;

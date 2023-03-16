@@ -39,10 +39,8 @@ in {
         infra.description = "Shared Services for The Cardano World";
         mainnet.description = "Cardano Main Network";
         shelley-qa.description = "Cardano Shelley Internal QA";
-        vasil-dev.description = "Cardano Vasil HF Development Testnet";
         preprod.description = "Cardano Pre-Production Environment";
         preview.description = "Cardano Preview Environment";
-        pv8.description = "Cardano Mixed Environment";
         private.description = "Cardano Private Testing Environment";
         perf.description = "Cardano Performance Testing Environment";
       };
@@ -92,19 +90,11 @@ in {
             policy = "write";
             intentions = "write";
           };
-          service_prefix."vasil-dev-" = {
-            policy = "write";
-            intentions = "write";
-          };
           service_prefix."preprod-" = {
             policy = "write";
             intentions = "write";
           };
           service_prefix."preview-" = {
-            policy = "write";
-            intentions = "write";
-          };
-          service_prefix."pv8-" = {
             policy = "write";
             intentions = "write";
           };
@@ -146,17 +136,6 @@ in {
               "alloc-lifecycle"
             ];
           };
-          namespace.vasil-dev = {
-            policy = "write";
-            capabilities = [
-              "submit-job"
-              "dispatch-job"
-              "read-logs"
-              "alloc-exec"
-              "alloc-node-exec"
-              "alloc-lifecycle"
-            ];
-          };
           namespace.preprod = {
             policy = "write";
             capabilities = [
@@ -169,17 +148,6 @@ in {
             ];
           };
           namespace.preview = {
-            policy = "write";
-            capabilities = [
-              "submit-job"
-              "dispatch-job"
-              "read-logs"
-              "alloc-exec"
-              "alloc-node-exec"
-              "alloc-lifecycle"
-            ];
-          };
-          namespace.pv8 = {
             policy = "write";
             capabilities = [
               "submit-job"
@@ -203,10 +171,8 @@ in {
           };
           host_volume."mainnet-*".policy = "write";
           host_volume."shelley-qa-*".policy = "write";
-          host_volume."vasil-dev-*".policy = "write";
           host_volume."preprod-*".policy = "write";
           host_volume."preview-*".policy = "write";
-          host_volume."pv8-*".policy = "write";
           host_volume."private-*".policy = "write";
         };
 
