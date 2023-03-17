@@ -171,4 +171,20 @@
       path."auth/token/roles/submit-api".capabilities = ["read"];
     };
   };
+
+  # Metadata
+  workload-policies-metadata = {
+    tf.hydrate-cluster.configuration.locals.policies = {
+      vault.metadata = {
+        path."kv/data/metadata/*".capabilities = ["read" "list"];
+        path."kv/metadata/metadata/*".capabilities = ["read" "list"];
+      };
+    };
+    # FIXME: consolidate policy reconciliation loop with TF
+    # PROBLEM: requires bootstrapper reconciliation loop
+    # clients need the capability to impersonate the `metadata` role
+    services.vault.policies.client = {
+      path."auth/token/roles/metadata".capabilities = ["read"];
+    };
+  };
 }

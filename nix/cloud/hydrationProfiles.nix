@@ -16,6 +16,7 @@ in {
       (cells.cardano.hydrationProfiles.workload-policies-faucet)
       (cells.cardano.hydrationProfiles.workload-policies-wallet)
       (cells.cardano.hydrationProfiles.workload-policies-submit-api)
+      (cells.cardano.hydrationProfiles.workload-policies-metadata)
     ];
     # NixOS-level hydration
     # --------------

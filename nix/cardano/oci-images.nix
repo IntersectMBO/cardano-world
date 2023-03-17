@@ -34,6 +34,7 @@ in {
     ];
     config.User = "65534:65534";
   };
+
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
     name = "registry.ci.iog.io/cardano-db-sync";
     maxLayers = 25;
@@ -54,6 +55,7 @@ in {
       }
     ];
   };
+
   cardano-wallet = buildDebugImage entrypoints.cardano-wallet {
     name = "registry.ci.iog.io/cardano-wallet";
     maxLayers = 25;
@@ -67,6 +69,7 @@ in {
     ];
     config.User = "65534:65534";
   };
+
   cardano-submit-api = buildDebugImage entrypoints.cardano-submit-api {
     name = "registry.ci.iog.io/cardano-submit-api";
     maxLayers = 25;
@@ -80,6 +83,7 @@ in {
     ];
     config.User = "65534:65534";
   };
+
   ogmios = buildDebugImage entrypoints.ogmios {
     name = "registry.ci.iog.io/ogmios";
     maxLayers = 25;
@@ -93,6 +97,7 @@ in {
     ];
     config.User = "65534:65534";
   };
+
   cardano-faucet = buildDebugImage entrypoints.cardano-faucet {
     name = "registry.ci.iog.io/cardano-faucet";
     maxLayers = 25;
@@ -102,6 +107,45 @@ in {
     copyToRoot = [nixpkgs.bashInteractive];
     config.Cmd = [
       "${entrypoints.cardano-faucet}/bin/entrypoint"
+    ];
+    config.User = "65534:65534";
+  };
+
+  metadata-server = buildDebugImage entrypoints.metadata-server {
+    name = "registry.ci.iog.io/metadata-server";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = [packages.metadata-server];})
+    ];
+    copyToRoot = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.metadata-server}/bin/entrypoint"
+    ];
+    config.User = "65534:65534";
+  };
+
+  metadata-sync = buildDebugImage entrypoints.metadata-sync {
+    name = "registry.ci.iog.io/metadata-sync";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = [packages.metadata-sync];})
+    ];
+    copyToRoot = with nixpkgs; [bashInteractive cacert];
+    config.Cmd = [
+      "${entrypoints.metadata-sync}/bin/entrypoint"
+    ];
+    config.User = "65534:65534";
+  };
+
+  metadata-webhook = buildDebugImage entrypoints.metadata-webhook {
+    name = "registry.ci.iog.io/metadata-webhook";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = [packages.metadata-webhook];})
+    ];
+    copyToRoot = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.metadata-webhook}/bin/entrypoint"
     ];
     config.User = "65534:65534";
   };

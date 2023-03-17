@@ -70,7 +70,7 @@
     cardano-node.url = "github:input-output-hk/cardano-node/1.35.6";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     offchain-metadata-tools = {
-      url = "github:input-output-hk/offchain-metadata-tools";
+      url = "github:input-output-hk/offchain-metadata-tools/pg-cli-mods";
       flake = false;
     };
 

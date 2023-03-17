@@ -1,0 +1,22 @@
+pgUser: ENC[AES256_GCM,data:eSR2DYgwkCdILDtdnA==,iv:eLqKkH4HCNbKA5cgySy0dFAgCltWTjDedFitGP4qHPk=,tag:DXT6JtcS5o0fLdYlga8+iQ==,type:str]
+pgPass: ENC[AES256_GCM,data:6BUF0vMWTGDbsr2Ma1EDJ66KiVl1FR7rOuAKCjIJpWmbQHwpd6n4ReJOFNxXTJh1ytWEfbxhGI0f/muiQ//lyg==,iv:eNOga0IQqKMnuLyaNaLARl/feMKU5gDFomGrh8saS30=,tag:1sz8PQ7+pFSuudfRsXgrzQ==,type:str]
+gitUrl: ENC[AES256_GCM,data:ZElfT7Um7xDh6KKJS7oCyt5U6P0A4Lts7SFmB1FlfdWluyWp6HHu/1/r62OP8tRr/cC4c25eEXVfcSTeuNIuXA==,iv:x4oflQtrSuMS+mQ1JOCOUd75Sj1Li9YQWe2C/YQVjCI=,tag:yJvTnAe9czT9Iphtd0N2Ug==,type:str]
+gitMetadataFolder: ENC[AES256_GCM,data:GRUR3bGbKYA=,iv:e4Oou94IXANkrCjqPynltF3QFkOQv+I8PGYky5FE4h4=,tag:zqLdnVQbcuBnE1eBm6BXJg==,type:str]
+metadataWebhookSecret: ENC[AES256_GCM,data:Zxn2TKnfK9OS7gZDN88Q1yDjth7ROhOHfD4sNIXqeBY=,iv:ahS6yG1diPdXfOJcPbyyEpGr3uVMVSd9zwCFIds9l9k=,tag:m+34lfvzA3y5YCMzOHATVg==,type:str]
+metadataGithubToken: ""
+sops:
+    kms: []
+    gcp_kms: []
+    azure_kv: []
+    hc_vault:
+        - vault_address: https://vault.world.dev.cardano.org
+          engine_path: sops
+          key_name: ops
+          created_at: "2023-03-17T01:52:06Z"
+          enc: vault:v1:uQFF6gz+ycdXVS3ZRIAo8/ZapLZLUo+zJNFhWQJo7fEV7j+xBwIArzEOT/OKsqxjgfoNmujjzczZ0wBd
+    age: []
+    lastmodified: "2023-03-17T04:37:33Z"
+    mac: ENC[AES256_GCM,data:NRvEBsTTB2iwhaJmvbYV4Eh/4AUzv99ND53dwtpR221XGhe4GOFdAN/T+QfbdVT2m2rqRw4O0zhxFHAxGdeSwKDr7RYi16IOhKoSiCRPy4soLtwNAItBQPRp5T7FsZGPkpjyswosgWfRxKASsP3/9k0LoeI+FIu5mnppqQOtTqg=,iv:nhGrtCqemdK0nLEeRMi1nvMiufg+bSOVzUCSVXR28oY=,tag:E6CFb39UkNCzlsIcSQNPFA==,type:str]
+    pgp: []
+    unencrypted_suffix: _unencrypted
+    version: 3.7.3

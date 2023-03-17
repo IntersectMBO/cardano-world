@@ -604,4 +604,76 @@ in {
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
     '';
   };
+
+  metadata-server = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--port" "$PORT")
+
+      echo "Starting metadata server"
+      exec ${packages.metadata-server}/bin/metadata-server "''${args[@]}"
+    '';
+  };
+
+  metadata-sync = writeShellApplication {
+    runtimeInputs = with nixpkgs; prelude-runtime ++ [gitMinimal gnused];
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--git-url" "$GIT_URL")
+      args+=("--git-metadata-folder" "$GIT_METADATA_FOLDER")
+
+      LC_TIME=C
+      export TMPDIR="/local";
+      export HOME="/local";
+      export SSL_CERT_FILE="/etc/ssl/certs/ca-bundle.crt";
+      cd /local
+
+      while true; do
+        echo "Starting metadata sync at $(date -u)"
+        ${packages.metadata-sync}/bin/metadata-sync "''${args[@]}" | sed -E 's/password=[^ ]* //g'
+        echo "Sleeping 1 hour until the next sync..."
+        echo
+        sleep 3600
+      done
+    '';
+  };
+
+  metadata-webhook= writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--port" "$PORT")
+
+      echo "Starting metadata webhook"
+      exec ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}"
+    '';
+  };
 }) {}
