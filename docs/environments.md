@@ -129,6 +129,7 @@ Informed: Cardano Core Tribe, COO, IOG Director of Engineering, IOG VP Community
 - [DB Sync Config](environments/mainnet/db-sync-config.json)
 - [Submit API Config](environments/mainnet/submit-api-config.json)
 - [Node Topology](environments/mainnet/topology.json)
+- [Node Topology (P2P - SPOs only!)](environments/mainnet/topology-p2p.json)
 - [Byron Genesis](environments/mainnet/byron-genesis.json)
 - [Shelley Genesis](environments/mainnet/shelley-genesis.json)
 - [Alonzo Genesis](environments/mainnet/alonzo-genesis.json)
