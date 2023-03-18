@@ -56,6 +56,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     nixpkgs.gnutar
     nixpkgs.gzip
   ];
+
   pull-snapshot = ''
     function pull_snapshot {
       [ -z "''${SNAPSHOT_BASE_URL:-}" ] && echo "SNAPSHOT_BASE_URL env var must be set -- aborting" && exit 1
@@ -620,8 +621,37 @@ in {
       args+=("--db-ssl-mode" "$PG_SSL_MODE")
       args+=("--port" "$PORT")
 
-      echo "Starting metadata server"
-      exec ${packages.metadata-server}/bin/metadata-server "''${args[@]}"
+      [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+
+      function watch_leader_discovery {
+        declare -i pid_to_signal=$1
+        while true; do
+          sleep 15
+          echo "Service discovery heartbeat - every 15 seconds" >&2
+          original_addr="$PSQL_ADDR0"
+          eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+          new_addr="$PSQL_ADDR0"
+          [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
+        done
+      }
+
+      if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
+        # Turn on bash's job control
+        set -m
+
+        # Define handler for SIGINT
+        trap "kill" "''${sid[@]}" INT
+
+        # SIGHUP reloads --topology
+        echo "Starting metadata server"
+        ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
+
+        PID="$!"
+        sid=("$PID")
+        echo Running leader discovery loop >&2
+        watch_leader_discovery "$PID"
+      fi
     '';
   };
 
@@ -657,7 +687,7 @@ in {
     '';
   };
 
-  metadata-webhook= writeShellApplication {
+  metadata-webhook = writeShellApplication {
     runtimeInputs = prelude-runtime;
     debugInputs = [];
     name = "entrypoint";
@@ -672,8 +702,63 @@ in {
       args+=("--db-ssl-mode" "$PG_SSL_MODE")
       args+=("--port" "$PORT")
 
-      echo "Starting metadata webhook"
-      exec ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}"
+      export SSL_CERT_FILE="/etc/ssl/certs/ca-bundle.crt";
+
+      [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+
+      function watch_leader_discovery {
+        declare -i pid_to_signal=$1
+        while true; do
+          sleep 15
+          echo "Service discovery heartbeat - every 15 seconds" >&2
+          original_addr="$PSQL_ADDR0"
+          eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+          new_addr="$PSQL_ADDR0"
+          [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
+        done
+      }
+
+      if [ -n "''${MASTER_REPLICA_SRV_DNS:-}" ]; then
+        # Turn on bash's job control
+        set -m
+
+        # Define handler for SIGINT
+        trap "kill" "''${sid[@]}" INT
+
+        # SIGHUP reloads --topology
+        echo "Starting metadata webhook"
+        ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}" &
+
+        PID="$!"
+        sid=("$PID")
+        echo Running leader discovery loop >&2
+        watch_leader_discovery "$PID"
+      fi
+    '';
+  };
+
+  metadata-varnish = let
+    vmodPath = nixpkgs.lib.makeSearchPathOutput "lib" "lib/varnish/vmods" (with nixpkgs; [varnish varnishPackages.modules]);
+  in writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("-F")
+      args+=("-a" "*:$VARNISH_PORT")
+      args+=("-f" "/local/default.vcl")
+      args+=("-n" "/local/varnish")
+      args+=("-t" "$VARNISH_TTL_SEC")
+      args+=("-s" "malloc,''${VARNISH_MALLOC_MB}M")
+      args+=("-p" "vmod_path=${vmodPath}")
+      args+=("-r" "vmod_path")
+
+      mkdir -p /local/varnish
+
+      echo "Starting metadata varnish"
+      exec ${nixpkgs.varnish}/sbin/varnishd "''${args[@]}"
     '';
   };
 }) {}

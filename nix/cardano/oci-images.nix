@@ -137,13 +137,26 @@ in {
     config.User = "65534:65534";
   };
 
+  metadata-varnish = buildDebugImage entrypoints.metadata-varnish {
+    name = "registry.ci.iog.io/metadata-varnish";
+    maxLayers = 25;
+    layers = [
+      (n2c.buildLayer {deps = with nixpkgs; [varnish varnishPackages.modules];})
+    ];
+    copyToRoot = [nixpkgs.bashInteractive];
+    config.Cmd = [
+      "${entrypoints.metadata-varnish}/bin/entrypoint"
+    ];
+    config.User = "65534:65534";
+  };
+
   metadata-webhook = buildDebugImage entrypoints.metadata-webhook {
     name = "registry.ci.iog.io/metadata-webhook";
     maxLayers = 25;
     layers = [
       (n2c.buildLayer {deps = [packages.metadata-webhook];})
     ];
-    copyToRoot = [nixpkgs.bashInteractive];
+    copyToRoot = with nixpkgs; [bashInteractive cacert];
     config.Cmd = [
       "${entrypoints.metadata-webhook}/bin/entrypoint"
     ];

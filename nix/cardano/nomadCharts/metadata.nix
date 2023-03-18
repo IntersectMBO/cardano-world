@@ -17,6 +17,10 @@ in
     domain,
     extraVector ? {},
     nodeClass,
+    varnishTtlSec ? 900,
+    varnishMemoryMb ? 384, # Actual memory available for caching is about 1/3 this value
+    varnishMaxPostSizeBodyKb ? 64, # The maximum POST size allowed for a metadata/query body payload
+    varnishMaxPostSizeCachableKb ? 100, # The maximum cacheable POST size before varnish will disconnect and cause traefik to 502
     ...
   } @ args: let
     id = jobname;
@@ -80,7 +84,7 @@ in
           (vector.nomadTask.default {
             inherit namespace;
             endpoints = [
-              # For when metadata-server metrics metrics scrape endpoint becomes available
+              # For when metadata-server metrics scrape endpoint becomes available
             ];
             extra = extraVector;
           })
@@ -97,13 +101,16 @@ in
             };
             service = [
               (import ./srv-metadata-server.nix {inherit namespace;})
+              (import ./srv-metadata-varnish.nix {inherit namespace;})
               (import ./srv-metadata-webhook.nix {inherit namespace;})
             ];
             task = {
               # ------------
               # Task: server
               # ------------
-              server = {
+              server = let
+                memoryMb = 4 * 1024;
+              in {
                 env = {
                   PG_DB = "metadata_server";
                   PG_HOST = "master.infra-database.service.consul";
@@ -111,6 +118,10 @@ in
                   PG_NUM_CONNS = "1";
                   PG_SSL_MODE = "require";
                   PORT = "\${NOMAD_PORT_server}";
+                  MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+
+                  # Leave at least a few MB available for overhead and debug entrypoint activity
+                  GHCRTS = "-M${toString (memoryMb - 128)}M";
                 };
 
                 template = [
@@ -131,7 +142,7 @@ in
                 kill_timeout = "30s";
                 resources = {
                   cpu = 2000;
-                  memory = 4 * 1024;
+                  memory = memoryMb;
                 };
                 vault = {
                   change_mode = "noop";
@@ -182,6 +193,148 @@ in
               };
 
               # -------------
+              # Task: varnish
+              # -------------
+              varnish = {
+                env = {
+                  VARNISH_PORT = "\${NOMAD_PORT_varnish}";
+                  VARNISH_TTL_SEC = varnishTtlSec;
+                  VARNISH_MALLOC_MB = varnishMemoryMb / 3;
+                };
+
+                template = [
+                  {
+                    change_mode = "restart";
+                    data = ''
+                      vcl 4.1;
+                      import std;
+                      import bodyaccess;
+                      backend default {
+                        .host = "127.0.0.1";
+                        .port = "{{env "NOMAD_PORT_server"}}";
+                      }
+                      acl purge {
+                        "localhost";
+                        "127.0.0.1";
+                      }
+                      sub vcl_recv {
+                        unset req.http.X-Body-Len;
+                        unset req.http.x-cache;
+                        # Add a healthcheck
+                        if (req.url == "/ping" && req.method == "GET") {
+                          return(synth(700));
+                        }
+                        # Avoid backend calls for options
+                        if (req.method == "OPTIONS") {
+                          return(synth(701));
+                        }
+                        # Allow PURGE from localhost
+                        if (req.method == "PURGE") {
+                          if (!std.ip(req.http.X-Real-Ip, "0.0.0.0") ~ purge) {
+                            return(synth(405,"Not Allowed"));
+                          }
+                          # The host is included as part of the object hash
+                          # We need to match the public FQDN for the purge to be successful
+                          set req.http.host = "metadata.${domain}";
+                        }
+                        # Allow POST caching
+                        # PURGE also needs to hash the body to obtain a correct object hash to purge
+                        if (req.method == "POST" || req.method == "PURGE") {
+                          # Caches the body which enables POST retries if needed
+                          std.cache_req_body(${toString varnishMaxPostSizeCachableKb}KB);
+                          set req.http.X-Body-Len = bodyaccess.len_req_body();
+                          if ((std.integer(req.http.X-Body-Len, ${toString (1024 * varnishMaxPostSizeCachableKb)}) > ${toString (1024 * varnishMaxPostSizeBodyKb)}) ||
+                              (req.http.X-Body-Len == "-1")) {
+                            return(synth(413, "Payload Too Large"));
+                          }
+                          if (req.method == "PURGE") {
+                            return(purge);
+                          }
+                          return(hash);
+                        }
+                      }
+                      sub vcl_hash {
+                        # For caching POSTs, hash the body also
+                        if (req.http.X-Body-Len) {
+                          bodyaccess.hash_req_body();
+                        }
+                        else {
+                          hash_data("");
+                        }
+                      }
+                      sub vcl_hit {
+                        set req.http.x-cache = "hit";
+                      }
+                      sub vcl_miss {
+                        set req.http.x-cache = "miss";
+                      }
+                      sub vcl_pass {
+                        set req.http.x-cache = "pass";
+                      }
+                      sub vcl_pipe {
+                        set req.http.x-cache = "pipe";
+                      }
+                      sub vcl_synth {
+                        if (resp.status == 700) {
+                          set resp.http.Content-Type = "text/html";
+                          set resp.status = 200;
+                          set resp.reason = "OK";
+                          synthetic("...pong");
+                          return(deliver);
+                        }
+                        if (resp.status == 701) {
+                          set resp.http.Access-Control-Max-Age = "17280000";
+                          set resp.http.Content-Type = "text/plain; charset=utf-8";
+                          set resp.http.Content-Length = "0";
+                          set resp.status = 204;
+                          synthetic("");
+                          return(deliver);
+                        }
+                        set req.http.x-cache = "synth synth";
+                        set resp.http.x-cache = req.http.x-cache;
+                      }
+                      sub vcl_deliver {
+                        if (obj.uncacheable) {
+                          set req.http.x-cache = req.http.x-cache + " uncacheable";
+                        }
+                        else {
+                          set req.http.x-cache = req.http.x-cache + " cached";
+                        }
+                        set resp.http.x-cache = req.http.x-cache;
+                      }
+                      sub vcl_backend_fetch {
+                        if (bereq.http.X-Body-Len) {
+                          set bereq.method = "POST";
+                        }
+                      }
+                      sub vcl_backend_response {
+                        if (beresp.status == 404) {
+                          set beresp.ttl = ${toString (2 * varnishTtlSec / 3)}s;
+                        }
+                        call vcl_builtin_backend_response;
+                        return(deliver);
+                      }
+                    '';
+                    destination = "/local/default.vcl";
+                  }
+                ];
+
+                config.image = ociNamer oci-images.metadata-varnish;
+                driver = "docker";
+                kill_signal = "SIGINT";
+                kill_timeout = "30s";
+                resources = {
+                  cpu = 2000;
+                  memory = 2 * 1024;
+                };
+                vault = {
+                  change_mode = "noop";
+                  env = true;
+                  policies = ["metadata"];
+                };
+              };
+
+              # -------------
               # Task: webhook
               # -------------
               webhook = {
@@ -192,6 +345,7 @@ in
                   PG_NUM_CONNS = "1";
                   PG_SSL_MODE = "require";
                   PORT = "\${NOMAD_PORT_webhook}";
+                  MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
                 };
 
                 template = [
