@@ -18,9 +18,9 @@ in
     extraVector ? {},
     nodeClass,
     varnishTtlSec ? 900,
-    varnishMemoryMb ? 384, # Actual memory available for caching is about 1/3 this value
-    varnishMaxPostSizeBodyKb ? 64, # The maximum POST size allowed for a metadata/query body payload
-    varnishMaxPostSizeCachableKb ? 100, # The maximum cacheable POST size before varnish will disconnect and cause traefik to 502
+    varnishMemoryMb ? 2 * 1024,
+    varnishMaxPostSizeBodyKb ? 64, # The maximum hashable/cachable POST body size without varnish passing to upstream
+    varnishMaxPostSizeCachableKb ? 100, # The maximum cacheable POST size without varnish passing to upstream
     ...
   } @ args: let
     id = jobname;
@@ -108,7 +108,7 @@ in
             ];
             task = let
               mkServerTask = instance: let
-                memoryMb = 4 * 1024;
+                memoryMb = 1 * 1024;
               in {
                 env = {
                   PG_DB = "metadata_server";
@@ -146,7 +146,7 @@ in
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = 2000;
+                  cpu = 1000;
                   memory = memoryMb;
                 };
                 vault = {
@@ -200,8 +200,8 @@ in
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = 2000;
-                  memory = 2 * 1024;
+                  cpu = 500;
+                  memory = 256;
                 };
                 vault = {
                   change_mode = "noop";
@@ -220,7 +220,10 @@ in
                 env = {
                   VARNISH_PORT = "\${NOMAD_PORT_varnish}";
                   VARNISH_TTL_SEC = varnishTtlSec;
-                  VARNISH_MALLOC_MB = varnishMemoryMb / 3;
+                  # The malloc setting tends to result in overall task memory allocation of up to about 5X.
+                  # Add an additional factor of 2X for safety overhead is added.
+                  # Division factor is then 2 * 5 = 10.
+                  VARNISH_MALLOC_MB = varnishMemoryMb / 10;
                 };
 
                 template = [
@@ -411,8 +414,8 @@ in
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = 2000;
-                  memory = 2 * 1024;
+                  cpu = 500;
+                  memory = 256;
                 };
                 vault = {
                   change_mode = "noop";

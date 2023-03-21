@@ -25,6 +25,13 @@ in {
     // {
       datacenters = ["eu-central-1"];
       inherit jobname;
+      inherit
+        (cardano.constants.metadata.testnet)
+        varnishTtlSec
+        varnishMemoryMb
+        varnishMaxPostSizeBodyKb
+        varnishMaxPostSizeCachableKb
+        ;
     }
   );
 }

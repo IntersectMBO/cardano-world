@@ -15,5 +15,7 @@
   ];
   name = "${namespace}-metadata-server${toString instance}";
   port = "server${toString instance}";
-  tags = [];
+  tags = [
+    "\${NOMAD_ALLOC_ID}"
+  ];
 }
