@@ -94,21 +94,20 @@ in
               mode = "bridge";
               dns = {servers = ["172.17.0.1"];};
               port = {
-                server = {};
+                server1 = {};
+                server2 = {};
                 varnish = {};
                 webhook = {};
               };
             };
             service = [
-              (import ./srv-metadata-server.nix {inherit namespace;})
+              (import ./srv-metadata-server.nix {inherit namespace; instance = 1;})
+              (import ./srv-metadata-server.nix {inherit namespace; instance = 2;})
               (import ./srv-metadata-varnish.nix {inherit namespace;})
               (import ./srv-metadata-webhook.nix {inherit namespace;})
             ];
-            task = {
-              # ------------
-              # Task: server
-              # ------------
-              server = let
+            task = let
+              mkServerTask = instance: let
                 memoryMb = 4 * 1024;
               in {
                 env = {
@@ -117,13 +116,15 @@ in
                   PG_TABLE = "metadata";
                   PG_NUM_CONNS = "1";
                   PG_SSL_MODE = "require";
-                  PORT = "\${NOMAD_PORT_server}";
+                  PORT = "\${NOMAD_PORT_server${toString instance}}";
                   MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
 
                   # Server appears to have a memory leak hasn't been resolved, so rather than enforce
-                  # GHC heap compliance with the var below, allow nomad to kill and restart the job
-                  # when server overruns it's allocated RAM.  Otherwise server will just fail to
-                  # function properly while still staying alive.
+                  # GHC heap compliance with the var below, allow OOM to kill the server task
+                  # when server overruns it's allocated RAM.  Otherwise server task will just fail to
+                  # function properly while other parts of the job stay alive.  Uncomment below once
+                  # the memleak is fixed.
+                  #
                   # Leave at least a few MB available for overhead and debug entrypoint activity
                   # GHCRTS = "-M${toString (memoryMb - 128)}M";
                 };
@@ -135,7 +136,7 @@ in
                       PG_USER={{- with secret "kv/data/metadata/${namespace}" }}{{ .Data.data.pgUser }}{{ end }}
                       PG_PASS={{- with secret "kv/data/metadata/${namespace}" }}{{ .Data.data.pgPass }}{{ end }}
                     '';
-                    destination = "/secrets/metadata-server-env.sh";
+                    destination = "/secrets/metadata-server-${toString instance}.sh";
                     env = true;
                   }
                 ];
@@ -154,6 +155,19 @@ in
                   policies = ["metadata"];
                 };
               };
+            in {
+              # ------------
+              # Task: server
+              # ------------
+              # Server component has a memory leak which eventually leads to OOM.
+              # While the server entrypoint gracefully handles re-spawn of the server task upon OOM,
+              # there is a transient outage of around a dozen seconds.  Creating two server components and allowing
+              # varnish to health check select between them will minimize downtime as seen from clients.
+              # Varnish is used for caching and health selection as traefik caching does not have the middleware required.
+              # Also, keeping these tasks in the same group prevents network hairpin failures until the cluster is migrated to Nomad >= 1.5.0
+              # at which point separate taskgroups will be an option.
+              server1 = mkServerTask 1;
+              server2 = mkServerTask 2;
 
               # ----------
               # Task: sync
@@ -215,7 +229,7 @@ in
                       import bodyaccess;
                       backend default {
                         .host = "127.0.0.1";
-                        .port = "{{env "NOMAD_PORT_server"}}";
+                        .port = "{{env "NOMAD_PORT_server1"}}";
                       }
                       acl purge {
                         "localhost";
