@@ -249,7 +249,9 @@ in
                           set req.http.X-Body-Len = bodyaccess.len_req_body();
                           if ((std.integer(req.http.X-Body-Len, ${toString (1024 * varnishMaxPostSizeCachableKb)}) > ${toString (1024 * varnishMaxPostSizeBodyKb)}) ||
                               (req.http.X-Body-Len == "-1")) {
-                            return(synth(413, "Payload Too Large"));
+                            # Uncommit to restrict rare, but possible large backend metadata requests rather than pass directly to the backend
+                            # return(synth(413, "Payload Too Large"));
+                            return(pass);
                           }
                           if (req.method == "PURGE") {
                             return(purge);
