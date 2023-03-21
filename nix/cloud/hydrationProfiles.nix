@@ -216,6 +216,7 @@ in {
             dbsync
             faucet
             metal-explorer
+            bitte-system-modified
             ;
 
           # Upstream alerts
@@ -224,7 +225,6 @@ in {
             bitte-consul
             bitte-deadmanssnitch
             bitte-loki
-            bitte-system
             bitte-vault
             bitte-vm-health
             bitte-vm-standalone
