@@ -26,16 +26,8 @@ in {
           # wg pubkey < <(sops -d ../encrypted/wg/explorer-private)
           {
             publicKey = "4DEOtdKOu8h284ZwjOsd/cKqSmuQnI+Jy2yiUPxG9B8=";
-            allowedIPs = ["192.168.254.253/32"];
-            endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
-            persistentKeepalive = 30;
-          }
-          # mainnet explorer gateway
-          # wg pubkey < <(sops -d ../encrypted/wg/explorer-gateway-private)
-          {
-            publicKey = "tW/7xjjD2vobYtM4aK/2E3M7EjgfUhBWxISLy9CUVxw=";
             allowedIPs = ["192.168.254.254/32"];
-            endpoint = "explorer.${domain}:51820";
+            endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
             persistentKeepalive = 30;
           }
         ];

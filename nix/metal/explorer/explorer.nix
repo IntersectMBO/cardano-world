@@ -287,13 +287,9 @@ in {
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9999 -m comment --comment "graphql-engine healthcheck" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 12798 -m comment --comment "node metrics exporter" -j nixos-fw-accept
 
-      # Accept an upstream mainnet legacy explorer gateway's requests over wireguard
+      # Accept this environment cluster explorer gateway's requests over wireguard
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
-
-      # Accept this environment cluster explorer gateway's requests over wireguard
-      iptables -A nixos-fw -s 192.168.254.253/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
-      iptables -A nixos-fw -s 192.168.254.253/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
     '';
 
     users.users.dump-registered-relays-topology = {

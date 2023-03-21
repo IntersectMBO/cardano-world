@@ -19,8 +19,7 @@ in {
       interfaces.wg = {
         listenPort = 51820;
         # There should be only 1 traefik gateway per explorer environment, so we can fix this ip
-        # Mainnet legacy cluster traefik gateway is reserved as 192.168.254.254 so use the next available.
-        ips = ["192.168.254.253/32"];
+        ips = ["192.168.254.254/32"];
         privateKeyFile = "/etc/wireguard/private.key";
         peers = map (backend: {
           inherit (backend) publicKey;
