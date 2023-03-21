@@ -213,6 +213,9 @@ in
               # -------------
               # Task: varnish
               # -------------
+              # Backend status can be debugged by providing the state dir of /local/varnish to varnish debug cmds.
+              # Example of following backend health status:
+              #   $CMD_PATH/varnishlog -n /local/varnish -g raw -i backend_health
               varnish = {
                 env = {
                   VARNISH_PORT = "\${NOMAD_PORT_varnish}";
@@ -227,15 +230,36 @@ in
                       vcl 4.1;
                       import std;
                       import bodyaccess;
-                      backend default {
+                      import directors;
+                      probe default {
+                        # There is no metadata server healthcheck endpoint available, so just use
+                        # a non-existent object to ensure the server is processing requests.
+                        .url = "/metadata/1";
+                        .expected_response = 404;
+                        .timeout = 2s;
+                        .interval = 5s;
+                        .threshold = 1;
+                        .window = 1;
+                      }
+                      backend server1 {
                         .host = "127.0.0.1";
                         .port = "{{env "NOMAD_PORT_server1"}}";
+                      }
+                      backend server2 {
+                        .host = "127.0.0.1";
+                        .port = "{{env "NOMAD_PORT_server2"}}";
                       }
                       acl purge {
                         "localhost";
                         "127.0.0.1";
                       }
+                      sub vcl_init {
+                        new lb = directors.round_robin();
+                        lb.add_backend(server1);
+                        lb.add_backend(server2);
+                      }
                       sub vcl_recv {
+                        set req.backend_hint = lb.backend();
                         unset req.http.X-Body-Len;
                         unset req.http.x-cache;
                         # Add a healthcheck
