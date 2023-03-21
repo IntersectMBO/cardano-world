@@ -120,8 +120,12 @@ in
                   PORT = "\${NOMAD_PORT_server}";
                   MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
 
+                  # Server appears to have a memory leak hasn't been resolved, so rather than enforce
+                  # GHC heap compliance with the var below, allow nomad to kill and restart the job
+                  # when server overruns it's allocated RAM.  Otherwise server will just fail to
+                  # function properly while still staying alive.
                   # Leave at least a few MB available for overhead and debug entrypoint activity
-                  GHCRTS = "-M${toString (memoryMb - 128)}M";
+                  # GHCRTS = "-M${toString (memoryMb - 128)}M";
                 };
 
                 template = [

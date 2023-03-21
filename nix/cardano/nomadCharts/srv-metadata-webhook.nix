@@ -7,9 +7,9 @@
       name = "live";
       address_mode = "host";
       port = "webhook";
-      timeout = "2s";
       type = "tcp";
-      interval = "1m0s";
+      interval = "10s";
+      timeout = "5s";
     }
   ];
   name = "${namespace}-metadata-webhook";

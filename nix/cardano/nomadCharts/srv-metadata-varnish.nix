@@ -9,8 +9,8 @@
       port = "varnish";
       path = "/ping";
       type = "http";
-      timeout = "10s";
-      interval = "1m0s";
+      interval = "10s";
+      timeout = "5s";
     }
   ];
   name = "${namespace}-metadata-varnish";
