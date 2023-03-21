@@ -3,7 +3,7 @@ let
   inherit (inputs.nixpkgs) lib;
 in lib.recursiveUpdate (import ./default-aux.nix inputs) {
   explorerHostName = "explorer.cardano.org";
-  explorerAliases = ["explorer.mainnet.cardano.org"];
+  explorerAliases = ["explorer.mainnet.cardano.org" "explorer.cardano-mainnet.iohk.io"];
 
   # WG_PUBKEY: wg pubkey < <(sops -d nix/metal/encrypted/wg/$AWS_EXT_NODES_NODENAME-private)
   # Attr struct: {name = $AWS_EXT_NODES_NODENAME; publicKey = $WG_PUBKEY;}
