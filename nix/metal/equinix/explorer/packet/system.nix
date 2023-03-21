@@ -1,120 +1,96 @@
 {
   imports = [
-    ({
-      boot.kernelModules = [ "dm_multipath" "dm_round_robin" "ipmi_watchdog" ];
+    {
+      boot.kernelModules = ["dm_multipath" "dm_round_robin" "ipmi_watchdog"];
       services.openssh.enable = true;
       system.stateVersion = "22.11";
     }
-    )
-    ({
+    {
       nixpkgs.config.allowUnfree = true;
 
-      boot.initrd.availableKernelModules = [
-        "xhci_pci"
-        "ahci"
-        "usbhid"
-        "sd_mod"
-      ];
-      boot.initrd.kernelModules = [ ];
-      boot.kernelModules = [ "kvm-intel" ];
-      boot.kernelParams = [ "console=ttyS1,115200n8" ];
-      boot.extraModulePackages = [ ];
+      boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "usbhid" "sd_mod"];
+      boot.initrd.kernelModules = [];
+      boot.kernelModules = ["kvm-intel"];
+      boot.kernelParams = ["console=ttyS1,115200n8"];
+      boot.extraModulePackages = [];
 
       hardware.enableAllFirmware = true;
     }
-    )
-    ({ lib, ... }:
-      {
-        boot.loader = {
-          systemd-boot.enable = true;
-          efi.canTouchEfiVariables = true;
-        };
-        nix.settings.max-jobs = lib.mkDefault 64;
-      }
-    )
-    ({
+    ({lib, ...}: {
+      boot.loader = {
+        systemd-boot.enable = true;
+        efi.canTouchEfiVariables = true;
+      };
+      nix.settings.max-jobs = lib.mkDefault 64;
+    })
+    {
       swapDevices = [
-
         {
           device = "/dev/disk/by-id/ata-Micron_5300_MTFDDAK480TDT_2204345F6F6C-part2";
         }
-
       ];
 
       fileSystems = {
-
         "/boot" = {
           device = "/dev/disk/by-id/ata-Micron_5300_MTFDDAK480TDT_2204345F6F6C-part1";
           fsType = "vfat";
-
         };
-
 
         "/" = {
           device = "zpool/root";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/nix" = {
           device = "zpool/nix";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/var" = {
           device = "zpool/var";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/cache" = {
           device = "zpool/cache";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/var/lib/nomad" = {
           device = "zpool/nomad";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/var/lib/containers" = {
           device = "zpool/containers";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/var/lib/docker" = {
           device = "zpool/docker";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
 
         "/home" = {
           device = "zpool/home";
           fsType = "zfs";
-          options = [ "defaults" ];
+          options = ["defaults"];
         };
-
       };
 
       boot.loader.efi.efiSysMountPoint = "/boot";
-    })
-    ({ networking.hostId = "dd2d5667"; }
-    )
-    ({ modulesPath, ... }: {
+    }
+    {networking.hostId = "dd2d5667";}
+    ({modulesPath, ...}: {
       networking.hostName = "explorer";
       networking.useNetworkd = true;
-
 
       systemd.network.networks."40-bond0" = {
         matchConfig.Name = "bond0";
@@ -123,12 +99,8 @@
           MACAddress = "e8:eb:d3:6d:fe:2a";
         };
         networkConfig.LinkLocalAddressing = "no";
-        dns = [
-          "147.75.207.207"
-          "147.75.207.208"
-        ];
+        dns = ["147.75.207.207" "147.75.207.208"];
       };
-
 
       boot.extraModprobeConfig = "options bonding max_bonds=0";
       systemd.network.netdevs = {
@@ -148,7 +120,6 @@
         };
       };
 
-
       systemd.network.networks."30-enp1s0f0np0" = {
         matchConfig = {
           Name = "enp1s0f0np0";
@@ -156,7 +127,6 @@
         };
         networkConfig.Bond = "bond0";
       };
-
 
       systemd.network.networks."30-enp1s0f1np1" = {
         matchConfig = {
@@ -166,31 +136,16 @@
         networkConfig.Bond = "bond0";
       };
 
-
-
       systemd.network.networks."40-bond0".addresses = [
-        {
-          addressConfig.Address = "147.75.85.167/31";
-        }
-        {
-          addressConfig.Address = "2604:1380:4602:2500::5/127";
-        }
-        {
-          addressConfig.Address = "10.12.171.133/31";
-        }
+        {addressConfig.Address = "147.75.85.167/31";}
+        {addressConfig.Address = "2604:1380:4602:2500::5/127";}
+        {addressConfig.Address = "10.12.171.133/31";}
       ];
       systemd.network.networks."40-bond0".routes = [
-        {
-          routeConfig.Gateway = "147.75.85.166";
-        }
-        {
-          routeConfig.Gateway = "2604:1380:4602:2500::4";
-        }
-        {
-          routeConfig.Gateway = "10.12.171.132";
-        }
+        {routeConfig.Gateway = "147.75.85.166";}
+        {routeConfig.Gateway = "2604:1380:4602:2500::4";}
+        {routeConfig.Gateway = "10.12.171.132";}
       ];
-    }
-    )
+    })
   ];
 }
