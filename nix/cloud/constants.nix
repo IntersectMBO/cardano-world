@@ -27,12 +27,6 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
-    vasil-dev = {
-      namespace = "vasil-dev";
-      domain = "vasil-dev.${baseDomain}";
-      nodeClass = "qa";
-      scaling = 3;
-    };
     preprod = {
       namespace = "preprod";
       domain = "preprod.${baseDomain}";
@@ -42,12 +36,6 @@ in {
     preview = {
       namespace = "preview";
       domain = "preview.${baseDomain}";
-      nodeClass = "qa";
-      scaling = 3;
-    };
-    pv8 = {
-      namespace = "pv8";
-      domain = "pv8.${baseDomain}";
       nodeClass = "qa";
       scaling = 3;
     };

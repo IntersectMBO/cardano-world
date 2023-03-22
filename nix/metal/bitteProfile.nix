@@ -116,16 +116,6 @@ in {
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    ["vasil-dev-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["vasil-dev-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
                     ["preprod-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
@@ -143,11 +133,6 @@ in {
                     bittelib.mkNomadHostVolumesConfig
                     ["preview-persist-db-sync-local"]
                     (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["pv8-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
@@ -379,8 +364,6 @@ in {
                     preprod = 30000;
                     preview = 30002;
                     shelley-qa = 30003;
-                    vasil-dev = 30001;
-                    pv8 = 30006;
                     private = 30007;
                   } [
                     (

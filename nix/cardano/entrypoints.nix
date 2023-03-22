@@ -56,6 +56,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     nixpkgs.gnutar
     nixpkgs.gzip
   ];
+
   pull-snapshot = ''
     function pull_snapshot {
       [ -z "''${SNAPSHOT_BASE_URL:-}" ] && echo "SNAPSHOT_BASE_URL env var must be set -- aborting" && exit 1
@@ -602,6 +603,191 @@ in {
         sleep 15
       done
       exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
+    '';
+  };
+
+  metadata-server = writeShellApplication {
+    runtimeInputs = with nixpkgs; prelude-runtime ++ [procps];
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--port" "$PORT")
+
+      LC_TIME=C
+
+      [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+
+      function watch_leader_discovery {
+        while true; do
+          sleep 15
+          echo "Service discovery heartbeat - every 15 seconds (current db address: $PSQL_ADDR0)" >&2
+          ORIG="$PSQL_ADDR0"
+          eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+          NEW="$PSQL_ADDR0"
+
+          if ! pgrep metadata-server > /dev/null; then
+            echo "Restarting metadata server due to OOM at $(date -u)"
+            ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
+            PID="$!"
+          elif [ "$ORIG" != "$NEW" ]; then
+            kill -s 1 "$PID"
+            echo "Restarting metadata server due to database DNS change at $(date -u)"
+            ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
+            PID="$!"
+          fi
+        done
+      }
+
+      function cleanup {
+        echo "Received a SIGINT, exiting."
+        kill -s 1 "$PID"
+        exit
+      }
+
+      trap cleanup INT
+
+      echo "Starting metadata server"
+      ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
+
+      PID="$!"
+      echo Running leader discovery loop >&2
+      watch_leader_discovery
+    '';
+  };
+
+  metadata-sync = writeShellApplication {
+    runtimeInputs = with nixpkgs; prelude-runtime ++ [gitMinimal gnused];
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--git-url" "$GIT_URL")
+      args+=("--git-metadata-folder" "$GIT_METADATA_FOLDER")
+
+      LC_TIME=C
+      export TMPDIR="/local";
+      export HOME="/local";
+      export SSL_CERT_FILE="/etc/ssl/certs/ca-bundle.crt";
+      cd /local
+
+      function cleanup {
+        echo "Received a SIGINT, exiting."
+        exit
+      }
+
+      # Sleep 1 hr and respond to sigint within 10 seconds without special job handling
+      function delay {
+        i=0
+        until [ "$i" == 360 ]; do
+          sleep 10
+          i=$((i + 1))
+        done
+      }
+
+      trap cleanup INT
+
+      while true; do
+        echo "Starting metadata sync at $(date -u)"
+        ${packages.metadata-sync}/bin/metadata-sync "''${args[@]}" | sed -E 's/password=[^ ]* //g'
+        echo "Sleeping 1 hour until the next sync..."
+        echo
+        delay
+      done
+    '';
+  };
+
+  metadata-webhook = writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("--db" "$PG_DB")
+      args+=("--db-user" "$PG_USER")
+      args+=("--db-pass" "$PG_PASS")
+      args+=("--db-host" "$PG_HOST")
+      args+=("--db-table" "$PG_TABLE")
+      args+=("--db-conns" "$PG_NUM_CONNS")
+      args+=("--db-ssl-mode" "$PG_SSL_MODE")
+      args+=("--port" "$PORT")
+
+      export SSL_CERT_FILE="/etc/ssl/certs/ca-bundle.crt";
+
+      LC_TIME=C
+
+      [ -z "''${MASTER_REPLICA_SRV_DNS:-}" ] && echo "MASTER_REPLICA_SRV_DNS env var must be set -- aborting" && exit 1
+      eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+
+      function watch_leader_discovery {
+        while true; do
+          sleep 15
+          echo "Service discovery heartbeat - every 15 seconds (current db address: $PSQL_ADDR0)" >&2
+          ORIG="$PSQL_ADDR0"
+          eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
+          NEW="$PSQL_ADDR0"
+          if [ "$ORIG" != "$NEW" ]; then
+            kill -s 1 "$PID"
+            echo "Restarting metadata webhook due to database DNS change at $(date -u)"
+            ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}" &
+            PID="$!"
+          fi
+        done
+      }
+
+      function cleanup {
+        echo "Received a SIGINT, exiting."
+        kill -s 1 "$PID"
+        exit
+      }
+
+      trap cleanup INT
+
+      echo "Starting metadata webhook"
+      ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}" &
+
+      PID="$!"
+      echo Running leader discovery loop >&2
+      watch_leader_discovery
+    '';
+  };
+
+  metadata-varnish = let
+    vmodPath = nixpkgs.lib.makeSearchPathOutput "lib" "lib/varnish/vmods" (with nixpkgs; [varnish varnishPackages.modules]);
+  in writeShellApplication {
+    runtimeInputs = prelude-runtime;
+    debugInputs = [];
+    name = "entrypoint";
+    text = ''
+      # Build args array
+      args+=("-F")
+      args+=("-a" "*:$VARNISH_PORT")
+      args+=("-f" "/local/default.vcl")
+      args+=("-n" "/local/varnish")
+      args+=("-t" "$VARNISH_TTL_SEC")
+      args+=("-s" "malloc,''${VARNISH_MALLOC_MB}M")
+      args+=("-p" "vmod_path=${vmodPath}")
+      args+=("-r" "vmod_path")
+
+      mkdir -p /local/varnish
+
+      echo "Starting metadata varnish"
+      exec ${nixpkgs.varnish}/sbin/varnishd "''${args[@]}"
     '';
   };
 }) {}

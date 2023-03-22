@@ -14,6 +14,7 @@ let
     cardano-db-sync
     ogmios
     cardano-graphql
+    offchain-metadata-tools
     cardano-explorer-app
     nix-inclusive
     ;
@@ -71,6 +72,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
       }
     ];
   };
+  offchain-metadata-tools' = import offchain-metadata-tools { inherit (nixpkgs) system; };
 in
 {
   inherit project ogmiosProject;
@@ -80,8 +82,17 @@ in
   inherit (cardano-wallet.packages) cardano-address;
   inherit (cardano-db-sync.packages) cardano-db-sync cardano-db-tool;
   inherit (ogmiosProject.hsPkgs.ogmios.components.exes) ogmios;
+  inherit nix-inclusive; # TODO REMOVE
+  inherit (offchain-metadata-tools')
+    metadata-server
+    metadata-sync
+    metadata-webhook
+    metadata-validator-github
+    token-metadata-creator;
+
   cardano-graphql = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.cardano-graphql;
   graphql-engine = (import (cardano-graphql + "/nix/pkgs.nix") { inherit (nixpkgs) system; }).packages.graphql-engine;
+
   cardano-explorer-app =
     let
       # TODO fix the ugliness to make this work
@@ -91,13 +102,15 @@ in
       };
     in
     package;
-  #cardano-rosetta-server = (import (cardano-rosetta + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.cardano-rosetta-server;
+
+  # cardano-rosetta-server = (import (cardano-rosetta + "/nix/pkgs.nix") {inherit (nixpkgs) system;}).packages.cardano-rosetta-server;
+
   cardano-config-html-public =
     let
-      publicEnvNames = [ "mainnet" "testnet" "shelley_qa" "vasil-dev" ];
+      publicEnvNames = [ "mainnet" "preview" "preprod" "shelley_qa" ];
       environments = lib.filterAttrs (_: v: !v.private) cardano.environments;
     in
     cardano.library.generateStaticHTMLConfigs environments;
+
   cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
-  inherit nix-inclusive; # TODO REMOVE
 }) {}

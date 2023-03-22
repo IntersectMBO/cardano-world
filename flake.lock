@@ -25946,6 +25946,23 @@
         "type": "github"
       }
     },
+    "offchain-metadata-tools": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1679016345,
+        "narHash": "sha256-I/M2t7K1Kjlpu0uf3BEwnGFoqR6VX72rhq1peiaEv84=",
+        "owner": "input-output-hk",
+        "repo": "offchain-metadata-tools",
+        "rev": "7777fbda679fedd43fa90beeb1595be430154a02",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "ref": "pg-cli-mods",
+        "repo": "offchain-metadata-tools",
+        "type": "github"
+      }
+    },
     "ogmios": {
       "flake": false,
       "locked": {
@@ -27868,6 +27885,7 @@
           "haskell-nix",
           "nixpkgs-unstable"
         ],
+        "offchain-metadata-tools": "offchain-metadata-tools",
         "ogmios": "ogmios_2",
         "openziti": "openziti",
         "std": "std_8",

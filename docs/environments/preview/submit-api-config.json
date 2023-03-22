@@ -1,7 +1,7 @@
 {
   "EnableLogMetrics": false,
   "EnableLogging": true,
-  "GenesisHash": "72593f260b66f26bef4fc50b38a8f24d3d3633ad2e854eaf73039eb9402706f1",
+  "GenesisHash": "83de1d7302569ad56cf9139a41e2e11346d4cb4a31c00142557b6ab3fa550761",
   "PrometheusPort": 8080,
   "RequiresNetworkMagic": "RequiresMagic",
   "defaultBackends": [

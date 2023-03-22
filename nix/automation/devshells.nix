@@ -32,7 +32,7 @@
     bitte = {
       domain = "world.dev.cardano.org";
       cluster = "cardano";
-      namespace = "vasil-dev";
+      namespace = "preview";
       provider = "AWS";
       cert = null;
       aws_profile = "cardano";
