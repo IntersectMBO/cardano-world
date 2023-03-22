@@ -280,14 +280,14 @@ in {
     networking.firewall.extraCommands = ''
       # Allow scrapes for metrics to the private IP from the monitoring server
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 8080 -m comment --comment "dbsync metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node-exporter metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9113 -m comment --comment "nginx metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9131 -m comment --comment "varnish metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9586 -m comment --comment "wireguard metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9999 -m comment --comment "graphql-engine healthcheck" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 12798 -m comment --comment "node metrics exporter" -j nixos-fw-accept
 
-      # Accept an upstream explorer gateway's requests over wireguard
+      # Accept this environment cluster explorer gateway's requests over wireguard
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
     '';
@@ -545,8 +545,8 @@ in {
               '';
               tryFiles = "$uri /index.html";
             };
-          } else
-            let graphqlRewriter = query: postProcessing: ''
+          } else let
+            graphqlRewriter = query: postProcessing: ''
               rewrite_by_lua_block {
                   ngx.req.read_body()
                   ngx.req.set_header("Content-Type", "application/json")
@@ -575,6 +575,15 @@ in {
                   end
                 }
               '';
+            rosettaHealth = ''
+              rewrite_by_lua_block {
+                  ngx.req.read_body()
+                  ngx.req.set_header("Content-Type", "application/json")
+                  ngx.req.set_method(ngx.HTTP_POST)
+                  ngx.req.set_uri("/network/list")
+                  ngx.req.set_body_data("{\"metadata\":{}}")
+                }
+            '';
           in {
             "/" = {
               root = (explorerAppPkgs.overrideScope'(self: super: {
@@ -606,6 +615,10 @@ in {
             };
             "/rosetta/" = {
               proxyPass = "http://127.0.0.1:8082/";
+            };
+            "/rosetta/health" = {
+              proxyPass = "http://127.0.0.1:8082/";
+              extraConfig = rosettaHealth;
             };
             "/supply/total" = {
               proxyPass = "http://127.0.0.1:3100/";

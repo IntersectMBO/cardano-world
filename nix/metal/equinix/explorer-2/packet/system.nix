@@ -26,17 +26,17 @@
     })
     {
       swapDevices = [
-        {device = "/dev/disk/by-id/ata-MTFDDAV240TDU_221937EC1F94-part2";}
+        {device = "/dev/disk/by-id/ata-MTFDDAV240TDU_21513393E484-part2";}
       ];
 
       fileSystems = {
         "/boot" = {
-          device = "/dev/disk/by-id/ata-MTFDDAV240TDU_221937EC1F94-part1";
+          device = "/dev/disk/by-id/ata-MTFDDAV240TDU_21513393E484-part1";
           fsType = "vfat";
         };
 
         "/scratch" = {
-          device = "/dev/disk/by-id/ata-MTFDDAV240TDU_221937EC4DF9-part1";
+          device = "/dev/disk/by-id/ata-MTFDDAV240TDU_21513393E390-part1";
           fsType = "ext4";
         };
 
@@ -91,16 +91,16 @@
 
       boot.loader.efi.efiSysMountPoint = "/boot";
     }
-    {networking.hostId = "9f29ac5c";}
+    {networking.hostId = "1b9f5b2d";}
     ({modulesPath, ...}: {
-      networking.hostName = "explorer-1";
+      networking.hostName = "explorer-2";
       networking.useNetworkd = true;
 
       systemd.network.networks."40-bond0" = {
         matchConfig.Name = "bond0";
         linkConfig = {
           RequiredForOnline = "carrier";
-          MACAddress = "b4:96:91:ec:c7:64";
+          MACAddress = "b4:96:91:f8:f1:56";
         };
         networkConfig.LinkLocalAddressing = "no";
         dns = ["147.75.207.207" "147.75.207.208"];
@@ -127,7 +127,7 @@
       systemd.network.networks."30-enp65s0f0" = {
         matchConfig = {
           Name = "enp65s0f0";
-          PermanentMACAddress = "b4:96:91:ec:c7:64";
+          PermanentMACAddress = "b4:96:91:f8:f1:56";
         };
         networkConfig.Bond = "bond0";
       };
@@ -135,20 +135,20 @@
       systemd.network.networks."30-enp65s0f1" = {
         matchConfig = {
           Name = "enp65s0f1";
-          PermanentMACAddress = "b4:96:91:ec:c7:65";
+          PermanentMACAddress = "b4:96:91:f8:f1:57";
         };
         networkConfig.Bond = "bond0";
       };
 
       systemd.network.networks."40-bond0".addresses = [
-        {addressConfig.Address = "147.75.84.59/31";}
-        {addressConfig.Address = "2604:1380:4602:2500::1/127";}
-        {addressConfig.Address = "10.12.171.129/31";}
+        {addressConfig.Address = "145.40.97.49/31";}
+        {addressConfig.Address = "2604:1380:4602:2500::3/127";}
+        {addressConfig.Address = "10.12.171.131/31";}
       ];
       systemd.network.networks."40-bond0".routes = [
-        {routeConfig.Gateway = "147.75.84.58";}
-        {routeConfig.Gateway = "2604:1380:4602:2500::";}
-        {routeConfig.Gateway = "10.12.171.128";}
+        {routeConfig.Gateway = "145.40.97.48";}
+        {routeConfig.Gateway = "2604:1380:4602:2500::2";}
+        {routeConfig.Gateway = "10.12.171.130";}
       ];
     })
   ];

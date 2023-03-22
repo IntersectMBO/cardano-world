@@ -9,6 +9,33 @@ let
 
 in
 {
+  bitte-system-modified = {
+    datasource = "vm";
+    rules =
+      (builtins.filter (e: !(builtins.elem e.alert ["SystemCpuUsedAlert"])) inputs.bitte-cells.bitte.alerts.bitte-system.rules)
+      ++ [
+        {
+          alert = "SystemCpuUsedAlert";
+          expr = ''100 - cpu_usage_idle{cpu="cpu-total",host!="explorer"} > 90'';
+          for = "5m";
+          labels.severity = "critical";
+          annotations = {
+            description = "CPU has been above 90% on {{ $labels.host }} for more than 5 minutes.";
+            summary = "[System] CPU Used alert on {{ $labels.host }}";
+          };
+        }
+        {
+          alert = "SystemCpuUsedAlertExplorer";
+          expr = ''100 - cpu_usage_idle{cpu="cpu-total",host="explorer"} > 90'';
+          for = "30m";
+          labels.severity = "critical";
+          annotations = {
+            description = "CPU has been above 90% on {{ $labels.host }} for more than 30 minutes.";
+            summary = "[System] CPU Used alert on {{ $labels.host }}";
+          };
+        }
+      ];
+  };
 
   node = {
     datasource = "vm";
