@@ -56,6 +56,56 @@ in {
         policies = ["perf"];
       };
 
+      resource.aws_iam_group.perf = {
+        name = "perf";
+        path = "/perf/";
+      };
+
+      resource.aws_iam_group_policy.perf = {
+        name = "perf";
+        group = "perf";
+        policy = ''
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "iam:ChangePassword"
+                ],
+                "Resource": [
+                  "arn:aws:iam::*:user/$${aws:username}"
+                ]
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "iam:GetAccountPasswordPolicy"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:*"
+                ],
+                "Resource": [
+                  "arn:aws:s3:::iog-cardano-perf",
+                  "arn:aws:s3:::iog-cardano-perf/*"
+                ]
+              }
+            ]
+          }
+        '';
+      };
+
+      resource.vault_aws_secret_backend_role.perf = {
+        backend = "aws";
+        name = "perf";
+        credential_type = "iam_user";
+        iam_groups = ["perf"];
+      };
+
       # ... operator role policies
       locals.policies = {
         vault = let
@@ -71,6 +121,7 @@ in {
             "auth/token/lookup" = [u];
             "auth/token/lookup-self" = [r];
             "auth/token/renew-self" = [u];
+            "aws/creds/perf".capabilities = [r u];
             "sys/capabilities-self" = [u];
             "kv/data/postgrest/*" = [r l];
             "kv/metadata/postgrest/*" = [r l];
