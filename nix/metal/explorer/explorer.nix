@@ -317,7 +317,7 @@ in {
           fi
           while IFS= read -r ip; do
             set +e
-            PING="$(timeout 7s cardano-ping -h "$ip" -p "$port" -m $NETWORK_MAGIC -c 1 -q --json)"
+            PING="$(timeout 7s cardano-cli ping -h "$ip" -p "$port" -m $NETWORK_MAGIC -c 1 -q --json)"
             res=$?
             if [ $res -eq 0 ]; then
               echo $PING | jq -c > /dev/null 2>&1

@@ -10,6 +10,8 @@
   ShelleyGenesisHash = "363498d1024f84bb39d3fa9593ce391483cb40d479b87233f868d6e57c3a400d";
   AlonzoGenesisFile = ./preview + "/alonzo-genesis.json";
   AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
+  ConwayGenesisFile = ./preview + "/conway-genesis.json";
+  ConwayGenesisHash = "011788fdf180fd6f0fe2d9916b8345c289ffa093014805cbc681344be7200926";
 
   ### Core protocol parameters #####
   Protocol = "Cardano";
