@@ -215,7 +215,7 @@ in {
           instanceType = "t3a.xlarge";
           privateIP = "172.16.0.20";
           subnet = cluster.vpc.subnets.core-1;
-          volumeSize = 500;
+          volumeSize = 1000;
           securityGroupRules = {inherit (sr) internet internal ssh http https;};
           modules = [
             (bitte + /profiles/monitoring.nix)
