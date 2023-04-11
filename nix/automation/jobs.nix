@@ -175,6 +175,7 @@ in {
         --byron-template "$TEMPLATE_DIR/byron.json" \
         --shelley-template "$TEMPLATE_DIR/shelley.json" \
         --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --conway-template "$TEMPLATE_DIR/conway.json" \
         --node-config-template "$TEMPLATE_DIR/config.json" \
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
@@ -209,8 +210,9 @@ in {
               --arg byron "$(base64 -w 0 < byron-genesis.json)" \
               --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
               --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
+              --arg conway "$(base64 -w 0 < conway-genesis.json)" \
               --argjson config "$(< node-config.json)" \
-              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
+              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, conwayGenesisBlob: $conway, nodeConfig: $config}' \
             > config.json
             cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
             pushd delegate-keys
@@ -620,6 +622,7 @@ in {
         --byron-template "$TEMPLATE_DIR/byron.json" \
         --shelley-template "$TEMPLATE_DIR/shelley.json" \
         --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --conway-template "$TEMPLATE_DIR/conway.json" \
         --node-config-template "$TEMPLATE_DIR/config.json" \
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
