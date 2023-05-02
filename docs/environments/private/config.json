@@ -13,6 +13,8 @@
   "RequiresNetworkMagic": "RequiresMagic",
   "ShelleyGenesisFile": "shelley-genesis.json",
   "ShelleyGenesisHash": "d9d01796f5cfab8da3833dd98d15b3967fecb52ab75df9f0267be7888d535ead",
+  "ConwayGenesisFile": "conway-genesis.json",
+  "ConwayGenesisHash": "011788fdf180fd6f0fe2d9916b8345c289ffa093014805cbc681344be7200926",
   "TargetNumberOfActivePeers": 20,
   "TargetNumberOfEstablishedPeers": 50,
   "TargetNumberOfKnownPeers": 100,
