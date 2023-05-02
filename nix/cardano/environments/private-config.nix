@@ -9,9 +9,9 @@
   ShelleyGenesisFile = ./private + "/shelley-genesis.json";
   ShelleyGenesisHash = "d9d01796f5cfab8da3833dd98d15b3967fecb52ab75df9f0267be7888d535ead";
   AlonzoGenesisFile = ./private + "/alonzo-genesis.json";
-  AlonzoGenesisHash = "8bfa9249601f7174594b0e792a4c5697421df1ec8102a236224b4e0e398dd1d7";
+  AlonzoGenesisHash = "1759c0d6cf19d5a4187d0ceff3ae1b9b76fcfff7d5d881963eff6d78575ed184";
   ConwayGenesisFile = ./private + "/conway-genesis.json";
-  ConwayGenesisHash = "011788fdf180fd6f0fe2d9916b8345c289ffa093014805cbc681344be7200926";
+  ConwayGenesisHash = "b63c171c0ae8ec0ebf2178240fc05a7e5ed2ac557694a4422cb9e11ff0c7ecda";
 
   ### Core protocol parameters #####
   Protocol = "Cardano";

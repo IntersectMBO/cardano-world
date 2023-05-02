@@ -201,7 +201,7 @@ in {
       text = ''
           # Inputs: $GENESIS_DIR, $NUM_GENESIS_KEYS, $ENV_NAME
           export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
-        export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
+          export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
           export ENV_NAME=''${ENV_NAME:-"custom-env"}
           mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
           mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
@@ -520,7 +520,7 @@ in {
     '';
   };
   update-proposal-generic = writeShellApplication {
-    name = "update-proposal-d";
+    name = "update-proposal-generic";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC, PROPOSAL_ARGS
@@ -539,7 +539,7 @@ in {
     '';
   };
   update-proposal-hard-fork = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-hard-fork";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
@@ -551,7 +551,7 @@ in {
     '';
   };
   update-proposal-cost-model = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-cost-model";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
@@ -562,7 +562,7 @@ in {
     '';
   };
   update-proposal-mainnet-params = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-mainnet-params";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
