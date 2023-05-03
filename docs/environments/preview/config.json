@@ -14,7 +14,7 @@
   "ShelleyGenesisFile": "shelley-genesis.json",
   "ShelleyGenesisHash": "363498d1024f84bb39d3fa9593ce391483cb40d479b87233f868d6e57c3a400d",
   "ConwayGenesisFile": "conway-genesis.json",
-  "ConwayGenesisHash": "011788fdf180fd6f0fe2d9916b8345c289ffa093014805cbc681344be7200926",
+  "ConwayGenesisHash": "aba97cfd8f4971983a46dbf4433a40d968cfa97411e7dbfe294c256211de895b",
   "TargetNumberOfActivePeers": 20,
   "TargetNumberOfEstablishedPeers": 50,
   "TargetNumberOfKnownPeers": 100,

@@ -15,7 +15,7 @@
   "ShelleyGenesisFile": "shelley-genesis.json",
   "ShelleyGenesisHash": "85d1783750753deaa6560158eb85fcb30078ea32a36e12dd8af39168bc053d09",
   "ConwayGenesisFile": "conway-genesis.json",
-  "ConwayGenesisHash": "011788fdf180fd6f0fe2d9916b8345c289ffa093014805cbc681344be7200926",
+  "ConwayGenesisHash": "aba97cfd8f4971983a46dbf4433a40d968cfa97411e7dbfe294c256211de895b",
   "TestShelleyHardForkAtEpoch": 2,
   "TraceAcceptPolicy": true,
   "TraceBlockFetchClient": false,
