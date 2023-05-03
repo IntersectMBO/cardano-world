@@ -9,7 +9,7 @@
   ShelleyGenesisFile = ./private + "/shelley-genesis.json";
   ShelleyGenesisHash = "d9d01796f5cfab8da3833dd98d15b3967fecb52ab75df9f0267be7888d535ead";
   AlonzoGenesisFile = ./private + "/alonzo-genesis.json";
-  AlonzoGenesisHash = "1759c0d6cf19d5a4187d0ceff3ae1b9b76fcfff7d5d881963eff6d78575ed184";
+  AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
   ConwayGenesisFile = ./private + "/conway-genesis.json";
   ConwayGenesisHash = "aba97cfd8f4971983a46dbf4433a40d968cfa97411e7dbfe294c256211de895b";
 
