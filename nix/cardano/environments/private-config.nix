@@ -21,8 +21,8 @@
   TargetNumberOfEstablishedPeers = 50;
   TargetNumberOfKnownPeers = 100;
   TargetNumberOfRootPeers = 100;
-  TestEnableDevelopmentHardForkEras = true;
-  TestEnableDevelopmentNetworkProtocols = true;
+  ExperimentalHardForksEnabled = true;
+  ExperimentalProtocolsEnabled = true;
   TestShelleyHardForkAtEpoch = 0;
   TestAllegraHardForkAtEpoch = 0;
   TestMaryHardForkAtEpoch = 0;
