@@ -11,7 +11,7 @@
   AlonzoGenesisFile = ./private + "/alonzo-genesis.json";
   AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
   ConwayGenesisFile = ./private + "/conway-genesis.json";
-  ConwayGenesisHash = "aba97cfd8f4971983a46dbf4433a40d968cfa97411e7dbfe294c256211de895b";
+  ConwayGenesisHash = "f28f1c1280ea0d32f8cd3143e268650d6c1a8e221522ce4a7d20d62fc09783e1";
 
   ### Core protocol parameters #####
   Protocol = "Cardano";

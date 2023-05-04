@@ -14,7 +14,7 @@
   "ShelleyGenesisFile": "shelley-genesis.json",
   "ShelleyGenesisHash": "1a3be38bcbb7911969283716ad7aa550250226b76a61fc51cc9a9a35d9276d81",
   "ConwayGenesisFile": "conway-genesis.json",
-  "ConwayGenesisHash": "aba97cfd8f4971983a46dbf4433a40d968cfa97411e7dbfe294c256211de895b",
+  "ConwayGenesisHash": "f28f1c1280ea0d32f8cd3143e268650d6c1a8e221522ce4a7d20d62fc09783e1",
   "TraceAcceptPolicy": true,
   "TraceBlockFetchClient": false,
   "TraceBlockFetchDecisions": false,
