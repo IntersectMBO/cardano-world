@@ -87,7 +87,6 @@ library
                       , time
                       , transformers
                       , transformers-except
-                      , unordered-containers
                       , warp
 
 executable cardano-new-faucet

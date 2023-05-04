@@ -31,7 +31,7 @@ import Cardano.Faucet.Types
 import Cardano.Faucet.Utils
 import Cardano.Faucet.Web
 import Cardano.Prelude hiding ((%))
-import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO, TQueue)
+import Control.Concurrent.STM (newTQueueIO, newEmptyTMVarIO, putTMVar, readTQueue, newTMVarIO, TQueue, TMVar, tryTakeTMVar)
 import Control.Monad.Trans.Except.Extra (left)
 import Data.List.Utils (uniq)
 import Data.Map qualified as Map
@@ -50,6 +50,10 @@ import Prelude qualified
 import Servant
 import System.Environment (lookupEnv)
 import System.IO (hSetBuffering, BufferMode(LineBuffering))
+
+-- remove once stm is upgraded
+writeTMVar :: TMVar a -> a -> STM ()
+writeTMVar tmvar new = tryTakeTMVar tmvar >> putTMVar tmvar new
 
 app :: IsShelleyBasedEra era =>
   CardanoEra era
@@ -138,6 +142,13 @@ runQueryThen query queryDone = do
     Net.Query.ClientStQuerying {
       Net.Query.recvMsgResult = \result -> do
         queryDone result
+    }
+
+reAcquireThen :: m (Net.Query.ClientStAcquired block point query m a) -> IO (Net.Query.ClientStAcquired block point query m a)
+reAcquireThen cb = do
+  pure $ Net.Query.SendMsgReAcquire Nothing $ Net.Query.ClientStAcquiring
+    { Net.Query.recvMsgAcquired = cb
+    , Net.Query.recvMsgFailure = Prelude.error "not implemented"
     }
 
 sortStakeKeys :: (Map StakeAddress Lovelace, Map StakeAddress PoolId) -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) -> ([Word32],[(Word32, SigningKey StakeExtendedKey, StakeCredential)],[(Word32, Lovelace, PoolId)])
@@ -287,6 +298,27 @@ finish = do
   pure $ Net.Query.SendMsgRelease $
     pure $ Net.Query.SendMsgDone ()
 
+queryStakeKeyLoop :: IsShelleyBasedEra era => NetworkId -> Maybe (EraInMode era mode) -> Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential) -> Bool -> FaucetState era -> Bool -> IO (Net.Query.ClientStAcquired block point (QueryInMode mode) IO ())
+queryStakeKeyLoop network era manyStakeKeys debug faucetState initial = do
+  let
+    stakeCredentials :: [StakeCredential]
+    stakeCredentials = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
+  runQueryThen (queryManyStakeAddr network era stakeCredentials) $ \case
+    Right stakeKeyResults -> do
+      let (notRegistered,notDelegated,delegated) = sortStakeKeys stakeKeyResults manyStakeKeys
+      case debug of
+        True -> do
+          putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
+          putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
+          putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
+        False -> do
+          when initial $ putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
+      atomically $ writeTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
+      threadDelay 60000000
+      reAcquireThen $ do
+        queryStakeKeyLoop network era manyStakeKeys debug faucetState False
+    Left _ -> Prelude.error "not handled"
+
 queryClient :: FaucetConfigFile -> TQueue (TxInMode CardanoMode, ByteString) -> Port -> Net.Query.LocalStateQueryClient (BlockInMode CardanoMode) ChainPoint (QueryInMode CardanoMode) IO ()
 queryClient config txQueue port = LocalStateQueryClient $ do
   aquireConnection $ do
@@ -318,22 +350,7 @@ queryClient config txQueue port = LocalStateQueryClient $ do
                   let
                     manyStakeKeys :: Map StakeAddress (Word32, SigningKey StakeExtendedKey, StakeCredential)
                     manyStakeKeys = createManyStakeKeys (fsAcctKey faucetState) (fcfNetwork config) count
-                    x :: [StakeCredential]
-                    x = Map.elems $ map (\(_,_,v) -> v) manyStakeKeys
-                  runQueryThen (queryManyStakeAddr (fcfNetwork config) (toEraInMode era3 CardanoMode) x) $ \case
-                    Right stakeKeyResults -> do
-                      let (notRegistered,notDelegated,delegated) = sortStakeKeys stakeKeyResults manyStakeKeys
-
-                      case fcfDebug config of
-                        True -> do
-                          putStrLn $ format ("these stake key indexes are not registered: " % sh) notRegistered
-                          putStrLn $ format ("these stake keys are registered and ready for use: " % sh) $ sort $ map (\(index,_skey,_vkey) -> index) notDelegated
-                          putStrLn $ format ("these stake keys are delegated: " % sh) $ sort delegated
-                        False -> do
-                          putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
-                      atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
-                      finish
-                    Left _ -> Prelude.error "not handled"
+                  queryStakeKeyLoop (fcfNetwork config) (toEraInMode era3 CardanoMode) manyStakeKeys (fcfDebug config) faucetState True
             Left _e -> Prelude.error "not handled"
         _ -> Prelude.error "not handled"
 
@@ -341,9 +358,9 @@ txMonitor :: FaucetConfigFile -> LocalTxMonitorClient txid (TxInMode CardanoMode
 txMonitor FaucetConfigFile{fcfDebug} = LocalTxMonitorClient $ return $ CTxMon.SendMsgAcquire getSnapshot
   where
     getSnapshot :: SlotNo -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
-    getSnapshot slot = do
-      when fcfDebug $ do
-        putStrLn $ format ("got mempool snapshot at slot " % sh) $ slot
+    getSnapshot _slot = do
+      --when fcfDebug $ do
+        --putStrLn $ format ("got mempool snapshot at slot " % sh) $ slot
       return $ CTxMon.SendMsgNextTx getNextTx
     getNextTx :: Show tx => Maybe tx -> IO (CTxMon.ClientStAcquired txid1 (TxInMode CardanoMode) SlotNo IO a1)
     getNextTx (Just tx) = do
