@@ -24,7 +24,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 83,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -504,8 +503,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "faucet_delegation_rewards{namespace=~\"$namespace\"} / 1E6",
-          "legendFormat": "{{pool}}",
+          "expr": "faucet_delegation_rewards{namespace=~\"$namespace\",index=~\"$index\"} / 1E6",
+          "legendFormat": "{{index}} {{pool}}",
           "range": true,
           "refId": "A"
         }
@@ -550,6 +549,32 @@
         "skipUrlSync": false,
         "sort": 0,
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "VictoriaMetrics"
+        },
+        "definition": "label_values(faucet_delegation_rewards, index)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "index",
+        "options": [],
+        "query": {
+          "query": "label_values(faucet_delegation_rewards, index)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
@@ -561,6 +586,6 @@
   "timezone": "",
   "title": "Faucet",
   "uid": "XG-OjjzVl",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
