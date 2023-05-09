@@ -122,6 +122,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       export SHELLEY_GENESIS_FILE="shelley-genesis.json"
       export BYRON_GENESIS_FILE="byron-genesis.json"
       export ALONZO_GENESIS_FILE="alonzo-genesis.json"
+      export CONWAY_GENESIS_FILE="conway-genesis.json"
 
       [ -z "''${CONSUL_KV_PATH:-}" ] && echo "CONSUL_KV_PATH env var must be set -- aborting" && exit 1
       [ -z "''${CONSUL_HTTP_ADDR:-}" ] && echo "CONSUL_HTTP_ADDR env var must be set -- aborting" && exit 1
@@ -154,11 +155,13 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       # mary
       echo "$json"|jq -r '.alonzoGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
       # vasil
+      echo "$json"|jq -r '.conwayGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$CONWAY_GENESIS_FILE"
 
       # ensure genesis file contracts
       ensure_file_location_contract "ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
       ensure_file_location_contract "ByronGenesisFile" "$BYRON_GENESIS_FILE"
       ensure_file_location_contract "AlonzoGenesisFile" "$ALONZO_GENESIS_FILE"
+      ensure_file_location_contract "ConwayGenesisFile" "$CONWAY_GENESIS_FILE"
     }
 
     function load_kv_secrets {
@@ -289,7 +292,7 @@ in {
   cardano-node = writeShellApplication {
     name = "entrypoint";
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
-    debugInputs = [packages.cardano-cli packages.cardano-node packages.cardano-ping];
+    debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
       # in nomad: producer is always the node with index 0
       producer=0

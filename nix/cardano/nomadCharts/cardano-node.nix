@@ -55,10 +55,10 @@ in
         # ----------
         # https://www.nomadproject.io/docs/job-specification/update
         update.health_check = "checks";
-        update.healthy_deadline = "5m0s";
+        update.healthy_deadline = "25m0s";
         update.max_parallel = 1;
         update.min_healthy_time = "10s";
-        update.progress_deadline = "20m0s";
+        update.progress_deadline = "30m0s";
         update.stagger = "30s";
         # ----------
         # Migrate

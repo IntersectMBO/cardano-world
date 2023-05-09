@@ -65,7 +65,7 @@ in
   };
 
   config = {
-    environment.systemPackages = with nodePkgs; [ cardano-cli cardano-ping ];
+    environment.systemPackages = with nodePkgs; [ cardano-cli ];
     environment.variables = environmentVariables // {CARDANO_NODE_SOCKET_PATH = cfg.socketPath;};
 
     networking.firewall.allowedTCPPorts = [nodePort];

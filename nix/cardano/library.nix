@@ -105,6 +105,7 @@ in rec {
                 ByronGenesisFile = "byron-genesis.json";
                 ShelleyGenesisFile = "shelley-genesis.json";
                 AlonzoGenesisFile = "alonzo-genesis.json";
+                ConwayGenesisFile = "conway-genesis.json";
               }))} > "$DATA_DIR/config/${env}/config.json"
             ${jq}/bin/jq . < ${__toFile "${env}-db-sync-config.json" (__toJSON (value.dbSyncConfig
               // {
@@ -114,6 +115,7 @@ in rec {
             cp ${value.nodeConfig.ByronGenesisFile} "$DATA_DIR/config/${env}/byron-genesis.json"
             cp ${value.nodeConfig.ShelleyGenesisFile} "$DATA_DIR/config/${env}/shelley-genesis.json"
             cp ${value.nodeConfig.AlonzoGenesisFile} "$DATA_DIR/config/${env}/alonzo-genesis.json"
+            cp ${value.nodeConfig.ConwayGenesisFile} "$DATA_DIR/config/${env}/conway-genesis.json"
             ${jq}/bin/jq . < ${mkTopology value} > "$DATA_DIR/config/${env}/topology.json"
           ''
         )

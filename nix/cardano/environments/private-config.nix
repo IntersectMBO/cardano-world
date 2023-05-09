@@ -9,7 +9,9 @@
   ShelleyGenesisFile = ./private + "/shelley-genesis.json";
   ShelleyGenesisHash = "d9d01796f5cfab8da3833dd98d15b3967fecb52ab75df9f0267be7888d535ead";
   AlonzoGenesisFile = ./private + "/alonzo-genesis.json";
-  AlonzoGenesisHash = "8bfa9249601f7174594b0e792a4c5697421df1ec8102a236224b4e0e398dd1d7";
+  AlonzoGenesisHash = "7e94a15f55d1e82d10f09203fa1d40f8eede58fd8066542cf6566008068ed874";
+  ConwayGenesisFile = ./private + "/conway-genesis.json";
+  ConwayGenesisHash = "f28f1c1280ea0d32f8cd3143e268650d6c1a8e221522ce4a7d20d62fc09783e1";
 
   ### Core protocol parameters #####
   Protocol = "Cardano";
@@ -19,8 +21,8 @@
   TargetNumberOfEstablishedPeers = 50;
   TargetNumberOfKnownPeers = 100;
   TargetNumberOfRootPeers = 100;
-  TestEnableDevelopmentHardForkEras = true;
-  TestEnableDevelopmentNetworkProtocols = true;
+  ExperimentalHardForksEnabled = true;
+  ExperimentalProtocolsEnabled = true;
   TestShelleyHardForkAtEpoch = 0;
   TestAllegraHardForkAtEpoch = 0;
   TestMaryHardForkAtEpoch = 0;

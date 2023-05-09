@@ -175,6 +175,7 @@ in {
         --byron-template "$TEMPLATE_DIR/byron.json" \
         --shelley-template "$TEMPLATE_DIR/shelley.json" \
         --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --conway-template "$TEMPLATE_DIR/conway.json" \
         --node-config-template "$TEMPLATE_DIR/config.json" \
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
@@ -200,7 +201,7 @@ in {
       text = ''
           # Inputs: $GENESIS_DIR, $NUM_GENESIS_KEYS, $ENV_NAME
           export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
-        export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
+          export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
           export ENV_NAME=''${ENV_NAME:-"custom-env"}
           mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
           mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
@@ -209,8 +210,9 @@ in {
               --arg byron "$(base64 -w 0 < byron-genesis.json)" \
               --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
               --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
+              --arg conway "$(base64 -w 0 < conway-genesis.json)" \
               --argjson config "$(< node-config.json)" \
-              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, nodeConfig: $config}' \
+              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, conwayGenesisBlob: $conway, nodeConfig: $config}' \
             > config.json
             cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
             pushd delegate-keys
@@ -518,7 +520,7 @@ in {
     '';
   };
   update-proposal-generic = writeShellApplication {
-    name = "update-proposal-d";
+    name = "update-proposal-generic";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC, PROPOSAL_ARGS
@@ -537,7 +539,7 @@ in {
     '';
   };
   update-proposal-hard-fork = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-hard-fork";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
@@ -549,7 +551,7 @@ in {
     '';
   };
   update-proposal-cost-model = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-cost-model";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
@@ -560,7 +562,7 @@ in {
     '';
   };
   update-proposal-mainnet-params = writeShellApplication {
-    name = "update-proposal-hf";
+    name = "update-proposal-mainnet-params";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
       # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
@@ -620,6 +622,7 @@ in {
         --byron-template "$TEMPLATE_DIR/byron.json" \
         --shelley-template "$TEMPLATE_DIR/shelley.json" \
         --alonzo-template "$TEMPLATE_DIR/alonzo.json" \
+        --conway-template "$TEMPLATE_DIR/conway.json" \
         --node-config-template "$TEMPLATE_DIR/config.json" \
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
