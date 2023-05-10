@@ -570,7 +570,7 @@ in {
     name = "update-proposal-mainnet-params";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC
       PROPOSAL_ARGS=(
         "--max-block-body-size" "90112"
         "--number-of-pools" "500"
