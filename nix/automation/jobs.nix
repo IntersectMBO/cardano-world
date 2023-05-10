@@ -27,7 +27,6 @@
       SIGNING_ARGS+=("--signing-key-file" "$KEY_DIR/delegate-keys/shelley.00$i.skey")
     done
 
-
     cardano-cli governance create-update-proposal \
       --epoch "$EPOCH" \
       "''${PROPOSAL_ARGS[@]}" \
@@ -523,7 +522,13 @@ in {
     name = "update-proposal-generic";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC, PROPOSAL_ARGS
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, [$MAJOR_VERSION], $TESTNET_MAGIC, $PROPOSAL_ARGS
+      if [ "$#" -eq 0 ]; then
+        echo "Generic update proposal args must be provided as cli args in the pattern:"
+        echo "nix run .#x86_64-linux.automation.jobs.update-proposal-generic -- \"\''${PROPOSAL_ARGS[@]}\""
+        exit 1
+      fi
+      PROPOSAL_ARGS=("$@")
       ${updateProposalTemplate}
     '';
   };
@@ -569,9 +574,8 @@ in {
       PROPOSAL_ARGS=(
         "--max-block-body-size" "90112"
         "--number-of-pools" "500"
-        "--max-block-execution-units" '(40000000000,62000000)'
+        "--max-block-execution-units" '(20000000000,62000000)'
         "--max-tx-execution-units" '(10000000000,14000000)'
-
       )
       ${updateProposalTemplate}
     '';
