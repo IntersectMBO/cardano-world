@@ -20,6 +20,7 @@ let
     ;
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
+  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
 in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
   inherit
@@ -108,9 +109,9 @@ in
   cardano-config-html-public =
     let
       publicEnvNames = [ "mainnet" "preview" "preprod" "shelley_qa" ];
-      environments = lib.filterAttrs (_: v: !v.private) cardano.environments;
+      environments = lib.filterAttrs (n: v: builtins.elem n publicEnvNames || !v.private) cardanoLib.environments;
     in
     cardano.library.generateStaticHTMLConfigs environments;
 
-  cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
+  cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardanoLib.environments;
 }) {}
