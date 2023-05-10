@@ -1,6 +1,7 @@
 # Generate genesis files and keys
 ```
-TEMPLATE_DIR=nix/cardano/environments/testnet-template SECURITY_PARAM=432 NUM_GENESIS_KEYS=7 SLOT_LENGTH=1000 TESTNET_MAGIC=2 START_TIME="2022-08-11T14:00:00Z" nix run .\#x86_64-linux.automation.jobs.gen-custom-node-config
+IOHK_NIX=$(nix eval --impure --expr '(builtins.getFlake (toString ./.)).inputs.iohk-nix.outPath')
+TEMPLATE_DIR="$IOHK_NIX/cardano-libs/testnet-template" SECURITY_PARAM=432 NUM_GENESIS_KEYS=7 SLOT_LENGTH=1000 TESTNET_MAGIC=2 START_TIME="2022-08-11T14:00:00Z" nix run .\#x86_64-linux.automation.jobs.gen-custom-node-config
 ```
 
 # Import configuration/keys into kv store with bitte deployments
@@ -14,7 +15,7 @@ for i in {0..6}; do cat workbench/custom/delegate-keys/shelley.00"$i".opcert.jso
 ```
 
 ```
-cardano-node run --config workbench/custom/node-config.json --database-path ~/.local/share/bitte/cardano/db-preview/node --topology nix/cardano/environments/testnet-template/topology-empty-p2p.json +RTS -N2 -A16m -qg -qb -M3584.000000M -RTS --socket-path $(pwd)/node.socket --shelley-kes-key workbench/custom/delegate-keys/shelley.000.kes.skey --shelley-vrf-key workbench/custom/delegate-keys/shelley.000.vrf.skey --shelley-operational-certificate workbench/custom/delegate-keys/shelley.000.opcert.json (edited) 
+cardano-node run --config workbench/custom/node-config.json --database-path ~/.local/share/bitte/cardano/db-preview/node --topology "$IOHK_NIX/cardano-lib/testnet-template/topology-empty-p2p.json" +RTS -N2 -A16m -qg -qb -M3584.000000M -RTS --socket-path $(pwd)/node.socket --shelley-kes-key workbench/custom/delegate-keys/shelley.000.kes.skey --shelley-vrf-key workbench/custom/delegate-keys/shelley.000.vrf.skey --shelley-operational-certificate workbench/custom/delegate-keys/shelley.000.opcert.json
 ```
 
 For further commands using local node:
