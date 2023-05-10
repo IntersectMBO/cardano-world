@@ -2,12 +2,13 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) data-merge;
+  inherit (inputs) data-merge iohk-nix nixpkgs;
   inherit (inputs.cells) cardano;
   inherit (cell) constants;
+  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
   persistanceMount = "/persist";
-  LEDGER_SLOT = cardano.environments.mainnet.usePeersFromLedgerAfterSlot;
+  LEDGER_SLOT = cardanoLib.environments.mainnet.usePeersFromLedgerAfterSlot;
 in {
   db-sync-0 = let
     jobname = "db-sync-0";
