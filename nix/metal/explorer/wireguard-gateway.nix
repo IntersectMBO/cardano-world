@@ -6,7 +6,8 @@ name: environmentName: {
   etcEncrypted,
   ...
 }: let
-  inherit (self.x86_64-linux.cardano.environments.${environmentName}.auxConfig) explorerActiveBackends;
+  inherit (auxConfig.${environmentName}) explorerActiveBackends;
+  auxConfig = import ./aux-config.nix self.inputs;
 
   # Obtain the explorer name index number
   explorerNum = backendName: builtins.elemAt (lib.splitString "-" backendName) 1;

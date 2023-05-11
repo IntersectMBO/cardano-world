@@ -1,5 +1,7 @@
 {self, pkgs, lib, config, ...}:
-{
+let
+  auxConfig = import ./explorer/aux-config.nix self.inputs;
+in {
   # No longer effective; needs manual purging until a monitoring PR update
   # services.loki.configuration.table_manager = {
   #   retention_deletes_enabled = true;
@@ -120,7 +122,7 @@
       }
     ];
 
-    inherit (self.x86_64-linux.cardano.environments.${environment}.auxConfig) explorerActiveBackends;
+    inherit (auxConfig.${environment}) explorerActiveBackends;
   in (
     (mkExplorerGatewayTargets [
       {ip = config.cluster.awsExtNodes.explorer.privateIP; machine = "explorer";}

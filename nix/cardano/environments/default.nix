@@ -44,7 +44,6 @@
       submitApiConfig = mkSubmitApiConfig "mainnet" nodeConfig;
       dbSyncConfig = mkDbSyncConfig "mainnet" nodeConfig;
       usePeersFromLedgerAfterSlot = 84916732;
-      auxConfig = import ./aux-config/mainnet-aux.nix inputs;
     };
     # used for daedalus/cardano-wallet for local development
     shelley_qa = rec {

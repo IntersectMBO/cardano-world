@@ -8,7 +8,7 @@ name: environmentName: privateIP: {
 }: let
   inherit (lib) mkOption types;
   inherit
-    (self.x86_64-linux.cardano.environments.${environmentName}.auxConfig)
+    (auxConfig.${environmentName})
     explorerHostName
     explorerAliases
     explorerActiveBackends
@@ -16,6 +16,7 @@ name: environmentName: privateIP: {
     cardanoExplorerGwPrometheusExporterPort
     smashHostName
     ;
+  auxConfig = import ./aux-config.nix self.inputs;
 
   # Obtain the explorer name index number
   explorerNum = backendName: builtins.elemAt (lib.splitString "-" backendName) 1;
