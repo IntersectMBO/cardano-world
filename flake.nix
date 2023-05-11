@@ -123,7 +123,6 @@
       #debug = ["cells" "cloud" "packages"];
       cellBlocks = [
         (inputs.std.data "constants")
-        (inputs.std.data "environments")
         (inputs.std.data "namespaces/infra")
         (inputs.std.data "namespaces/mainnet")
         (inputs.std.data "namespaces/shelley-qa")
