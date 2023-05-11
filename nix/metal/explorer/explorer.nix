@@ -1,7 +1,9 @@
 name: privateIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
+  inherit (self.inputs) nixpkgs iohk-nix;
   inherit (lib) mkOption types;
-  inherit (self.${nodeCfg.system}.cardano.library) mkEdgeTopology;
+  inherit (cardanoLib) mkEdgeTopology;
+  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
   maintenanceMode = false;
 
@@ -13,7 +15,7 @@ let
   nodeCfg = config.services.cardano-node;
   ogmiosCfg = config.services.cardano-ogmios;
 
-  environments = self.${nodeCfg.system}.cardano.environments;
+  environments = cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.x86_64-linux;

@@ -1,13 +1,15 @@
 privateIP: {self, pkgs, config, lib, ...}:
 let
+  inherit (self.inputs) nixpkgs iohk-nix;
   inherit (lib) mkDefault mkIf mkOption types;
+  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
   cfg = config.services.cardano-node;
   nodePort = 3001;
 
   cardanoNodePrometheusExporterPort = 12798;
 
-  environments = self.${cfg.system}.cardano.environments;
+  environments = cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   environmentVariables = let

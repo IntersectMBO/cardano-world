@@ -1,13 +1,15 @@
 {self, pkgs, config, lib, ...}:
 let
+  inherit (self.inputs) nixpkgs iohk-nix;
   inherit (lib) mkOption types;
+  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
   cfg = config.services.cardano-db-sync;
   nodeCfg = config.services.cardano-node;
 
   cardanoNodeConfigPath = builtins.toFile "cardano-node-config.json" (builtins.toJSON nodeCfg.nodeConfig);
 
-  environments = self.${cfg.system}.cardano.environments;
+  environments = cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.${cfg.system};
