@@ -58,7 +58,8 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
+      url = "github:input-output-hk/iohk-nix/angerman/remove-old-envs";
+      # url = "path:/home/jlotoski/work/iohk/iohk-nix-wt/angerman-remove-old-envs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
