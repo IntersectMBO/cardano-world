@@ -386,7 +386,7 @@ in {
     text = ''
 
       ${prelude}
-      DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
+      DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT:-custom}/db-sync-config.json"
 
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
