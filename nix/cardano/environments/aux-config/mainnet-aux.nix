@@ -21,6 +21,7 @@ in lib.recursiveUpdate (import ./default-aux.nix inputs) {
 
   # Mainnet auxillary configuration parameters
   smashDelistedPools = [
+    "00a6461d1561987241f41c34d42c5c5830a11510d3007a32d33f007e"
     "b6f665ef4d02abc5ce551f3565ada97d870d603c724ba791c7975a6b"
     "413b0496a93ff4ef5d7436828e9764d37778d74d60a62451cfbed057"
     "ce2e5bbae0caa514670d63cfdad3123a5d32cf7c37df87add5a0f75f"
