@@ -1,9 +1,6 @@
 name: privateIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
-  inherit (self.inputs) nixpkgs iohk-nix;
   inherit (lib) mkOption types;
-  inherit (cardanoLib) mkEdgeTopology;
-  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
 
   maintenanceMode = false;
 
@@ -15,7 +12,7 @@ let
   nodeCfg = config.services.cardano-node;
   ogmiosCfg = config.services.cardano-ogmios;
 
-  environments = cardanoLib.environments;
+  environments = pkgs.cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
   auxConfig = import ./aux-config.nix self.inputs;
 
@@ -193,7 +190,7 @@ in {
     services.cardano-rosetta-server = {
       enable = true;
       package = rosettaPkgs.cardano-rosetta-server;
-      topologyFilePath = mkEdgeTopology {
+      topologyFilePath = pkgs.cardanoLib.mkEdgeTopology {
         edgeNodes = map (p: p.addr) nodeCfg.producers;
         port = nodeCfg.port;
       };

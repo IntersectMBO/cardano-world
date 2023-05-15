@@ -162,6 +162,8 @@
         bitte = inputs.bitte.lib.mkBitteStack {
           inherit inputs;
           inherit (inputs) self;
+
+          overlays = [inputs.iohk-nix.overlays.cardano-lib];
           domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfiles.default;

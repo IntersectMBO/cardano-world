@@ -6,10 +6,8 @@ name: environmentName: {
   etcEncrypted,
   ...
 }: let
-  inherit (self.inputs) nixpkgs iohk-nix;
   inherit (config.services.cardano-node) system;
-  inherit (cardanoLib.environments.${environmentName}) domain;
-  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
+  inherit (pkgs.cardanoLib.environments.${environmentName}) domain;
 
   # Obtain the explorer name index number
   explorerNum = builtins.elemAt (lib.splitString "-" name) 1;

@@ -2,20 +2,19 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) nixpkgs iohk-nix;
-  inherit (nixpkgs) lib runCommand;
-  inherit (cardanoLib) mkConfigHtml;
-  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
+  inherit (inputs.nixpkgs) lib runCommand;
 
 in rec {
+  inherit (inputs.iohk-nix.pkgs) cardanoLib;
+
   # Use the iohk-nix mkConfigHtml attr and transform the output to what mdbook expects
   generateStaticHTMLConfigs = environments: let
-    cardano-deployment = mkConfigHtml environments;
+    cardano-deployment = cardanoLib.mkConfigHtml environments;
   in runCommand "cardano-html" {} ''
     mkdir "$out"
     cp "${cardano-deployment}/index.html" "$out/"
     cp "${cardano-deployment}/rest-config.json" "$out/"
-    ENVS=(${nixpkgs.lib.escapeShellArgs (builtins.attrNames environments)})
+    ENVS=(${lib.escapeShellArgs (builtins.attrNames environments)})
     for ENV in "''${ENVS[@]}"; do
       # Migrate each env from a flat dir to an ENV subdir
       mkdir -p "$out/config/$ENV"
@@ -39,7 +38,7 @@ in rec {
   in ''
     # DATA_DIR is a runtime entrypoint env var which will contain the cp target
     mkdir -p "$DATA_DIR/config"
-    ENVS=(${nixpkgs.lib.escapeShellArgs (builtins.attrNames environments)})
+    ENVS=(${lib.escapeShellArgs (builtins.attrNames environments)})
     for ENV in "''${ENVS[@]}"; do
       cp -rv "${envCfgs}/config/$ENV" "$DATA_DIR/config/"
     done

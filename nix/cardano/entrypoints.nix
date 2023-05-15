@@ -2,13 +2,12 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) iohk-nix nixpkgs;
+  inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
   inherit (cell) packages library constants;
-  inherit (cardanoLib) environments;
+  inherit (cell.library.cardanoLib) environments;
 
-  cardanoLib = import "${iohk-nix}/cardano-lib/default.nix" {inherit (nixpkgs) lib writeText runCommand jq;};
   packages' = packages;
 in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
   packages = if args ? evalSystem then packages'.override { inherit evalSystem; } else packages';
