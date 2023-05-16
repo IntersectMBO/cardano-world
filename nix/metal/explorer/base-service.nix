@@ -7,7 +7,7 @@ let
 
   cardanoNodePrometheusExporterPort = 12798;
 
-  environments = self.${cfg.system}.cardano.environments;
+  environments = pkgs.cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   environmentVariables = let

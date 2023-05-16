@@ -20,6 +20,7 @@ let
     ;
   inherit (inputs.cells) cardano;
   inherit (nixpkgs) lib;
+  inherit (cell.library) cardanoLib generateStaticHTMLConfigs;
 
 in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
   inherit
@@ -44,7 +45,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
 
   project =
     (import ./haskell.nix {
-      inherit lib haskell-nix evalSystem;
+      inherit lib haskell-nix iohk-nix evalSystem;
       inherit (inputs) byron-chain;
       src = self;
       inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = inputs.CHaP; };
@@ -108,9 +109,9 @@ in
   cardano-config-html-public =
     let
       publicEnvNames = [ "mainnet" "preview" "preprod" "shelley_qa" ];
-      environments = lib.filterAttrs (_: v: !v.private) cardano.environments;
+      environments = lib.filterAttrs (n: v: builtins.elem n publicEnvNames || !v.private) cardanoLib.environments;
     in
-    cardano.library.generateStaticHTMLConfigs environments;
+    generateStaticHTMLConfigs environments;
 
-  cardano-config-html-internal = cardano.library.generateStaticHTMLConfigs cardano.environments;
+  cardano-config-html-internal = generateStaticHTMLConfigs cardanoLib.environments;
 }) {}

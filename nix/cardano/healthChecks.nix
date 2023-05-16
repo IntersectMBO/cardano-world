@@ -4,8 +4,7 @@
 }: let
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
-  inherit (inputs.bitte-cells._utils.packages) srvaddr;
-  inherit (cell) environments library packages;
+  inherit (cell) packages;
 in {
   cardano-wallet-network-sync = writeShellApplication {
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils nixpkgs.curl];

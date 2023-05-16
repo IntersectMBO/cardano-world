@@ -7,7 +7,7 @@ let
 
   cardanoNodeConfigPath = builtins.toFile "cardano-node-config.json" (builtins.toJSON nodeCfg.nodeConfig);
 
-  environments = self.${cfg.system}.cardano.environments;
+  environments = pkgs.cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.${cfg.system};

@@ -7,7 +7,6 @@
   inherit (cell) constants;
 
   persistanceMount = "/persist";
-  LEDGER_SLOT = cardano.environments.mainnet.usePeersFromLedgerAfterSlot;
 in {
   db-sync-0 = let
     jobname = "db-sync-0";

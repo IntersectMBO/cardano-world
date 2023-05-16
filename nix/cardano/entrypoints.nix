@@ -5,7 +5,9 @@
   inherit (inputs) nixpkgs;
   inherit (inputs.bitte-cells._writers.library) writeShellApplication;
   inherit (inputs.bitte-cells._utils.packages) srvaddr;
-  inherit (cell) packages environments library constants;
+  inherit (cell) packages library constants;
+  inherit (cell.library.cardanoLib) environments;
+
   packages' = packages;
 in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
   packages = if args ? evalSystem then packages'.override { inherit evalSystem; } else packages';
@@ -383,7 +385,7 @@ in {
     text = ''
 
       ${prelude}
-      DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT-custom}/db-sync-config.json"
+      DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT:-custom}/db-sync-config.json"
 
       function watch_leader_discovery {
         declare -i pid_to_signal=$1
