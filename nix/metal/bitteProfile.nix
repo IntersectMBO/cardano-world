@@ -60,11 +60,39 @@ in {
         euCentral = attrs: [
           (attrs // {region = "eu-central-1";})
         ];
+        perfNodes = attrs: [
+          (attrs
+            // {
+              region = "eu-central-1";
+              desiredCapacity = 19;
+            })
+          (attrs
+            // {
+              region = "us-east-1";
+              desiredCapacity = 17;
+            })
+          (attrs
+            // {
+              region = "ap-southeast-2";
+              desiredCapacity = 17;
+            })
+        ];
       in
         lib.listToAttrs
         (
           lib.forEach
           (
+            # Perf Nodes
+            (perfNodes {
+              instanceType = "c5.2xlarge";
+              volumeSize = 60;
+              node_class = "perf";
+              maxSize = 20;
+              modules = defaultModules ++ [
+                {services.nomad.client.meta.perf = "true";}
+              ];
+            })
+            ++
             # Infra Nodes
             (euCentral {
               instanceType = "t3.2xlarge";

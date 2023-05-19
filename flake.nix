@@ -8,7 +8,7 @@
 
     # --- Bitte Stack ----------------------------------------------
     bitte = {
-      url = "github:input-output-hk/bitte/bump-glusterfs";
+      url = "github:input-output-hk/bitte";
       inputs.capsules.follows = "capsules";
     };
 
