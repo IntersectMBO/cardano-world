@@ -200,7 +200,7 @@ in {
 
       instances = {
         core-1 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.0.10";
           subnet = cluster.vpc.subnets.core-1;
           volumeSize = 100;
@@ -214,7 +214,7 @@ in {
         };
 
         core-2 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.1.10";
           subnet = cluster.vpc.subnets.core-2;
           volumeSize = 100;
@@ -227,7 +227,7 @@ in {
         };
 
         core-3 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.2.10";
           subnet = cluster.vpc.subnets.core-3;
           volumeSize = 100;
@@ -255,7 +255,7 @@ in {
           instanceType = "t3a.small";
           privateIP = "172.16.1.20";
           subnet = cluster.vpc.subnets.core-2;
-          volumeSize = 30;
+          volumeSize = 100;
           securityGroupRules = {inherit (sr) internet internal ssh http https routing;};
           route53.domains = [
             "*.${cluster.domain}"
