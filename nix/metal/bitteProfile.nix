@@ -89,7 +89,10 @@ in {
               node_class = "perf";
               maxSize = 20;
               modules = defaultModules ++ [
-                {services.nomad.client.meta.perf = "true";}
+                {
+                  services.zfs-client-options.enableZfsSnapshots = false;
+                  services.nomad.client.meta.perf = "true";
+                }
               ];
             })
             ++
