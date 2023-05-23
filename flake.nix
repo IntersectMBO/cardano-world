@@ -12,7 +12,7 @@
       inputs.capsules.follows = "capsules";
     };
 
-    bitte-cells.url = "github:input-output-hk/bitte-cells";
+    bitte-cells.url = "github:input-output-hk/bitte-cells/patroni-flex";
     tullia.url = "github:input-output-hk/tullia";
     # --------------------------------------------------------------
 

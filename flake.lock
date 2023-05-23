@@ -783,15 +783,16 @@
         "std": "std_2"
       },
       "locked": {
-        "lastModified": 1670003309,
-        "narHash": "sha256-jIATRw5GadTD8b09H+tB8iN18luDCGkL2Vbf52uW6ic=",
+        "lastModified": 1684822032,
+        "narHash": "sha256-GhHYjR0Bpph5ymfeFL/M54q95eNlMAuPPmtTd5aSQXs=",
         "owner": "input-output-hk",
         "repo": "bitte-cells",
-        "rev": "6f5d607b76d15238ae6729ebef8ff3fe6c0049d8",
+        "rev": "965b8003b1fce2ce8ddf156bbea67740e5be9149",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
+        "ref": "patroni-flex",
         "repo": "bitte-cells",
         "type": "github"
       }
@@ -20456,11 +20457,11 @@
         "zitiConsole": "zitiConsole"
       },
       "locked": {
-        "lastModified": 1678464806,
-        "narHash": "sha256-h7b57EK5gDWeqW3CP2Wrps6vZ/XH6HhqHi3bZl8/jq0=",
+        "lastModified": 1684801115,
+        "narHash": "sha256-7/Q4b64GZSDE1SNfTo3lqGvHZgKDhq8Xb3l4dnbBJ6Y=",
         "owner": "johnalotoski",
         "repo": "openziti-bins",
-        "rev": "fdc4283ea28c5865fd1d2874a9871cba2392bdb0",
+        "rev": "d9d132c69e5ea9dc5779c64fbbb84894f3ec31d8",
         "type": "github"
       },
       "original": {
