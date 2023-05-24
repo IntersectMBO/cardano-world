@@ -1,7 +1,7 @@
 # Generate genesis files and keys
 ```
-IOHK_NIX=$(nix eval --impure --expr '(builtins.getFlake (toString ./.)).inputs.iohk-nix.outPath')
-TEMPLATE_DIR="$IOHK_NIX/cardano-libs/testnet-template" \
+IOHK_NIX=$(nix eval --raw --impure --expr '(builtins.getFlake (toString ./.)).inputs.iohk-nix.outPath')
+TEMPLATE_DIR="$IOHK_NIX/cardano-lib/testnet-template" \
 SECURITY_PARAM=432 \
 NUM_GENESIS_KEYS=7 \
 SLOT_LENGTH=1000 \
