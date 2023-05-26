@@ -32,7 +32,7 @@
       flake = false;
     };
 
-    openziti.url = "github:johnalotoski/openziti-bins";
+    openziti.url = "github:johnalotoski/openziti-bins/large-tcp";
     deploy-rs.url = "github:serokell/deploy-rs";
     # --------------------------------------------------------------
 

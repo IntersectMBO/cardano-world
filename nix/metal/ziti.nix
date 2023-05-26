@@ -1,4 +1,4 @@
-{lib, ...}: let
+{lib, self, pkgs, ...}: let
   awsExt-to-equinix-host-v1 = builtins.toJSON {
     allowedAddresses = ["10.12.171.0/24"];
     allowedPortRanges = [
@@ -75,7 +75,10 @@ in {
   services = {
     ziti-router.enable = true;
     ziti-console.enable = true;
-    ziti-edge-tunnel.enable = true;
+    ziti-edge-tunnel = {
+      enable = true;
+      package = self.inputs.openziti.packages.${pkgs.system}.ziti-edge-tunnel_latest_large_tcp;
+    };
 
     ziti-controller = {
       enable = true;
