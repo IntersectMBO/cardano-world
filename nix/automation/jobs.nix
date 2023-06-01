@@ -11,18 +11,33 @@
   cabal-project-utils = nixpkgs.callPackages iohk-nix.utils.cabal-project {};
 
   updateProposalTemplate = ''
-    # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $PROPOSAL_ARGS
+    # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $PROPOSAL_ARGS, $SUBMIT_TX, $ERA, $DEBUG
 
-    CHANGE_ADDRESS=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --testnet-magic "$TESTNET_MAGIC")
-    TXIN=$(cardano-cli query utxo --address "$CHANGE_ADDRESS" --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout \
-            | jq -r 'to_entries[0]|.key'
+    CHANGE_ADDRESS=$(
+      cardano-cli address build \
+        --payment-verification-key-file "$PAYMENT_KEY".vkey \
+        --testnet-magic "$TESTNET_MAGIC"
     )
-    EPOCH=$(cardano-cli query tip --testnet-magic "$TESTNET_MAGIC"|jq .epoch)
+
+    TXIN=$(
+      cardano-cli query utxo \
+        --address "$CHANGE_ADDRESS" \
+        --testnet-magic "$TESTNET_MAGIC" \
+        --out-file /dev/stdout \
+      | jq -r 'to_entries[0] | .key'
+    )
+
+    EPOCH=$(
+      cardano-cli query tip \
+        --testnet-magic "$TESTNET_MAGIC" \
+      | jq .epoch
+    )
+
     echo "$TXIN" > /dev/null
     PROPOSAL_KEY_ARGS=()
     SIGNING_ARGS=()
-    for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
-    do
+
+    for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
       PROPOSAL_KEY_ARGS+=("--genesis-verification-key-file" "$KEY_DIR/genesis-keys/shelley.00$i.vkey")
       SIGNING_ARGS+=("--signing-key-file" "$KEY_DIR/delegate-keys/shelley.00$i.skey")
     done
@@ -32,38 +47,45 @@
       "''${PROPOSAL_ARGS[@]}" \
       "''${PROPOSAL_KEY_ARGS[@]}" \
       --out-file update.proposal
-    cardano-cli transaction build \
+
+    cardano-cli transaction build ''${ERA:+$ERA} \
       --tx-in "$TXIN" \
       --change-address "$CHANGE_ADDRESS" \
       --update-proposal-file update.proposal \
       --testnet-magic "$TESTNET_MAGIC" \
       --out-file tx-proposal.txbody
+
     cardano-cli transaction sign \
       --tx-body-file tx-proposal.txbody \
       --out-file tx-proposal.txsigned \
       --signing-key-file "$PAYMENT_KEY".skey \
       "''${SIGNING_ARGS[@]}"
-    # TODO: remove if we figure out how to make it detect where in epoch we are
-    if ! cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned
-    then
-      cardano-cli governance create-update-proposal \
-        --epoch $(("$EPOCH" + 1)) \
-      "''${PROPOSAL_ARGS[@]}" \
-      "''${PROPOSAL_KEY_ARGS[@]}" \
-        --out-file update.proposal
-      cardano-cli transaction build \
-        --tx-in "$TXIN" \
-        --change-address "$CHANGE_ADDRESS" \
-        --update-proposal-file update.proposal \
-        --testnet-magic "$TESTNET_MAGIC" \
-        --out-file tx-proposal.txbody
-      cardano-cli transaction sign \
-        --tx-body-file tx-proposal.txbody \
-        --out-file tx-proposal.txsigned \
-        --signing-key-file "$PAYMENT_KEY".skey \
-        "''${SIGNING_ARGS[@]}"
-      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned
+
+    if [ "''${SUBMIT_TX:-TRUE}" = "TRUE" ]; then
+      # TODO: remove if we figure out how to make it detect where in epoch we are
+      if ! cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned; then
+        cardano-cli governance create-update-proposal \
+          --epoch $(("$EPOCH" + 1)) \
+          "''${PROPOSAL_ARGS[@]}" \
+          "''${PROPOSAL_KEY_ARGS[@]}" \
+          --out-file update.proposal
+
+        cardano-cli transaction build ''${ERA:+$ERA} \
+          --tx-in "$TXIN" \
+          --change-address "$CHANGE_ADDRESS" \
+          --update-proposal-file update.proposal \
+          --testnet-magic "$TESTNET_MAGIC" \
+          --out-file tx-proposal.txbody
+
+        cardano-cli transaction sign \
+          --tx-body-file tx-proposal.txbody \
+          --out-file tx-proposal.txsigned \
+          --signing-key-file "$PAYMENT_KEY".skey \
+          "''${SIGNING_ARGS[@]}"
+
+        cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-proposal.txsigned
       fi
+    fi
   '';
 in {
   update-cabal-source-repo-checksums = writeShellApplication {
@@ -79,18 +101,23 @@ in {
     '';
     runtimeInputs = [cabal-project-utils.cabalProjectRegenerate];
   };
+
   cabal-project-check = cabal-project-utils.checkCabalProject;
+
   hlint-check = nixpkgs.callPackage iohk-nix.checks.hlint {
     inherit (packages) hlint;
     inherit (packages.project.args) src;
   };
+
   stylish-haskell-check = nixpkgs.callPackage inputs.iohk-nix.checks.stylish-haskell {
     inherit (packages) stylish-haskell;
     inherit (packages.project.args) src;
   };
+
   shell-check = nixpkgs.callPackage inputs.iohk-nix.checks.shell {
     src = inputs.self;
   };
+
   mkHydraRequiredJob = nonRequiredPaths: jobs:
     nixpkgs.releaseTools.aggregate {
       name = "github-required";
@@ -106,6 +133,7 @@ in {
             else value)
           jobs);
     };
+
   # run-local-node = let
   #   envName = "testnet";
   #   config =
@@ -152,11 +180,14 @@ in {
   #   command = "push-snapshot";
   #   dependencies = [cmd];
   # };
+
   gen-custom-node-config = writeShellApplication {
     name = "gen-custom-node-config";
     runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
     text = ''
-      # Inputs: $START_TIME, $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS
+      # Inputs: $START_TIME, $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       export START_TIME=''${START_TIME:-$(date --utc +"%Y-%m-%dT%H:%M:%SZ" --date " now +30 min")}
       export SLOT_LENGTH=''${SLOT_LENGTH:-1000}
       export SECURITY_PARAM=''${SECURITY_PARAM:-36}
@@ -164,10 +195,12 @@ in {
       export TESTNET_MAGIC=''${TESTNET_MAGIC:-42}
       export TEMPLATE_DIR=''${TEMPLATE_DIR:-"${iohk-nix}/cardano-lib/testnet-template"}
       export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
+
       mkdir -p "$GENESIS_DIR"
       cardano-cli genesis create-cardano \
         --genesis-dir "$GENESIS_DIR" \
         --gen-genesis-keys "$NUM_GENESIS_KEYS" \
+        --gen-utxo-keys 1 \
         --supply 30000000000000000 \
         --testnet-magic "$TESTNET_MAGIC" \
         --slot-coefficient 0.05 \
@@ -179,70 +212,72 @@ in {
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
         --start-time "$START_TIME"
+
       # TODO remove when genesis generator outputs non-extended-key format
       pushd "$GENESIS_DIR/genesis-keys"
-        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
-        do
+        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
           mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
           cardano-cli key non-extended-key \
             --extended-verification-key-file shelley.00"$i".vkey-ext \
             --verification-key-file shelley.00"$i".vkey
-
         done
-
       popd
     '';
   };
+
   gen-custom-kv-config =
     writeShellApplication {
       name = "gen-custom-kv-config";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-          # Inputs: $GENESIS_DIR, $NUM_GENESIS_KEYS, $ENV_NAME
-          export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
-          export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
-          export ENV_NAME=''${ENV_NAME:-"custom-env"}
-          mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
-          mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-          pushd "$GENESIS_DIR"
-            jq -n \
-              --arg byron "$(base64 -w 0 < byron-genesis.json)" \
-              --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
-              --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
-              --arg conway "$(base64 -w 0 < conway-genesis.json)" \
-              --argjson config "$(< node-config.json)" \
-              '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, conwayGenesisBlob: $conway, nodeConfig: $config}' \
-            > config.json
-            cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
-            pushd delegate-keys
-              for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
-                jq -n \
-                  --argjson cold "$(<shelley."00$i".skey)" \
-                  --argjson vrf "$(<shelley."00$i".vrf.skey)" \
-                  --argjson kes "$(<shelley."00$i".kes.skey)" \
-                  --argjson opcert "$(<shelley."00$i".opcert.json)" \
-                  --argjson counter "$(<shelley."00$i".counter.json)" \
-                  --argjson byron_cert "$(<byron."00$i".cert.json)" \
-                  '{
-                    "kes.skey": $kes,
-                    "vrf.skey": $vrf,
-                    "opcert.json": $opcert,
-                    "byron.cert.json": $byron_cert,
-                    "cold.skey": $cold,
-                    "cold.counter": $counter
-                  }' > "bft-$i.json"
-                  cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-              done
-            popd
-            pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-              for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
-                sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
-              done
-            popd
+        # Inputs: $GENESIS_DIR, $NUM_GENESIS_KEYS, $ENV_NAME, $DEBUG
+        [ -n "''${DEBUG:-}" ] && set -x
+
+        export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/custom"}
+        export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-3}
+        export ENV_NAME=''${ENV_NAME:-"custom-env"}
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/consul/cardano"
+        mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+        pushd "$GENESIS_DIR"
+          jq -n \
+            --arg byron "$(base64 -w 0 < byron-genesis.json)" \
+            --arg shelley "$(base64 -w 0 < shelley-genesis.json)" \
+            --arg alonzo "$(base64 -w 0 < alonzo-genesis.json)" \
+            --arg conway "$(base64 -w 0 < conway-genesis.json)" \
+            --argjson config "$(< node-config.json)" \
+            '{byronGenesisBlob: $byron, shelleyGenesisBlob: $shelley, alonzoGenesisBlob: $alonzo, conwayGenesisBlob: $conway, nodeConfig: $config}' \
+          > config.json
+          cp config.json "$PRJ_ROOT/nix/cloud/kv/consul/cardano/$ENV_NAME.json"
+          pushd delegate-keys
+            for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
+              jq -n \
+                --argjson cold "$(<shelley."00$i".skey)" \
+                --argjson vrf "$(<shelley."00$i".vrf.skey)" \
+                --argjson kes "$(<shelley."00$i".kes.skey)" \
+                --argjson opcert "$(<shelley."00$i".opcert.json)" \
+                --argjson counter "$(<shelley."00$i".counter.json)" \
+                --argjson byron_cert "$(<byron."00$i".cert.json)" \
+                '{
+                  "kes.skey": $kes,
+                  "vrf.skey": $vrf,
+                  "opcert.json": $opcert,
+                  "byron.cert.json": $byron_cert,
+                  "cold.skey": $cold,
+                  "cold.counter": $counter
+                }' > "bft-$i.json"
+                cp "bft-$i.json" "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+            done
           popd
+          pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
+            for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
+              sops -e "bft-$i.json" > "bft-$i.enc.json" && rm "bft-$i.json"
+            done
+          popd
+        popd
       '';
     }
     // {after = ["gen-custom-node-config"];};
+
   push-custom-kv-config =
     writeShellApplication {
       name = "push-custom-kv-config";
@@ -253,71 +288,82 @@ in {
       '';
     }
     // {after = ["gen-custom-kv-config"];};
+
   create-stake-pools = writeShellApplication {
     name = "create-stake-pools";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_OUTPUT_DIR, $POOL_RELAY, $POOL_RELAY_PORT
+      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_OUTPUT_DIR, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       WITNESSES=$(("$NUM_POOLS" * 2 + 1))
       END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
       CHANGE_ADDRESS=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --testnet-magic "$TESTNET_MAGIC")
 
       mkdir -p "$STAKE_POOL_OUTPUT_DIR"
 
-      # generate wallet in control of all the funds delegated to the stake pools
+      # Generate wallet in control of all the funds delegated to the stake pools
       cardano-address recovery-phrase generate > "$STAKE_POOL_OUTPUT_DIR"/owner.mnemonic
-      # extract reward address vkey
+
+      # Extract reward address vkey
       cardano-address key from-recovery-phrase Shelley < "$STAKE_POOL_OUTPUT_DIR"/owner.mnemonic \
         | cardano-address key child 1852H/1815H/"0"H/2/0 \
         | cardano-cli key convert-cardano-address-key --shelley-stake-key \
-            --signing-key-file /dev/stdin --out-file /dev/stdout \
+          --signing-key-file /dev/stdin --out-file /dev/stdout \
         | cardano-cli key verification-key --signing-key-file /dev/stdin \
-            --verification-key-file /dev/stdout \
+          --verification-key-file /dev/stdout \
         | cardano-cli key non-extended-key \
-            --extended-verification-key-file /dev/stdin \
-            --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-0-reward-stake.vkey
-      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-      do
-        # extract stake skey/vkey needed for pool registration and delegation
+          --extended-verification-key-file /dev/stdin \
+          --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-0-reward-stake.vkey
+
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
+        # Extract stake skey/vkey needed for pool registration and delegation
         cardano-address key from-recovery-phrase Shelley < "$STAKE_POOL_OUTPUT_DIR"/owner.mnemonic \
           | cardano-address key child 1852H/1815H/"$i"H/2/0 \
           | cardano-cli key convert-cardano-address-key --shelley-stake-key \
-              --signing-key-file /dev/stdin \
-              --out-file /dev/stdout \
+            --signing-key-file /dev/stdin \
+            --out-file /dev/stdout \
           | tee "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.skey \
           | cardano-cli key verification-key \
-              --signing-key-file /dev/stdin \
-              --verification-key-file /dev/stdout \
+            --signing-key-file /dev/stdin \
+            --verification-key-file /dev/stdout \
           | cardano-cli key non-extended-key \
-              --extended-verification-key-file /dev/stdin \
-              --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey
-        # generate cold, vrf and kes keys
+            --extended-verification-key-file /dev/stdin \
+            --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey
+
+        # Generate cold, vrf and kes keys
         cardano-cli node key-gen \
           --cold-signing-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.skey \
           --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.vkey \
           --operational-certificate-issue-counter-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.counter
+
         cardano-cli node key-gen-VRF \
           --signing-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-vrf.skey \
           --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-vrf.vkey
+
         cardano-cli node key-gen-KES \
           --signing-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-kes.skey \
           --verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-kes.vkey
-        # generate opcert
+
+        # Generate opcert
         cardano-cli node issue-op-cert \
           --kes-period 0 \
           --kes-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-kes.vkey \
           --operational-certificate-issue-counter-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.counter \
           --cold-signing-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.skey \
           --out-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i".opcert
-      # generate stake registration and delegation certificate
+
+        # Generate stake registration and delegation certificate
         cardano-cli stake-address registration-certificate \
           --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
           --out-file sp-"$i"-owner-registration.cert
+
         cardano-cli stake-address delegation-certificate \
           --cold-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.vkey \
           --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
           --out-file sp-"$i"-owner-delegation.cert
-      # generate stake pool registration certificate
+
+        # Generate stake pool registration certificate
         cardano-cli stake-pool registration-certificate \
           --testnet-magic "$TESTNET_MAGIC" \
           --cold-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-cold.vkey \
@@ -331,16 +377,26 @@ in {
           --vrf-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-vrf.vkey \
           --out-file sp-"$i"-registration.cert
       done
-      # generate transaction
-      TXIN=$(cardano-cli query utxo --address "$CHANGE_ADDRESS" --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout \
-              | jq -r 'to_entries[0]|.key'
+
+      # Generate transaction
+      TXIN=$(
+        cardano-cli query utxo \
+          --address "$CHANGE_ADDRESS" \
+          --testnet-magic "$TESTNET_MAGIC" \
+          --out-file /dev/stdout \
+          | jq -r 'to_entries[0] | .key'
       )
-      # generate arrays needed for build/sign commands
+
+      # Generate arrays needed for build/sign commands
       BUILD_TX_ARGS=()
       SIGN_TX_ARGS=()
-      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-      do
-        STAKE_POOL_ADDR=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey --testnet-magic "$TESTNET_MAGIC")
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
+        STAKE_POOL_ADDR=$(
+          cardano-cli address build \
+          --payment-verification-key-file "$PAYMENT_KEY".vkey \
+          --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
+          --testnet-magic "$TESTNET_MAGIC"
+        )
         BUILD_TX_ARGS+=("--tx-out" "$STAKE_POOL_ADDR+100000000000000")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-owner-registration.cert")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-registration.cert")
@@ -349,34 +405,44 @@ in {
         SIGN_TX_ARGS+=("--signing-key-file" "$STAKE_POOL_OUTPUT_DIR/sp-$i-owner-stake.skey")
       done
 
-      cardano-cli transaction build \
+      cardano-cli transaction build ''${ERA:+$ERA} \
         --tx-in "$TXIN" \
         --change-address "$CHANGE_ADDRESS" \
         --witness-override "$WITNESSES" \
         "''${BUILD_TX_ARGS[@]}" \
         --testnet-magic "$TESTNET_MAGIC" \
         --out-file tx-pool-reg.txbody
+
       cardano-cli transaction sign \
         --tx-body-file tx-pool-reg.txbody \
         --out-file tx-pool-reg.txsigned \
         --signing-key-file "$PAYMENT_KEY".skey \
         "''${SIGN_TX_ARGS[@]}"
-      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
+
+      if [ "''${SUBMIT_TX:-TRUE}" = "TRUE" ]; then
+        cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
+      fi
     '';
   };
+
   update-stake-pools = writeShellApplication {
     name = "update-stake-pools";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $POOL_RELAY, $POOL_RELAY_PORT
+      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       WITNESSES=$(("$NUM_POOLS" * 2 + 1))
       END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
-      CHANGE_ADDRESS=$(cardano-cli address build --payment-verification-key-file "$PAYMENT_KEY".vkey --testnet-magic "$TESTNET_MAGIC")
+      CHANGE_ADDRESS=$(
+        cardano-cli address build \
+          --payment-verification-key-file "$PAYMENT_KEY".vkey \
+          --testnet-magic "$TESTNET_MAGIC"
+      )
 
       mkdir -p "$STAKE_POOL_DIR"
 
-      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-      do
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
         cardano-cli stake-pool registration-certificate \
           --testnet-magic "$TESTNET_MAGIC" \
           --cold-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-cold.vkey \
@@ -390,47 +456,59 @@ in {
           --vrf-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-vrf.vkey \
           --out-file sp-"$i"-registration.cert
       done
-      # generate transaction
-      TXIN=$(cardano-cli query utxo --address "$CHANGE_ADDRESS" --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout \
-              | jq -r 'to_entries[0]|.key'
+
+      # Generate transaction
+      TXIN=$(
+        cardano-cli query utxo \
+          --address "$CHANGE_ADDRESS" \
+          --testnet-magic "$TESTNET_MAGIC" \
+          --out-file /dev/stdout \
+        | jq -r 'to_entries[0] | .key'
       )
-      # generate arrays needed for build/sign commands
+
+      # Generate arrays needed for build/sign commands
       BUILD_TX_ARGS=()
       SIGN_TX_ARGS=()
-      for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-      do
+
+      for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-registration.cert")
         SIGN_TX_ARGS+=("--signing-key-file" "$STAKE_POOL_DIR/sp-$i-cold.skey")
         SIGN_TX_ARGS+=("--signing-key-file" "$STAKE_POOL_DIR/sp-$i-owner-stake.skey")
       done
 
-      cardano-cli transaction build \
+      cardano-cli transaction build ''${ERA:+$ERA} \
         --tx-in "$TXIN" \
         --change-address "$CHANGE_ADDRESS" \
         --witness-override "$WITNESSES" \
         "''${BUILD_TX_ARGS[@]}" \
         --testnet-magic "$TESTNET_MAGIC" \
         --out-file tx-pool-reg.txbody
+
       cardano-cli transaction sign \
         --tx-body-file tx-pool-reg.txbody \
         --out-file tx-pool-reg.txsigned \
         --signing-key-file "$PAYMENT_KEY".skey \
         "''${SIGN_TX_ARGS[@]}"
-      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
+
+      if [ "''${SUBMIT_TX:-TRUE}" = "TRUE" ]; then
+        cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-pool-reg.txsigned
+      fi
     '';
   };
+
   gen-custom-kv-config-pools =
     writeShellApplication {
       name = "gen-custom-kv-config-pools";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME
+        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME, $DEBUG
+        [ -n "''${DEBUG:-}" ] && set -x
+
         export ENV_NAME=''${ENV_NAME:-"custom-env"}
         END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
         mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
         pushd "$STAKE_POOL_DIR"
-          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-          do
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
             jq -n \
               --argjson cold    "$(< sp-"$i"-cold.skey)" \
               --argjson vrf     "$(< sp-"$i"-vrf.skey)" \
@@ -447,33 +525,38 @@ in {
           done
         popd
         pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-          do
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
             sops -e "sp-$i.json" > "sp-$i.enc.json" && rm "sp-$i.json"
           done
         popd
       '';
     }
     // {after = ["gen-custom-node-config"];};
-    rotate-kes-pools =
+
+  rotate-kes-pools =
     writeShellApplication {
       name = "rotate-kes-pools";
       runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
       text = ''
-        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME, $CURRENT_KES_PERIOD
+        # Inputs: $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $ENV_NAME, $CURRENT_KES_PERIOD, $DEBUG
+        [ -n "''${DEBUG:-}" ] && set -x
+
         export ENV_NAME=''${ENV_NAME:-"custom-env"}
         END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
         mkdir -p "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
         pushd "$STAKE_POOL_DIR"
-          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-          do
-            cardano-cli node key-gen-KES --signing-key-file sp-"$i"-kes.skey --verification-key-file sp-"$i"-kes.vkey
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
+            cardano-cli node key-gen-KES \
+              --signing-key-file sp-"$i"-kes.skey \
+              --verification-key-file sp-"$i"-kes.vkey
+
             cardano-cli node issue-op-cert \
               --kes-verification-key-file sp-"$i"-kes.vkey \
               --cold-signing-key-file sp-"$i"-cold.skey \
               --operational-certificate-issue-counter-file sp-"$i"-cold.counter \
               --kes-period "$CURRENT_KES_PERIOD" \
               --out-file sp-"$i".opcert
+
             jq -n \
               --argjson cold    "$(< sp-"$i"-cold.skey)" \
               --argjson vrf     "$(< sp-"$i"-vrf.skey)" \
@@ -490,39 +573,62 @@ in {
           done
         popd
         pushd "$PRJ_ROOT/nix/cloud/kv/vault/cardano/$ENV_NAME"
-          for ((i="$START_INDEX"; i < "$END_INDEX"; i++))
-          do
+          for ((i="$START_INDEX"; i < "$END_INDEX"; i++)); do
             sops -e "sp-$i.json" > "sp-$i.enc.json" && rm "sp-$i.json"
           done
         popd
       '';
     }
     // {after = ["gen-custom-node-config"];};
+
   move-genesis-utxo = writeShellApplication {
     name = "move-genesis-utxo";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_ADDRESS, $BYRON_SIGNING_KEY, $TESTNET_MAGIC
-      BYRON_UTXO=$(cardano-cli query utxo --whole-utxo --testnet-magic "$TESTNET_MAGIC" --out-file /dev/stdout|jq \
-        'to_entries[]|
-        {"txin": .key, "address": .value.address, "amount": .value.value.lovelace}
-        |select(.amount > 0)
-      ')
-      FEE=200000
-      SUPPLY=$(echo "$BYRON_UTXO"|jq -r '.amount - 200000')
-      BYRON_ADDRESS=$(echo "$BYRON_UTXO"|jq -r '.address')
-      TXIN=$(echo "$BYRON_UTXO"|jq -r '.txin')
+      # Inputs: $PAYMENT_ADDRESS, $BYRON_SIGNING_KEY, $TESTNET_MAGIC, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
 
-      cardano-cli transaction build-raw --tx-in "$TXIN" --tx-out "$PAYMENT_ADDRESS+$SUPPLY" --fee "$FEE" --out-file tx-byron.txbody
-      cardano-cli transaction sign --tx-body-file tx-byron.txbody --out-file tx-byron.txsigned --address "$BYRON_ADDRESS" --signing-key-file "$BYRON_SIGNING_KEY"
-      cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-byron.txsigned
+      BYRON_UTXO=$(
+        cardano-cli query utxo \
+          --whole-utxo \
+          --testnet-magic "$TESTNET_MAGIC" \
+          --out-file /dev/stdout \
+        | jq '
+          to_entries[]
+          | {"txin": .key, "address": .value.address, "amount": .value.value.lovelace}
+          | select(.amount > 0)
+        '
+      )
+      FEE=200000
+      SUPPLY=$(echo "$BYRON_UTXO" | jq -r '.amount - 200000')
+      BYRON_ADDRESS=$(echo "$BYRON_UTXO" | jq -r '.address')
+      TXIN=$(echo "$BYRON_UTXO" | jq -r '.txin')
+
+      cardano-cli transaction build-raw ''${ERA:+$ERA} \
+        --tx-in "$TXIN" \
+        --tx-out "$PAYMENT_ADDRESS+$SUPPLY" \
+        --fee "$FEE" \
+        --out-file tx-byron.txbody
+
+      cardano-cli transaction sign \
+        --tx-body-file tx-byron.txbody \
+        --out-file tx-byron.txsigned \
+        --address "$BYRON_ADDRESS" \
+        --signing-key-file "$BYRON_SIGNING_KEY"
+
+      if [ "''${SUBMIT_TX:-TRUE}" = "TRUE" ]; then
+        cardano-cli transaction submit --testnet-magic "$TESTNET_MAGIC" --tx-file tx-byron.txsigned
+      fi
     '';
   };
+
   update-proposal-generic = writeShellApplication {
     name = "update-proposal-generic";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, [$MAJOR_VERSION], $TESTNET_MAGIC, $PROPOSAL_ARGS
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, [$MAJOR_VERSION], $TESTNET_MAGIC, $PROPOSAL_ARGS, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       if [ "$#" -eq 0 ]; then
         echo "Generic update proposal args must be provided as cli args in the pattern:"
         echo "nix run .#x86_64-linux.automation.jobs.update-proposal-generic -- \"\''${PROPOSAL_ARGS[@]}\""
@@ -532,22 +638,28 @@ in {
       ${updateProposalTemplate}
     '';
   };
+
   update-proposal-d = writeShellApplication {
     name = "update-proposal-d";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $D_VALUE, $TESTNET_MAGIC
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $D_VALUE, $TESTNET_MAGIC, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       PROPOSAL_ARGS=(
         "--decentralization-parameter" "$D_VALUE"
       )
       ${updateProposalTemplate}
     '';
   };
+
   update-proposal-hard-fork = writeShellApplication {
     name = "update-proposal-hard-fork";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $MAJOR_VERSION, $TESTNET_MAGIC, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       PROPOSAL_ARGS=(
         "--protocol-major-version" "$MAJOR_VERSION"
         "--protocol-minor-version" "0"
@@ -555,22 +667,28 @@ in {
       ${updateProposalTemplate}
     '';
   };
+
   update-proposal-cost-model = writeShellApplication {
     name = "update-proposal-cost-model";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $COST_MODEL, $TESTNET_MAGIC, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       PROPOSAL_ARGS=(
         "--cost-model-file" "$COST_MODEL"
       )
       ${updateProposalTemplate}
     '';
   };
+
   update-proposal-mainnet-params = writeShellApplication {
     name = "update-proposal-mainnet-params";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC
+      # Inputs: $PAYMENT_KEY, $NUM_GENESIS_KEYS, $KEY_DIR, $TESTNET_MAGIC, $SUBMIT_TX, $ERA, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       PROPOSAL_ARGS=(
         "--max-block-body-size" "90112"
         "--number-of-pools" "500"
@@ -580,6 +698,7 @@ in {
       ${updateProposalTemplate}
     '';
   };
+
   release = let
     ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
     release-notes = nixpkgs.writeText "release-notes" ''
@@ -604,11 +723,14 @@ in {
         gh release create -d "$TAG" --notes-file ${release-notes}
       '';
     };
+
   generate-and-run-node = writeShellApplication {
     name = "generate-and-run-node";
     runtimeInputs = [packages.cardano-cli nixpkgs.coreutils];
     text = ''
-      # Inputs: $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS
+      # Inputs: $SLOT_LENGTH, $SECURITY_PARAM, $TESTNET_MAGIC, $TEMPLATE_DIR, $GENESIS_DIR, $NUM_GENESIS_KEYS, $DEBUG
+      [ -n "''${DEBUG:-}" ] && set -x
+
       export SLOT_LENGTH=''${SLOT_LENGTH:-200}
       export SECURITY_PARAM=''${SECURITY_PARAM:-8}
       export NUM_GENESIS_KEYS=''${NUM_GENESIS_KEYS:-1}
@@ -617,6 +739,7 @@ in {
       export GENESIS_DIR=''${GENESIS_DIR:-"$PRJ_ROOT/workbench/local-dev"}
       rm -rf "$GENESIS_DIR"
       mkdir -p "$GENESIS_DIR"
+
       cardano-cli genesis create-cardano \
         --genesis-dir "$GENESIS_DIR" \
         --gen-genesis-keys "$NUM_GENESIS_KEYS" \
@@ -630,18 +753,18 @@ in {
         --node-config-template "$TEMPLATE_DIR/config.json" \
         --security-param "$SECURITY_PARAM" \
         --slot-length "$SLOT_LENGTH" \
+
       # TODO remove when genesis generator outputs non-extended-key format
       pushd "$GENESIS_DIR/genesis-keys"
-        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++))
-        do
+        for ((i=0; i < "$NUM_GENESIS_KEYS"; i++)); do
           mv shelley.00"$i".vkey shelley.00"$i".vkey-ext
+
           cardano-cli key non-extended-key \
             --extended-verification-key-file shelley.00"$i".vkey-ext \
             --verification-key-file shelley.00"$i".vkey
-
         done
-
       popd
+
       cp "$TEMPLATE_DIR/topology-empty-p2p.json" "$GENESIS_DIR/topology.json"
       cardano-node run \
         --config "$GENESIS_DIR/node-config.json" \
