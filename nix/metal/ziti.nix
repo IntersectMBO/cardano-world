@@ -33,8 +33,10 @@
   equinix-to-awsExt-host-v1 = builtins.toJSON {
     allowedAddresses = [
       "172.16.0.0/16"
+      "10.16.0.0/16"
       "10.24.0.0/16"
       "10.32.0.0/16"
+      "10.48.0.0/16"
       "10.52.0.0/16"
     ];
     allowedPortRanges = [
@@ -52,8 +54,10 @@
   equinix-to-awsExt-intercept-v1 = builtins.toJSON {
     addresses = [
       "172.16.0.0/16"
+      "10.16.0.0/16"
       "10.24.0.0/16"
       "10.32.0.0/16"
+      "10.48.0.0/16"
       "10.52.0.0/16"
     ];
     dialOptions = {
@@ -71,6 +75,9 @@
   };
 in {
   boot.kernel.sysctl."net.ipv4.conf.all.forwarding" = true;
+
+  # Restart ziti-edge-tunnel every 12 hours until the tcp limit issue has been fixed.
+  systemd.services.ziti-edge-tunnel.serviceConfig.RuntimeMaxSec = 12 * 60 * 60;
 
   services = {
     ziti-router.enable = true;
