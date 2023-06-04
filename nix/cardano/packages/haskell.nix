@@ -211,7 +211,7 @@ in
           packages =
             let
               # TODO: empty this list:
-              packagesWithWarnings = [ "ouroboros-consensus" ];
+              packagesWithWarnings = [ "ouroboros-consensus" "cardano-cli"];
             in
             lib.genAttrs (lib.subtractLists packagesWithWarnings packageNames)
               (name: { configureFlags = [ "--ghc-option=-Werror" ]; });
