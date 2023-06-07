@@ -15,9 +15,9 @@
 module Cardano.Faucet.Web (userAPI, server, SiteVerifyRequest(..)) where
 
 import Cardano.Api (CardanoEra, IsShelleyBasedEra, TxInMode(TxInMode), Lovelace(Lovelace), IsCardanoEra, TxCertificates(TxCertificatesNone), serialiseAddress, SigningKey(PaymentExtendedSigningKey), PaymentExtendedKey)
-import Cardano.Api.Shelley (StakeCredential, makeStakeAddressDelegationCertificate, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId, AdaAssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), Script(SimpleScript), simpleScriptVersion, SimpleScriptOrReferenceInput(SScript), SimpleScriptV2, scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), SimpleScriptVersion, shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey, Quantity(Quantity), scriptPolicyId, TxOut(TxOut), TxOutValue(TxOutAdaOnly, TxOutValue), lovelaceToValue, negateValue, Value, BuildTx, CtxUTxO, WitCtxMint)
+import Cardano.Api.Shelley (StakeCredential, PoolId, TxCertificates(TxCertificates), certificatesSupportedInEra, BuildTxWith(BuildTxWith), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForStakeAddr), StakeExtendedKey, serialiseToBech32, AssetId(AssetId, AdaAssetId), PolicyId(PolicyId), serialiseToRawBytesHexText, AssetName(AssetName), TxMintValue(TxMintNone, TxMintValue), AddressAny, multiAssetSupportedInEra, valueFromList, ScriptWitness(SimpleScriptWitness), SimpleScript(RequireSignature), SimpleScriptOrReferenceInput(SScript), scriptLanguageSupportedInEra, ScriptLanguage(SimpleScriptLanguage), shelleyBasedEra, Tx, TxId, verificationKeyHash, getVerificationKey, castVerificationKey, VerificationKey, Quantity(Quantity), scriptPolicyId, TxOut(TxOut), TxOutValue(TxOutAdaOnly, TxOutValue), lovelaceToValue, negateValue, Value, BuildTx, CtxUTxO, WitCtxMint, Script(SimpleScript), SimpleScript, SimpleScript', ShelleyWitnessSigningKey(WitnessPaymentExtendedKey, WitnessStakeExtendedKey), makeStakeAddressPoolDelegationCertificate)
 import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.CLI.Shelley.Run.Transaction (SomeWitness(..))
+import Cardano.CLI.Shelley.Run.Transaction ()
 import Cardano.Faucet.Misc (convertEra, parseAddress, toFaucetValue, faucetValueToLovelace, stripMintingTokens)
 import Cardano.Faucet.TxUtils (makeAndSignTx, Fee(..))
 import Cardano.Faucet.Types (CaptchaToken, ForwardedFor(..), SendMoneyReply(..), DelegationReply(..), SiteVerifyReply(..), SiteVerifyRequest(..), SecretKey, FaucetState(..), ApiKeyValue(..), RateLimitResult(..), ApiKey(..), RateLimitAddress(..), UtxoStats(..), FaucetValue(..), FaucetConfigFile(..), FaucetWebError(..), SiteKey(..), SendMoneySent(..), FaucetToken(FaucetToken, FaucetMintToken), rootKeyToPolicyKey)
@@ -183,9 +183,9 @@ txoutToValue (TxOut _ txOutValue _ _) = unwrap txOutValue
 data TokenState = TokenState
   { tsAssetId :: AssetId
   , tsPolicyId :: PolicyId
-  , tsSimpleScript :: SimpleScript SimpleScriptV2
+  , tsSimpleScript :: SimpleScript
   , tsPolicySKey :: SigningKey PaymentExtendedKey
-  , tsScript :: Script SimpleScriptV2
+  , tsScript :: Script SimpleScript'
   }
 
 getTokenState :: HasCallStack => IsCardanoEra era => Word32 -> AssetName -> FaucetState era -> TokenState
@@ -197,28 +197,26 @@ getTokenState policy_index name FaucetState{fsRootKey} = TokenState{tsAssetId,ts
     tsPolicySKey = PaymentExtendedSigningKey $ getKey policyKey
     policy_vkey :: VerificationKey PaymentExtendedKey
     policy_vkey = getVerificationKey tsPolicySKey
-    tsSimpleScript :: SimpleScript SimpleScriptV2
+    tsSimpleScript :: SimpleScript
     tsSimpleScript = RequireSignature $ verificationKeyHash $ castVerificationKey policy_vkey
-    tsScript :: Script SimpleScriptV2
-    tsScript = SimpleScript simpleScriptVersion tsSimpleScript
+    tsScript :: Script SimpleScript'
+    tsScript = SimpleScript tsSimpleScript
     tsPolicyId = scriptPolicyId tsScript
     tsAssetId = AssetId tsPolicyId name
 
-getOptionalMintOutput :: IsCardanoEra era => FaucetState era -> CardanoEra era -> FaucetValue -> ExceptT FaucetWebError IO (Value, TxMintValue BuildTx era, [SomeWitness])
+getOptionalMintOutput :: IsCardanoEra era => FaucetState era -> CardanoEra era -> FaucetValue -> ExceptT FaucetWebError IO (Value, TxMintValue BuildTx era, [ShelleyWitnessSigningKey])
 getOptionalMintOutput fs era (FaucetValueMultiAsset _ (FaucetMintToken (policy_index, name, quant))) = do
   supported <- either (\_ -> left $ FaucetWebErrorTodo "asset error") pure $ multiAssetSupportedInEra era
   let
-    x :: SimpleScriptVersion SimpleScriptV2
-    x = simpleScriptVersion
-  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage x) of
+  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage) of
     Just yes -> pure yes
     Nothing -> left $ FaucetWebErrorTodo "scripts not supported"
   let
     TokenState{tsAssetId,tsPolicyId,tsSimpleScript,tsPolicySKey} = getTokenState policy_index name fs
     valueToMint = valueFromList [ (tsAssetId, quant) ]
-    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript tsSimpleScript))]
+    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra (SScript tsSimpleScript))]
     y = BuildTxWith $ witnessesProvidedMap
-  pure $ (valueToMint, TxMintValue supported valueToMint y, [APaymentExtendedSigningKey tsPolicySKey])
+  pure $ (valueToMint, TxMintValue supported valueToMint y, [WitnessPaymentExtendedKey tsPolicySKey])
 getOptionalMintOutput _ _ _ = pure (mempty, TxMintNone, [])
 
 mintFreshTokens :: forall era . IsShelleyBasedEra era
@@ -231,23 +229,21 @@ mintFreshTokens :: forall era . IsShelleyBasedEra era
   -> Integer
   -> Fee
   -> ExceptT FaucetWebError IO (Tx era, TxId)
-mintFreshTokens era fs@FaucetState{fsUtxoTMVar,fsNetwork,fsPaymentSkey,fsOwnAddress} policyIndex destinationAddress tokenname count tx_out_count (Fee feeLovelace) = do
+mintFreshTokens era fs@FaucetState{fsUtxoTMVar,fsPaymentSkey,fsOwnAddress} policyIndex destinationAddress tokenname count tx_out_count (Fee feeLovelace) = do
   let
     TokenState{tsAssetId,tsPolicyId,tsSimpleScript,tsPolicySKey} = getTokenState policyIndex tokenname fs
     sbe = shelleyBasedEra @era
-    x :: SimpleScriptVersion SimpleScriptV2
-    x = simpleScriptVersion
   txinout@(_, txout) <- liftIO $ atomically $ do
     txinout <- findUtxoOfSize fsUtxoTMVar $ Ada $ Lovelace (1000 * 1000000)
     pure txinout
   supported <- either (\_ -> left $ FaucetWebErrorTodo "asset error") pure $ multiAssetSupportedInEra era
-  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage x) of
+  languageSupportedInEra <- case (scriptLanguageSupportedInEra era $ SimpleScriptLanguage) of
     Just yes -> pure yes
     Nothing -> left $ FaucetWebErrorTodo "scripts not supported"
   let
     valueToMint = valueFromList [(tsAssetId, Quantity $ count * tx_out_count)]
     witnessesProvidedMap :: Map PolicyId (ScriptWitness WitCtxMint era)
-    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra simpleScriptVersion (SScript tsSimpleScript))]
+    witnessesProvidedMap = Map.fromList [(tsPolicyId, SimpleScriptWitness languageSupportedInEra (SScript tsSimpleScript))]
     mint = TxMintValue supported valueToMint $ BuildTxWith witnessesProvidedMap
     -- value in each utxo being created
     outputValue = valueFromList [ (AdaAssetId, Quantity 10000000), (tsAssetId, Quantity count) ]
@@ -267,7 +263,7 @@ mintFreshTokens era fs@FaucetState{fsUtxoTMVar,fsNetwork,fsPaymentSkey,fsOwnAddr
   putStrLn $ format ("output_sum: " % sh) $ output_sum
   putStrLn $ format ("input_sum: " % sh) $ input_sum
   putStrLn $ format ("change: " % sh) $ change
-  (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputsWithChange) fsNetwork [fsPaymentSkey, APaymentExtendedSigningKey tsPolicySKey] TxCertificatesNone mint (Fee feeLovelace)
+  (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputsWithChange) [fsPaymentSkey, WitnessPaymentExtendedKey tsPolicySKey] TxCertificatesNone mint (Fee feeLovelace)
   pure (signedTx, txid)
 
 handleDelegateStake :: forall era. IsShelleyBasedEra era
@@ -280,7 +276,7 @@ handleDelegateStake :: forall era. IsShelleyBasedEra era
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] DelegationReply)
-handleDelegateStake era FaucetState{fsPaymentSkey,fsNetwork,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState,fsOwnAddress} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleDelegateStake era FaucetState{fsPaymentSkey,fsUtxoTMVar,fsTxQueue,fsStakeTMVar,fsConfig,fsDelegationRateLimitState,fsOwnAddress} poolId mApiKey mToken remoteip mForwardedFor mOrigin = do
   let
     clientIP = pickIp mForwardedFor remoteip
     sbe = shelleyBasedEra @era
@@ -311,11 +307,11 @@ handleDelegateStake era FaucetState{fsPaymentSkey,fsNetwork,fsUtxoTMVar,fsTxQueu
       Left err -> left err
       Right ((stake_skey, creds), txinout) -> do
         let
-          cert = makeStakeAddressDelegationCertificate creds poolId
-          stake_witness = AStakeExtendedSigningKey stake_skey
+          cert = makeStakeAddressPoolDelegationCertificate creds poolId
+          stake_witness = WitnessStakeExtendedKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era
-        (signedTx, txid) <- makeAndSignTx sbe txinout (Left fsOwnAddress) fsNetwork [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x) TxMintNone (Fee $ Lovelace 200000)
+        (signedTx, txid) <- makeAndSignTx sbe txinout (Left fsOwnAddress) [fsPaymentSkey, stake_witness] (TxCertificates supported [cert] x) TxMintNone (Fee $ Lovelace 200000)
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
@@ -484,7 +480,7 @@ handleSendMoney :: forall era. IsShelleyBasedEra era =>
   -> Maybe ForwardedFor
   -> Maybe Text
   -> Servant.Handler (Headers '[Header "Access-Control-Allow-Origin" Text] SendMoneyReply)
-handleSendMoney era fs@FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
+handleSendMoney era fs@FaucetState{fsUtxoTMVar,fsPaymentSkey,fsTxQueue,fsConfig,fsSendMoneyRateLimitState} addr mType mApiKey mToken remoteip mForwardedFor mOrigin = do
   let clientIP = pickIp mForwardedFor remoteip
   let sbe = shelleyBasedEra @era
   eResult <- liftIO $ runExceptT $ do
@@ -522,7 +518,7 @@ handleSendMoney era fs@FaucetState{fsNetwork,fsUtxoTMVar,fsPaymentSkey,fsTxQueue
       valueUserShouldReceive = txInValue <> mintedValue <> (negateValue $ lovelaceToValue feeLovelace)
       outputs :: [TxOutAnyEra]
       outputs = [ TxOutAnyEra addressAny valueUserShouldReceive TxOutDatumByNone ReferenceScriptAnyEraNone ]
-    (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputs) fsNetwork (extraKeys <> [fsPaymentSkey]) TxCertificatesNone mintField (Fee $ feeLovelace)
+    (signedTx, txid) <- makeAndSignTx sbe txinout (Right outputs) (extraKeys <> [fsPaymentSkey]) TxCertificatesNone mintField (Fee $ feeLovelace)
     putStrLn $ format ("txin is worth: " % sh) $ txInValue
     putStrLn $ format ("user should receive: " % sh) valueUserShouldReceive
     putStrLn $ format (sh % ": sending funds to address " % st % " via txid " % sh) clientIP (serialiseAddress addressAny) txid
