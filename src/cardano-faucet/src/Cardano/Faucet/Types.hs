@@ -8,19 +8,20 @@
 
 module Cardano.Faucet.Types where
 
+import Prelude (fail)
+
 import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XPrv, genMasterKeyFromMnemonic, indexFromWord32, deriveAccountPrivateKey, deriveAddressPrivateKey, Index, DerivationType(Hardened, Soft))
 import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
-import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, NetworkId, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), NetworkId, AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
-import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..))
+import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
+import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..), NetworkId(Testnet, Mainnet), NetworkMagic(NetworkMagic), ShelleyWitnessSigningKey)
 import Cardano.Api (EnvSocketError, InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
 import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, renderShelleyTxCmdError)
-import Cardano.CLI.Shelley.Run.Read (SomeWitness)
 import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
 import Cardano.Prelude
 import Control.Concurrent.STM (TMVar, TQueue)
 import Control.Monad.Trans.Except.Extra (left)
-import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String), withObject, (.:), (.:?), Object)
+import Data.Aeson (ToJSON(..), object, (.=), Options(fieldLabelModifier), defaultOptions, camelTo2, genericToJSON, FromJSON(parseJSON), eitherDecodeFileStrict, Value(String,Object), withObject, (.:), (.:?), Object)
 import Data.Aeson.Types (Parser)
 import Data.Aeson.KeyMap (member)
 import Data.ByteString.Char8 qualified as BSC
@@ -84,7 +85,7 @@ data FaucetWebError = FaucetWebErrorInvalidAddress Text Text
   | FaucetWebErrorUtxoNotFound FaucetValue
   | FaucetWebErrorEraConversion
   | FaucetWebErrorTodo Text
-  | FaucetWebErrorFeatureMismatch AnyCardanoEra Text
+  | FaucetWebErrorFeatureMismatch AnyCardanoEra
   | FaucetWebErrorConsensusModeMismatchTxBalance Text AnyCardanoEra
   | FaucetWebErrorEraMismatch Text
   | FaucetWebErrorAutoBalance Text
@@ -109,7 +110,7 @@ data IsCardanoEra era => FaucetState era = FaucetState
   , fsNetwork :: NetworkId
   , fsTxQueue :: TQueue (TxInMode CardanoMode, ByteString)
   , fsRootKey :: Shelley 'RootK XPrv
-  , fsPaymentSkey :: SomeWitness
+  , fsPaymentSkey :: ShelleyWitnessSigningKey
   , fsPaymentVkey :: SomeAddressVerificationKey
   , fsAcctKey :: Shelley 'AccountK XPrv
   , fsConfig :: FaucetConfigFile
@@ -186,6 +187,15 @@ data FaucetConfigFile = FaucetConfigFile
   , fcfAllowedCorsOrigins :: [Text]
   , fcfAddressIndex :: Word32
   } deriving (Generic, Show)
+
+-- copied from bench/tx-generator/src/Cardano/TxGenerator/Internal/Orphans.hs
+instance FromJSON NetworkId where
+  parseJSON j = case j of
+    String "Mainnet" -> pure Mainnet
+    Object v         -> v .:? "Testnet" >>= maybe failure (pure . Testnet . NetworkMagic)
+    _                -> failure
+    where
+      failure = fail $ "could not parse NetworkId: " <> show j
 
 instance FromJSON FaucetConfigFile where
   parseJSON = withObject "FaucetConfigFile" $ \o -> do
@@ -323,6 +333,7 @@ vkeyToAddr nw (AByronVerificationKey vk) = return (AddressByron (makeByronAddres
 vkeyToAddr nw (APaymentVerificationKey vk) = AddressShelley <$> buildShelleyAddress vk Nothing nw
 vkeyToAddr nw (APaymentExtendedVerificationKey vk) = AddressShelley <$> buildShelleyAddress (castVerificationKey vk) Nothing nw
 vkeyToAddr nw (AGenesisUTxOVerificationKey vk) = AddressShelley <$> buildShelleyAddress (castVerificationKey vk) Nothing nw
+vkeyToAddr _ _ = fail "unexpected vkey type"
 
 paymentKeyToAddress :: SigningKey PaymentExtendedKey -> NetworkId -> ExceptT FaucetError IO AddressAny
 paymentKeyToAddress skey network = do

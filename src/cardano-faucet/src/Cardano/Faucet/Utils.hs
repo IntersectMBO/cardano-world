@@ -8,7 +8,6 @@ module Cardano.Faucet.Utils where
 
 import Cardano.Api (TxIn, TxOut(TxOut), CtxUTxO, Lovelace, CardanoEra, TxFee, txFeesExplicitInEra, TxFee(TxFeeImplicit, TxFeeExplicit), anyCardanoEra, TxValidityLowerBound(TxValidityNoLowerBound), TxValidityUpperBound(TxValidityNoUpperBound), validityNoUpperBoundSupportedInEra)
 import Cardano.Api.Shelley ()
-import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.Faucet.Misc
 import Cardano.Faucet.Types
 import Cardano.Prelude hiding ((%))
@@ -74,14 +73,13 @@ validateTxFee ::
 validateTxFee era mfee = case (txFeesExplicitInEra era, mfee) of
   (Left  implicit, Nothing)  -> return (TxFeeImplicit implicit)
   (Right explicit, Just fee) -> return (TxFeeExplicit explicit fee)
-  (Right _, Nothing) -> txFeatureMismatch era TxFeatureImplicitFees
-  (Left  _, Just _)  -> txFeatureMismatch era TxFeatureExplicitFees
+  (Right _, Nothing) -> txFeatureMismatch era
+  (Left  _, Just _)  -> txFeatureMismatch era
 
 txFeatureMismatch ::
      CardanoEra era
-  -> TxFeature
   -> ExceptT FaucetWebError IO a
-txFeatureMismatch era feature = left (FaucetWebErrorFeatureMismatch (anyCardanoEra era) (show feature))
+txFeatureMismatch era = left (FaucetWebErrorFeatureMismatch (anyCardanoEra era))
 
 noBoundsIfSupported ::
      CardanoEra era
@@ -94,5 +92,5 @@ noUpperBoundIfSupported ::
      CardanoEra era
   -> ExceptT FaucetWebError IO (TxValidityUpperBound era)
 noUpperBoundIfSupported era = case validityNoUpperBoundSupportedInEra era of
-  Nothing -> txFeatureMismatch era TxFeatureValidityNoUpperBound
+  Nothing -> txFeatureMismatch era
   Just supported -> return (TxValidityNoUpperBound supported)
