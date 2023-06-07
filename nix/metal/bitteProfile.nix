@@ -64,7 +64,13 @@ in {
           (attrs
             // {
               region = "eu-central-1";
-              desiredCapacity = 19;
+              desiredCapacity = 18;
+            })
+          (attrs
+            // {
+              region = "eu-central-1";
+              desiredCapacity = 1;
+              instanceType = "c5.4xlarge";
             })
           (attrs
             // {
