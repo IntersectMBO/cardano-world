@@ -20457,11 +20457,11 @@
         "zitiConsole": "zitiConsole"
       },
       "locked": {
-        "lastModified": 1685118587,
-        "narHash": "sha256-lvxcIRMAg4cUHeAxCrPTFKEfxw9FuYjDv2PA6zCDdyE=",
+        "lastModified": 1685985328,
+        "narHash": "sha256-SN3dgmJ3MxBqnA+TB6Oi06UlbNzf5/sH8GqAZXITO/0=",
         "owner": "johnalotoski",
         "repo": "openziti-bins",
-        "rev": "fb327d8460c505ac1014fd52092079fb294d0874",
+        "rev": "01785a4c1ddf6705725e6cf180990395a543d6a1",
         "type": "github"
       },
       "original": {
