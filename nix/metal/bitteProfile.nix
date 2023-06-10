@@ -70,7 +70,7 @@ in {
             // {
               region = "eu-central-1";
               desiredCapacity = 1;
-              instanceType = "c5.4xlarge";
+              instanceType = "m5.4xlarge";
             })
           (attrs
             // {
