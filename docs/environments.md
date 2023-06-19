@@ -46,6 +46,7 @@ Informed: QA Team
 - [Byron Genesis](environments/shelley-qa/byron-genesis.json)
 - [Shelley Genesis](environments/shelley-qa/shelley-genesis.json)
 - [Alonzo Genesis](environments/shelley-qa/alonzo-genesis.json)
+- [Conway Genesis](environments/shelley-qa/conway-genesis.json)
 
 ## Preview Testnet
 

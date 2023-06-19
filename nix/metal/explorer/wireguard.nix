@@ -7,7 +7,7 @@ name: environmentName: {
   ...
 }: let
   inherit (config.services.cardano-node) system;
-  inherit (self.${system}.cardano.environments.${environmentName}) domain;
+  inherit (pkgs.cardanoLib.environments.${environmentName}) domain;
 
   # Obtain the explorer name index number
   explorerNum = builtins.elemAt (lib.splitString "-" name) 1;

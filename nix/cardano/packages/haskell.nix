@@ -3,6 +3,7 @@
 ############################################################################
 { lib
 , haskell-nix
+, iohk-nix
 , # cabal.project directory
   src
 , byron-chain
@@ -181,7 +182,7 @@ in
           packages.cardano-ledger-byron.components.tests.cardano-ledger-byron-test = {
             preCheck = ''
               export CARDANO_MAINNET_MIRROR="${byron-chain}/epochs"
-              cp ${../environments/mainnet/byron-genesis.json} ./mainnet-genesis.json
+              cp ${iohk-nix}/cardano-lib/mainnet/byron-genesis.json ./mainnet-genesis.json
             '';
             build-tools = [ pkgs.makeWrapper ];
             testFlags = [ "--scenario=ContinuousIntegration" ];

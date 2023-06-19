@@ -38,6 +38,11 @@ rec {
         category = "cardano";
       }
       {
+        package = packages.db-analyser;
+        name = "db-analyser";
+        category = "cardano";
+      }
+      {
         package = inputs.cells.automation.jobs.update-cabal-source-repo-checksums;
         category = "nix-build";
       }
@@ -108,11 +113,6 @@ rec {
       {
         package = packages.cardano-cli;
         name = "cardano-cli";
-        category = "cardano";
-      }
-      {
-        package = packages.cardano-ping;
-        name = "cardano-ping";
         category = "cardano";
       }
       {

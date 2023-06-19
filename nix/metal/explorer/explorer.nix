@@ -1,7 +1,6 @@
 name: privateIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
   inherit (lib) mkOption types;
-  inherit (self.${nodeCfg.system}.cardano.library) mkEdgeTopology;
 
   maintenanceMode = false;
 
@@ -13,8 +12,9 @@ let
   nodeCfg = config.services.cardano-node;
   ogmiosCfg = config.services.cardano-ogmios;
 
-  environments = self.${nodeCfg.system}.cardano.environments;
+  environments = pkgs.cardanoLib.environments;
   environmentConfig = environments.${cfg.environmentName};
+  auxConfig = import ./aux-config.nix self.inputs;
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.x86_64-linux;
   explorerAppPkgs = (import (self.inputs.explorer-cardano-explorer-app + "/nix/pkgs.nix") {inherit (nodeCfg) system;}).packages;
@@ -190,7 +190,7 @@ in {
     services.cardano-rosetta-server = {
       enable = true;
       package = rosettaPkgs.cardano-rosetta-server;
-      topologyFilePath = mkEdgeTopology {
+      topologyFilePath = pkgs.cardanoLib.mkEdgeTopology {
         edgeNodes = map (p: p.addr) nodeCfg.producers;
         port = nodeCfg.port;
       };
@@ -216,7 +216,7 @@ in {
       logConfig = {};
 
       postgres = {inherit (dbSyncCfg.postgres) port database user socketdir;};
-      delistedPools = environmentConfig.auxConfig.smashDelistedPools;
+      delistedPools = auxConfig.${cfg.environmentName}.smashDelistedPools;
     };
 
     systemd.services.cardano-ogmios.serviceConfig = {
@@ -317,7 +317,7 @@ in {
           fi
           while IFS= read -r ip; do
             set +e
-            PING="$(timeout 7s cardano-ping -h "$ip" -p "$port" -m $NETWORK_MAGIC -c 1 -q --json)"
+            PING="$(timeout 7s cardano-cli ping -h "$ip" -p "$port" -m $NETWORK_MAGIC -c 1 -q --json)"
             res=$?
             if [ $res -eq 0 ]; then
               echo $PING | jq -c > /dev/null 2>&1

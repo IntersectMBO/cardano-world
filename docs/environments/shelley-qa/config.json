@@ -5,6 +5,8 @@
   "ApplicationVersion": 0,
   "ByronGenesisFile": "byron-genesis.json",
   "ByronGenesisHash": "9325495d3ac7554d4bfaf2392cc3c74676d5add873d6ef8862d7562e660940bf",
+  "ConwayGenesisFile": "conway-genesis.json",
+  "ConwayGenesisHash": "f28f1c1280ea0d32f8cd3143e268650d6c1a8e221522ce4a7d20d62fc09783e1",
   "LastKnownBlockVersion-Alt": 0,
   "LastKnownBlockVersion-Major": 3,
   "LastKnownBlockVersion-Minor": 1,

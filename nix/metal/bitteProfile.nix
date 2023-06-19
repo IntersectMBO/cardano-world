@@ -60,11 +60,48 @@ in {
         euCentral = attrs: [
           (attrs // {region = "eu-central-1";})
         ];
+        perfNodes = attrs: [
+          (attrs
+            // {
+              region = "eu-central-1";
+              desiredCapacity = 18;
+            })
+          (attrs
+            // {
+              region = "eu-central-1";
+              desiredCapacity = 1;
+              instanceType = "m5.4xlarge";
+            })
+          (attrs
+            // {
+              region = "us-east-1";
+              desiredCapacity = 17;
+            })
+          (attrs
+            // {
+              region = "ap-southeast-2";
+              desiredCapacity = 17;
+            })
+        ];
       in
         lib.listToAttrs
         (
           lib.forEach
           (
+            # Perf Nodes
+            (perfNodes {
+              instanceType = "c5.2xlarge";
+              volumeSize = 60;
+              node_class = "perf";
+              maxSize = 20;
+              modules = defaultModules ++ [
+                {
+                  services.zfs-client-options.enableZfsSnapshots = false;
+                  services.nomad.client.meta.perf = "true";
+                }
+              ];
+            })
+            ++
             # Infra Nodes
             (euCentral {
               instanceType = "t3.2xlarge";
@@ -172,7 +209,7 @@ in {
 
       instances = {
         core-1 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.0.10";
           subnet = cluster.vpc.subnets.core-1;
           volumeSize = 100;
@@ -186,7 +223,7 @@ in {
         };
 
         core-2 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.1.10";
           subnet = cluster.vpc.subnets.core-2;
           volumeSize = 100;
@@ -199,7 +236,7 @@ in {
         };
 
         core-3 = {
-          instanceType = "t3a.medium";
+          instanceType = "r5.xlarge";
           privateIP = "172.16.2.10";
           subnet = cluster.vpc.subnets.core-3;
           volumeSize = 100;
@@ -215,7 +252,7 @@ in {
           instanceType = "t3a.xlarge";
           privateIP = "172.16.0.20";
           subnet = cluster.vpc.subnets.core-1;
-          volumeSize = 1000;
+          volumeSize = 500;
           securityGroupRules = {inherit (sr) internet internal ssh http https;};
           modules = [
             (bitte + /profiles/monitoring.nix)
@@ -227,7 +264,7 @@ in {
           instanceType = "t3a.small";
           privateIP = "172.16.1.20";
           subnet = cluster.vpc.subnets.core-2;
-          volumeSize = 30;
+          volumeSize = 100;
           securityGroupRules = {inherit (sr) internet internal ssh http https routing;};
           route53.domains = [
             "*.${cluster.domain}"

@@ -8,11 +8,11 @@
 
     # --- Bitte Stack ----------------------------------------------
     bitte = {
-      url = "github:input-output-hk/bitte/bump-glusterfs";
+      url = "github:input-output-hk/bitte";
       inputs.capsules.follows = "capsules";
     };
 
-    bitte-cells.url = "github:input-output-hk/bitte-cells";
+    bitte-cells.url = "github:input-output-hk/bitte-cells/patroni-flex";
     tullia.url = "github:input-output-hk/tullia";
     # --------------------------------------------------------------
 
@@ -32,7 +32,7 @@
       flake = false;
     };
 
-    openziti.url = "github:johnalotoski/openziti-bins";
+    openziti.url = "github:johnalotoski/openziti-bins/large-tcp";
     deploy-rs.url = "github:serokell/deploy-rs";
     # --------------------------------------------------------------
 
@@ -67,7 +67,7 @@
 
     # --- Bridge Heads----------------------------------------------
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
-    cardano-node.url = "github:input-output-hk/cardano-node/1.35.7";
+    cardano-node.url = "github:input-output-hk/cardano-node?ref=8.0.0";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     offchain-metadata-tools = {
       url = "github:input-output-hk/offchain-metadata-tools/pg-cli-mods";
@@ -123,7 +123,6 @@
       #debug = ["cells" "cloud" "packages"];
       cellBlocks = [
         (inputs.std.data "constants")
-        (inputs.std.data "environments")
         (inputs.std.data "namespaces/infra")
         (inputs.std.data "namespaces/mainnet")
         (inputs.std.data "namespaces/shelley-qa")
@@ -162,6 +161,8 @@
         bitte = inputs.bitte.lib.mkBitteStack {
           inherit inputs;
           inherit (inputs) self;
+
+          overlays = [inputs.iohk-nix.overlays.cardano-lib];
           domain = "world.dev.cardano.org";
           bitteProfile = inputs.self.${system}.metal.bitteProfile.default;
           hydrationProfile = inputs.self.${system}.cloud.hydrationProfiles.default;

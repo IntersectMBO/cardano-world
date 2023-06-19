@@ -30,7 +30,6 @@ import Data.ByteString.Lazy qualified as LBS
 import Data.IP (IPv4, fromHostAddress)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
-import Data.Text.Encoding qualified as T
 import Data.Text.Lazy qualified as LT
 import Data.Text.Lazy.Encoding qualified as LT
 import Data.Time.Clock (UTCTime, getCurrentTime, addUTCTime, diffUTCTime)
@@ -320,7 +319,7 @@ handleDelegateStake era FaucetState{fsPaymentSkey,fsNetwork,fsUtxoTMVar,fsTxQueu
         let
           prettyTx = friendlyTxBS era signedTx
         eraInMode <- convertEra era
-        putStrLn $ format ("delegating stake key to pool " % sh) poolId
+        putStrLn $ format ("delegating stake key to pool " % sh) (serialiseToBech32 poolId)
         liftIO $ atomically $ writeTQueue fsTxQueue (TxInMode signedTx eraInMode, prettyTx)
         pure $ DelegationReplySuccess txid
   let corsHeader = getCorsReply (fcfAllowedCorsOrigins fsConfig) mOrigin
@@ -427,7 +426,11 @@ handleMetrics FaucetState{fsUtxoTMVar,fsBucketSizes,fsConfig,fsStakeTMVar} = do
         where
           Lovelace l = faucetValueToLovelace fv
       tokenAttributes :: FaucetToken -> [Maybe (Text, MetricValue)]
-      tokenAttributes (FaucetToken (AssetId (PolicyId scripthash) (AssetName tokenname), _quant)) = [Just ("policyid", MetricValueStr $ serialiseToRawBytesHexText scripthash), Just ("tokenname", MetricValueStr $ T.decodeLatin1 tokenname)]
+      tokenAttributes (FaucetToken (AssetId (PolicyId scripthash) (AssetName _tokenname), _quant)) = [
+          Just ("policyid", MetricValueStr $ serialiseToRawBytesHexText scripthash)
+          -- has escaping issues, T_1\n breaks prometheus
+          --, Just ("tokenname", MetricValueStr $ T.decodeLatin1 tokenname)
+        ]
       tokenAttributes _ = []
       toStats :: FaucetValue -> Int -> Metric
       toStats fv@((Ada l)) count = Metric (Map.fromList $ catMaybes $ valueAttribute fv <> [isRequiredSize fv, isForDelegation l]) "faucet_utxo" (MetricValueInt $ fromIntegral count)
