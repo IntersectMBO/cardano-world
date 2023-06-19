@@ -76,8 +76,8 @@
 in {
   boot.kernel.sysctl."net.ipv4.conf.all.forwarding" = true;
 
-  # Restart ziti-edge-tunnel every 12 hours until the tcp limit issue has been fixed.
-  systemd.services.ziti-edge-tunnel.serviceConfig.RuntimeMaxSec = 12 * 60 * 60;
+  # Restart ziti-edge-tunnel every 24 hours until the tcp limit issue has been fixed.
+  systemd.services.ziti-edge-tunnel.serviceConfig.RuntimeMaxSec = 24 * 60 * 60;
 
   services = {
     ziti-router.enable = true;
