@@ -39,6 +39,12 @@ in {
       nodeClass = "qa";
       scaling = 3;
     };
+    sanchonet = {
+      namespace = "sanchonet";
+      domain = "sanchonet.${baseDomain}";
+      nodeClass = "qa";
+      scaling = 3;
+    };
     private = {
       namespace = "private";
       domain = "private.${baseDomain}";

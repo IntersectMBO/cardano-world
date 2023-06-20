@@ -42,6 +42,7 @@ in {
         shelley-qa.description = "Cardano Shelley Internal QA";
         preprod.description = "Cardano Pre-Production Environment";
         preview.description = "Cardano Preview Environment";
+        sanchonet.description = "Cardano Sanchonet Environment";
         private.description = "Cardano Private Testing Environment";
         perf.description = "Cardano Performance Testing Environment";
       };
@@ -150,6 +151,10 @@ in {
             policy = "write";
             intentions = "write";
           };
+          service_prefix."sanchonet-" = {
+            policy = "write";
+            intentions = "write";
+          };
           service_prefix."private-" = {
             policy = "write";
             intentions = "write";
@@ -210,6 +215,17 @@ in {
               "alloc-lifecycle"
             ];
           };
+          namespace.sanchonet = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
           namespace.private = {
             policy = "write";
             capabilities = [
@@ -225,6 +241,7 @@ in {
           host_volume."shelley-qa-*".policy = "write";
           host_volume."preprod-*".policy = "write";
           host_volume."preview-*".policy = "write";
+          host_volume."sanchonet-*".policy = "write";
           host_volume."private-*".policy = "write";
         };
 
