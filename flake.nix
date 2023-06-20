@@ -58,7 +58,8 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
+      url = "github:input-output-hk/iohk-nix/sanchonet";
+      # url = "path:/home/jlotoski/work/iohk/iohk-nix-wt/sanchonet";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -128,6 +129,7 @@
         (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
+        (inputs.std.data "namespaces/sanchonet")
         (inputs.std.data "namespaces/private")
         (inputs.std.data "namespaces/perf")
         (inputs.std.data "alerts")
@@ -195,6 +197,7 @@
       mainnet = mkNomadJobs cloud."namespaces/mainnet";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
+      sanchonet = mkNomadJobs cloud."namespaces/sanchonet";
       private = mkNomadJobs cloud."namespaces/private";
       perf = mkNomadJobs cloud."namespaces/perf";
     })

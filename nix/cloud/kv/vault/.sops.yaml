@@ -6,6 +6,8 @@ creation_rules:
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
   - path_regex: cardano/preview/*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
+  - path_regex: cardano/sanchonet/*
+    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
   - path_regex: cardano/private/*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/dev"
   # Ops
@@ -19,6 +21,8 @@ creation_rules:
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: db-sync/preview*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
+  - path_regex: db-sync/sanchonet*
+    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: db-sync/mainnet*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: db-sync/private*
@@ -26,6 +30,8 @@ creation_rules:
   - path_regex: faucet/preprod*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: faucet/preview*
+    hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
+  - path_regex: faucet/sanchonet*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"
   - path_regex: faucet/private*
     hc_vault_transit_uri: "https://vault.world.dev.cardano.org/v1/sops/keys/ops"

@@ -173,6 +173,16 @@ in {
                   )
                   (
                     bittelib.mkNomadHostVolumesConfig
+                    ["sanchonet-persist-cardano-node-local"]
+                    (n: "/var/lib/nomad-volumes/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
+                    ["sanchonet-persist-db-sync-local"]
+                    (n: "/mnt/gv0/${n}")
+                  )
+                  (
+                    bittelib.mkNomadHostVolumesConfig
                     ["private-persist-cardano-node-local"]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
@@ -290,6 +300,7 @@ in {
                     preprod = 30000;
                     preview = 30002;
                     shelley-qa = 30003;
+                    sanchonet = 30004;
                     private = 30007;
                   } [
                     (
