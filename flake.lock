@@ -11666,16 +11666,15 @@
         "sodium": "sodium_2"
       },
       "locked": {
-        "lastModified": 1687273902,
-        "narHash": "sha256-16tuRGftwhI/CdIp1C1LbgIgEeoC7DlEnoBdroVQRf8=",
+        "lastModified": 1687457666,
+        "narHash": "sha256-Fpf3SHzt3aAt2lyQzrrhWGt5NAL0LDS/mBYTp9+jbfA=",
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "f95bdeba11bd7af191a0fb677803732d2db12b52",
+        "rev": "694dcf154be8b276fb1196552dadbc3aedcc8613",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "sanchonet",
         "repo": "iohk-nix",
         "type": "github"
       }

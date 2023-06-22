@@ -58,8 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix/sanchonet";
-      # url = "path:/home/jlotoski/work/iohk/iohk-nix-wt/sanchonet";
+      url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
