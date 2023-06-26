@@ -20122,11 +20122,11 @@
         "zitiConsole": "zitiConsole"
       },
       "locked": {
-        "lastModified": 1686846168,
-        "narHash": "sha256-E/RPzE/Y/xPfZCrDcvZK+c5woWQ+6FniB/DsmUkQ8Rc=",
+        "lastModified": 1687803093,
+        "narHash": "sha256-nvsLqVs2hrcc9xuXuK133RnsUhe9DsxkjoWIR1Pf1yA=",
         "owner": "johnalotoski",
         "repo": "openziti-bins",
-        "rev": "6cbf2bf8a59b2094a3f2beb2f582da81c8380cc2",
+        "rev": "46b1021af56c770f7d878e7fdae65bac6016c56a",
         "type": "github"
       },
       "original": {
