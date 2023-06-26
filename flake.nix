@@ -93,7 +93,7 @@
     # --- Explorer Specific ----------------------------------------
     explorer-cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
 
-    explorer-cardano-node.url = "github:input-output-hk/cardano-node/1.35.4";
+    explorer-cardano-node.url = "github:input-output-hk/cardano-node/hkm/1.35.4-for-ci";
 
     explorer-cardano-explorer-app = {
       url = "github:input-output-hk/cardano-explorer-app/1.6.0-mods";
