@@ -329,8 +329,12 @@ in {
       [ -n "''${PORT:-}" ] && args+=("--port" "$PORT")
       [ -n "''${SOCKET_PATH:-}" ] && args+=("--socket-path" "$SOCKET_PATH")
 
-      # Ignore RTS flags for now. Need to figure out best way to pass a list
-      #[ -n "''${RTS_FLAGS:-}" ] && args+=$RTS_FLAGS
+      # If RTS flags are present, eval the RTS flag string for runtime dependency calcs,
+      # and convert the output to an arg array for inclusion in node args if non-empty.
+      if [ -n "''${RTS_FLAGS:-}" ]; then
+        RTS_FLAGS=$(eval echo -n "$RTS_FLAGS")
+        read -r -a RTS_FLAGS <<< "$RTS_FLAGS"
+      fi
 
       [ -n "''${BYRON_DELEG_CERT:-}" ] && args+=("--byron-delegation-certificate" "$BYRON_DELEG_CERT")
       [ -n "''${BYRON_SIGNING_KEY:-}" ] && args+=("--byron-signing-key" "$BYRON_SIGNING_KEY")
@@ -349,9 +353,10 @@ in {
         # Define handler for SIGINT
         trap "kill" "''${sid[@]}" INT
 
-        # SIGHUP reloads --topology
-        echo Running node in background >&2
-        ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" &
+        echo "Running node in background as:" >&2
+        echo "${packages.cardano-node}/bin/cardano-node run ''${args[*]} ''${RTS_FLAGS:+''${RTS_FLAGS[*]}}" >&2
+        ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" ''${RTS_FLAGS:+''${RTS_FLAGS[@]}} &
+
         CARDANO_PID="$!"
         sid=("$CARDANO_PID")
         echo Running service discovery loop >&2
@@ -359,7 +364,9 @@ in {
       else
         [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
         args+=("--topology" "$NODE_TOPOLOGY")
-        exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}"
+        echo "Running node as:"
+        echo "${packages.cardano-node}/bin/cardano-node run ''${args[*]} ''${RTS_FLAGS:+''${RTS_FLAGS[*]}}"
+        exec ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" ''${RTS_FLAGS:+''${RTS_FLAGS[@]}}
       fi
     '';
   };
