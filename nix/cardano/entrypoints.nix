@@ -229,60 +229,37 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     }
 
     function srv_discovery {
+      local FILTER
 
       export NODE_TOPOLOGY="$DATA_DIR/config/custom/topology.json"
 
-      # general values
-      # TODO: make this part of the kv-config, etc
-      echo '{}' | jq --arg LEDGER_SLOT "''${LEDGER_SLOT:-0}" '{
-        useLedgerAfterSlot: $LEDGER_SLOT|tonumber
-      }' > ./local/topology-common.json
+      # General values
+      jq -n --arg LEDGER_SLOT "$LEDGER_SLOT" '{ useLedgerAfterSlot: $LEDGER_SLOT | tonumber }' \
+        > ./local/topology-common.json
 
-      # public roots -> SIGHUP
-      # this contains also the "self" root, else we would need to filter that out
-      # and that would be _ugly_
-      (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq '{
-        PublicRoots: [
-          { publicRoots: {
-            accessPoints: .[] | map({address: .Host, port: .Port}),
-            advertise: false
-          } }
-        ]
-      }' || echo '{ "PublicRoots": [{
-        "publicRoots": {
-          "accessPoints": [
-          ],
-          "advertise": false
-        }
-      }] }') > ./local/topology-publics.json
-
-      # local roots -> SIGHUP
+      # Local roots
       (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '{
-        LocalRoots: {
-          groups: [
-            {
-              localRoots: {
-                accessPoints: .[] | map({address: .Host, port: .Port}),
-                advertise: false
-              },
-              valency: 1
-            }
-          ]
-        }
-      }' || echo '{ "LocalRoots": {
-        "groups": [
-          {
-            "localRoots": {
-              "accessPoints": [
-              ],
-              "advertise": false
-            },
-            "valency": 1
-          }
-        ]
-      } }') > ./local/topology-locals.json
+        localRoots: .locals | map({
+          accessPoints: [{address: .Host, port: .Port}],
+          advertise: false,
+          valency: 1
+        })
+      }' || echo '{localRoots: []}') > ./local/topology-locals.json
 
-      # construe topology
+      FILTER=$(srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '
+        .locals | map(.Host)
+      ')
+
+      # Public roots
+      (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq --argjson FILTER "$FILTER" '{
+        publicRoots: .publics | map(select(.Host as $HOST | $FILTER | all(. != $HOST))) | map({
+          accessPoints: [{address: .Host, port: .Port}],
+          advertise: false
+        })
+      }' || echo '{publicRoots: []}') > ./local/topology-publics.json
+
+      # Construe topology
+      # Node will re-read p2p topology via SIGHUP signal
       cat \
         ./local/topology-common.json \
         ./local/topology-locals.json \
