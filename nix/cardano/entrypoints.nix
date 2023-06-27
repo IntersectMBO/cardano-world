@@ -334,15 +334,32 @@ in {
         args+=("--topology" "$NODE_TOPOLOGY")
 
         # Define handler for SIGINT
-        trap "kill" "''${sid[@]}" INT
+        function cleanup {
+          echo "Received a SIGINT, killing cardano-node pid $CARDANO_PID ..." >&2
+          kill -s SIGINT "$CARDANO_PID"
+
+          WAIT="0"
+          until [ -f "$DB_DIR/node/clean" ]; do
+            sleep 1
+            echo "Waiting for cardano-node clean shutdown to finish ..." >&2
+            if [ "$WAIT" -eq "10" ]; then
+              echo "Cardano-node clean shutdown wait timed out, exiting" >&2
+              exit
+            fi
+            WAIT="$((WAIT + 1))"
+          done
+          echo "Cardano-node clean shutdown complete, exiting" >&2
+          exit
+        }
+
+        trap cleanup INT
 
         echo "Running node in background as:" >&2
         echo "${packages.cardano-node}/bin/cardano-node run ''${args[*]} ''${RTS_FLAGS:+''${RTS_FLAGS[*]}}" >&2
         ${packages.cardano-node}/bin/cardano-node run "''${args[@]}" ''${RTS_FLAGS:+''${RTS_FLAGS[@]}} &
 
         CARDANO_PID="$!"
-        sid=("$CARDANO_PID")
-        echo Running service discovery loop >&2
+        echo "Running service discovery loop" >&2
         watch_srv_discovery "$CARDANO_PID"
       else
         [ -z "''${NODE_TOPOLOGY:-}" ] && echo "NODE_TOPOLOGY env var must be set -- aborting" && exit 1
