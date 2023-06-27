@@ -222,15 +222,18 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
 
   legacy-srv-discovery = ''
     function watch_srv_discovery {
-      declare -i pid_to_signal=$1
-      while true
-      do
-        sleep 30
+      declare -i PID_TO_SIGNAL="$1"
+
+      while true; do
+        # Don't block INT trap handling during sleep
+        sleep 30 &
+        wait "$!"
+
         echo "Service discovery heartbeat - every 30 seconds" >&2
-        original_hash="$(md5sum "$NODE_TOPOLOGY")"
+        ORIGINAL_HASH=$(md5sum "$NODE_TOPOLOGY")
         srv_discovery
-        new_hash="$(md5sum "$NODE_TOPOLOGY")"
-        [ "$original_hash" != "$new_hash" ] && kill -1 "$pid_to_signal"
+        NEW_HASH=$(md5sum "$NODE_TOPOLOGY")
+        [ "$ORIGINAL_HASH" != "$NEW_HASH" ] && kill -s SIGHUP "$PID_TO_SIGNAL"
       done
     }
 
