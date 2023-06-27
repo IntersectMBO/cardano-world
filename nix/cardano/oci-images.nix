@@ -33,6 +33,7 @@ in {
       "${entrypoints.cardano-node}/bin/entrypoint"
     ];
     config.User = "65534:65534";
+    config.StopSignal = "INT";
   };
 
   cardano-db-sync = buildDebugImage entrypoints.cardano-db-sync {
