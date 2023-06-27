@@ -7,8 +7,13 @@
   inherit (inputs.nixpkgs) system;
   inherit (inputs.bitte-cells) vector _utils;
   inherit (cell) healthChecks constants oci-images;
+
   # OCI-Image Namer
   ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
+
+  # Resources used in resource and RTS flags declaration
+  cpuMhz = 1000;
+  memoryMB = 8192;
 in
   {
     jobname ? "cardano",
@@ -117,19 +122,32 @@ in
                 env.HOST_ADDR = "0.0.0.0";
                 env.PORT = "3001";
                 env.SOCKET_PATH = "/alloc/tmp/node.socket";
+                env.INSTANCE_CPU = "\${attr.cpu.totalcompute}";
+                env.INSTANCE_CORES = "\${attr.cpu.numcores}";
+
+                # RTS flags, the string for which is bash evaluated prior to node arg inclusion
+                # as some parameters are only determined at runtime.
+                # https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime_control.html
+                env.RTS_FLAGS = let
+                  threads = "$((${toString cpuMhz} / (INSTANCE_CPU / INSTANCE_CORES)))";
+                  nValue = ''if [ "${threads}" -eq "0" ]; then echo -n "1"; else echo -n "${threads}"; fi'';
+                in "+RTS -N$(${nValue}) -A16m -qg -qb -M${toString (memoryMB * 0.90)}M -RTS";
+
                 template =
                   _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
                   ++ _utils.nomadFragments.workload-identity-vault-consul {inherit consulRolePath;};
+
                 env.WORKLOAD_CACERT = "/secrets/tls/ca.pem";
                 env.WORKLOAD_CLIENT_KEY = "/secrets/tls/key.pem";
                 env.WORKLOAD_CLIENT_CERT = "/secrets/tls/cert.pem";
+
                 config.image = ociNamer oci-images.cardano-node;
                 driver = "docker";
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = 1000;
-                  memory = 8192;
+                  cpu = cpuMhz;
+                  memory = memoryMB;
                 };
                 volume_mount = {
                   destination = persistanceMount;
