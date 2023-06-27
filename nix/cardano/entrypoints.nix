@@ -23,10 +23,10 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     mkdir -p "$DATA_DIR/config/custom"
     chmod -R +w "$DATA_DIR/config/custom"
 
-    # the menu of environments that we ship as built-in envs
+    # The menu of environments that we ship as built-in envs
     ${library.copyEnvsTemplate environments}
 
-    # the legacy implementation to access kv config
+    # The legacy implementation to access kv config
     ${legacy-kv-config-instrumentation}
 
     # CASE: built-in environment
@@ -36,12 +36,12 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
       NODE_TOPOLOGY="''${NODE_TOPOLOGY:-$DATA_DIR/config/$ENVIRONMENT/topology.json}"
 
-    # CASE: premissioned long running environment
+    # CASE: permissioned long running environment
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
       echo "Using a long running environment as defined by kv (consul & vault) ..." >&2
 
       load_kv_config
-      [ "''${producer:-}" == "1" ] && load_kv_secrets
+      [ "''${PRODUCER:-}" -eq "1" ] && load_kv_secrets
 
     # CASE: permissioned short running environment
     # Job automation with custom config is an example use of this entrypoint case:
@@ -74,12 +74,12 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       SNAPSHOT_DIR="$DATA_DIR/initial-snapshot"
       mkdir -p "$SNAPSHOT_DIR"
 
-      # we are already initialized
-      [ -s "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum" ] && INITIALIZED=true && return
+      # We are already initialized
+      [ -s "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum" ] && INITIALIZED="true" && return
 
       # shellcheck source=/dev/null
       source ${nixpkgs.cacert}/nix-support/setup-hook
-      echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME into $SNAPSHOT_DIR  ..." >&2
+      echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME into $SNAPSHOT_DIR ..." >&2
       if curl -fL "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
         echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum into $SNAPSHOT_DIR ..." >&2
         if curl -fL "$SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME.sha256sum" --output "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME.sha256sum"; then
@@ -87,7 +87,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
           pushd "$SNAPSHOT_DIR" >&2
           echo "Validating sha256sum for ./$SNAPSHOT_FILE_NAME." >&2
           if sha256sum -c "$SNAPSHOT_FILE_NAME.sha256sum" >&2; then
-            echo "Downloading  $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME{,.sha256sum} into $SNAPSHOT_DIR complete." >&2
+            echo "Downloading $SNAPSHOT_BASE_URL/$SNAPSHOT_FILE_NAME{,.sha256sum} into $SNAPSHOT_DIR complete." >&2
           else
             echo "Could retrieve snapshot, but could not validate its checksum -- aborting" && exit 1
           fi
@@ -100,28 +100,29 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
         echo "No snapshot pulled -- aborting" && exit 1
       fi
     }
+
     function extract_snapshot_tgz_to {
-      local targetDir="$1"
-      local strip="''${2:-0}"
-      mkdir -p "$targetDir"
+      local TARGETDIR="$1"
+      local STRIP="''${2:-0}"
+      mkdir -p "$TARGETDIR"
 
       [ -n "''${INITIALIZED:-}" ] && return
 
-      echo "Extracting snapshot to $targetDir ..." >&2
-      if tar --strip-components="$strip" -C "$targetDir" -zxf "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
-        echo "Extracting snapshot to $targetDir complete." >&2
+      echo "Extracting snapshot to $TARGETDIR ..." >&2
+      if tar --strip-components="$STRIP" -C "$TARGETDIR" -zxf "$SNAPSHOT_DIR/$SNAPSHOT_FILE_NAME"; then
+        echo "Extracting snapshot to $TARGETDIR complete." >&2
       else
-        echo "Extracting snapshot to $targetDir failed -- aborting" && exit 1
+        echo "Extracting snapshot to $TARGETDIR failed -- aborting" && exit 1
       fi
     }
   '';
 
   legacy-kv-config-instrumentation = ''
     function ensure_file_location_contract {
-      local key="$1"
-      local value="$2"
-      jq -e --arg KEY "$key" --arg VALUE "$value" '.[$KEY] == $VALUE' "$NODE_CONFIG" > /dev/null || \
-        (echo "$value is not located where it needs to be ($(jq -r --arg KEY "$key" '.[$KEY]' "$NODE_CONFIG")) -- aborting" && exit 1)
+      local KEY="$1"
+      local VALUE="$2"
+      jq -e --arg KEY "$KEY" --arg VALUE "$VALUE" '.[$KEY] == $VALUE' "$NODE_CONFIG" > /dev/null \
+        || (echo "$VALUE is not located where it needs to be ($(jq -r '.[env.KEY]' "$NODE_CONFIG")) -- aborting" && exit 1)
     }
 
     function load_kv_config {
@@ -139,6 +140,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       [ -z "''${WORKLOAD_CACERT:-}" ] && echo "WORKLOAD_CACERT env var must be set -- aborting" && exit 1
       [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
       [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
+
       export CONSUL_CACERT="$WORKLOAD_CACERT"
       export CONSUL_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
       export CONSUL_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
@@ -151,19 +153,16 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
         "--header" "Content-Type: application/json"
       )
 
-      local json
-      json=$("''${cmd[@]}") 2>/dev/null
+      local JSON
+      JSON=$("''${cmd[@]}") 2>/dev/null
 
-      echo "$json"|jq '.nodeConfig'  > "$NODE_CONFIG"
-      echo "$json"|jq '.dbSyncConfig'  > "$DB_SYNC_CONFIG"
+      echo "$JSON" | jq '.nodeConfig' > "$NODE_CONFIG"
+      echo "$JSON" | jq '.dbSyncConfig' > "$DB_SYNC_CONFIG"
 
-      echo "$json"|jq -r '.byronGenesisBlob'  |base64 -d > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
-      echo "$json"|jq -r '.shelleyGenesisBlob'|base64 -d > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
-      # alegra
-      # mary
-      echo "$json"|jq -r '.alonzoGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
-      # vasil
-      echo "$json"|jq -r '.conwayGenesisBlob' |base64 -d > "$DATA_DIR/config/custom/$CONWAY_GENESIS_FILE"
+      echo "$JSON" | jq -r '.byronGenesisBlob' | base64 -d > "$DATA_DIR/config/custom/$BYRON_GENESIS_FILE"
+      echo "$JSON" | jq -r '.shelleyGenesisBlob' | base64 -d > "$DATA_DIR/config/custom/$SHELLEY_GENESIS_FILE"
+      echo "$JSON" | jq -r '.alonzoGenesisBlob' | base64 -d > "$DATA_DIR/config/custom/$ALONZO_GENESIS_FILE"
+      echo "$JSON" | jq -r '.conwayGenesisBlob' | base64 -d > "$DATA_DIR/config/custom/$CONWAY_GENESIS_FILE"
 
       # ensure genesis file contracts
       ensure_file_location_contract "ShelleyGenesisFile" "$SHELLEY_GENESIS_FILE"
@@ -173,11 +172,11 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     }
 
     function load_kv_secrets {
-      export BYRON_DELEG_CERT=/secrets/byron_deleg_cert.cert
-      export BYRON_SIGNING_KEY=/secrets/byron_signing_key.key
-      export SHELLEY_KES_KEY=/secrets/shelley_kes_key.skey
-      export SHELLEY_VRF_KEY=/secrets/shelley_vrf_key.skey
-      export SHELLEY_OPCERT=/secrets/shelley_opcert.opscert
+      export BYRON_DELEG_CERT="/secrets/byron_deleg_cert.cert"
+      export BYRON_SIGNING_KEY="/secrets/byron_signing_key.key"
+      export SHELLEY_KES_KEY="/secrets/shelley_kes_key.skey"
+      export SHELLEY_VRF_KEY="/secrets/shelley_vrf_key.skey"
+      export SHELLEY_OPCERT="/secrets/shelley_opcert.opscert"
 
       [ -z "''${VAULT_KV_PATH:-}" ] && echo "VAULT_KV_PATH env var must be set -- aborting" && exit 1
       [ -z "''${VAULT_ADDR:-}" ] && echo "VAULT_ADDR env var must be set -- aborting" && exit 1
@@ -187,9 +186,9 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
       [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
 
-      export  VAULT_CACERT="$WORKLOAD_CACERT"
-      export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
-      export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+      export VAULT_CACERT="$WORKLOAD_CACERT"
+      export VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+      export VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
       local cmd=(
         "curl"
@@ -199,24 +198,26 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
         "--header" "Content-Type: application/json"
       )
 
-      local json
-      json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
+      local JSON
+      JSON=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
 
-      echo "$json"|jq -e '."byron.cert.json"'  > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT BYRON_SIGNING_KEY
-      # we only want to fetch and set cold key if byron certificacte is passed to the node
+      echo "$JSON" | jq -e '."byron.cert.json"' > "$BYRON_DELEG_CERT" || unset BYRON_DELEG_CERT BYRON_SIGNING_KEY
+
+      # We only want to fetch and set a cold key if a byron certificate is passed to the node
       if [ -n "''${BYRON_DELEG_CERT:-}" ]; then
-        # we use the shelley delegate as transport because it's already encoded for transport. Here we extract and decode to it's byron era bin format.
-        echo "$json" | jq -e -r '."cold.skey".cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
+        # We use the shelley delegate as transport because it's already encoded for transport.
+        # Here we extract and decode to its byron era bin format.
+        echo "$JSON" | jq -e -r '."cold.skey".cborHex' | xxd -r -p - > "$BYRON_SIGNING_KEY" || unset BYRON_SIGNING_KEY
       fi
-      echo "$json"|jq -e '."kes.skey"'    > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
-      echo "$json"|jq -e '."vrf.skey"'    > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
-      echo "$json"|jq -e '."opcert.json"' > "$SHELLEY_OPCERT"  || unset SHELLEY_OPCERT
+      echo "$JSON" | jq -e '."kes.skey"' > "$SHELLEY_KES_KEY" || unset SHELLEY_KES_KEY
+      echo "$JSON" | jq -e '."vrf.skey"' > "$SHELLEY_VRF_KEY" || unset SHELLEY_VRF_KEY
+      echo "$JSON" | jq -e '."opcert.json"' > "$SHELLEY_OPCERT" || unset SHELLEY_OPCERT
 
-      test -z "''${BYRON_DELEG_CERT:-}"  || chmod 0600 "$BYRON_DELEG_CERT"
+      test -z "''${BYRON_DELEG_CERT:-}" || chmod 0600 "$BYRON_DELEG_CERT"
       test -z "''${BYRON_SIGNING_KEY:-}" || chmod 0600 "$BYRON_SIGNING_KEY"
-      test -z "''${SHELLEY_KES_KEY:-}"   || chmod 0600 "$SHELLEY_KES_KEY"
-      test -z "''${SHELLEY_VRF_KEY:-}"   || chmod 0600 "$SHELLEY_VRF_KEY"
-      test -z "''${SHELLEY_OPCERT:-}"    || chmod 0600 "$SHELLEY_OPCERT"
+      test -z "''${SHELLEY_KES_KEY:-}" || chmod 0600 "$SHELLEY_KES_KEY"
+      test -z "''${SHELLEY_VRF_KEY:-}" || chmod 0600 "$SHELLEY_VRF_KEY"
+      test -z "''${SHELLEY_OPCERT:-}" || chmod 0600 "$SHELLEY_OPCERT"
     }
   '';
 
@@ -282,26 +283,27 @@ in {
     runtimeInputs = prelude-runtime ++ pull-snapshot-deps;
     debugInputs = [packages.cardano-cli packages.cardano-node];
     text = ''
-      # in nomad: producer is always the node with index 0
-      producer=0
-      [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && [ -z "''${EDGE_NODE:-}" ] && producer=1
-      [ "''${EDGE_NODE:-0}" -eq "1" ] && LEDGER_SLOT=-1
+      # For an sp-X job in nomad, allocation index 0 is always a producer
+      PRODUCER="0"
+      [ "''${NOMAD_ALLOC_INDEX:-1}" -eq "0" ] && [ -z "''${EDGE_NODE:-}" ] && PRODUCER="1"
+      [ "''${EDGE_NODE:-0}" -eq "1" ] && LEDGER_SLOT="-1"
 
       ${prelude}
 
       DB_DIR="$DATA_DIR/db-''${ENVIRONMENT:-custom}"
 
-      # the legacy service discovery implementation
+      # The legacy service discovery implementation
       ${legacy-srv-discovery}
 
       # Grap a snapshot
       ${pull-snapshot}
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
-        # we are using a standard environment that already has known snapshots
-        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$snapshots")"
+        # We are using a standard environment that already has known snapshots
+        SNAPSHOTS="${builtins.toFile "snapshots.json" (builtins.toJSON constants.node-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$SNAPSHOTS")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$SNAPSHOTS")"
       fi
+
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         pull_snapshot
         extract_snapshot_tgz_to "$DB_DIR/node" 1
@@ -395,15 +397,15 @@ in {
       DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT:-custom}/db-sync-config.json"
 
       function watch_leader_discovery {
-        declare -i pid_to_signal=$1
-        while true
-        do
+        declare -i PID_TO_SIGNAL="$1"
+
+        while true; do
           sleep 15
           echo "Service discovery heartbeat - every 15 seconds" >&2
           original_addr="$PSQL_ADDR0"
           pgpassfile_discovery
           new_addr="$PSQL_ADDR0"
-          [ "$original_addr" != "$new_addr" ] && kill -1 "$pid_to_signal"
+          [ "$original_addr" != "$new_addr" ] && kill -s SIGHUP "$PID_TO_SIGNAL"
         done
       }
 
@@ -428,9 +430,9 @@ in {
         [ -z "''${WORKLOAD_CLIENT_CERT:-}" ] && echo "WORKLOAD_CLIENT_CERT env var must be set -- aborting" && exit 1
         [ -z "''${WORKLOAD_CLIENT_KEY:-}" ] && echo "WORKLOAD_CLIENT_KEY env var must be set -- aborting" && exit 1
 
-        export  VAULT_CACERT="$WORKLOAD_CACERT"
-        export  VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
-        export  VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
+        export VAULT_CACERT="$WORKLOAD_CACERT"
+        export VAULT_CLIENT_CERT="$WORKLOAD_CLIENT_CERT"
+        export VAULT_CLIENT_KEY="$WORKLOAD_CLIENT_KEY"
 
         local cmd=(
           "curl"
@@ -442,8 +444,8 @@ in {
         local json
         json=$("''${cmd[@]}" | jq '.data.data') 2>/dev/null
 
-        PGUSER=$(echo "$json"|jq -e -r '."pgUser"')
-        PGPASS=$(echo "$json"|jq -e -r '."pgPass"')
+        PGUSER=$(echo "$json" | jq -e -r '."pgUser"')
+        PGPASS=$(echo "$json" | jq -e -r '."pgPass"')
         echo -n "$PSQL_ADDR0:$DB_NAME:$PGUSER:$PGPASS" > "$PGPASSFILE"
         test -z "''${PGPASSFILE:-}" || chmod 0600 "$PGPASSFILE"
       }
@@ -459,17 +461,17 @@ in {
       # Grap a snapshot
       ${pull-snapshot}
       if [ -n "''${ENVIRONMENT:-}" ] && [ -n "''${USE_SNAPSHOT:-}" ]; then
-        # we are using a standard environment that already has known snapshots
-        snapshots="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
-        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$snapshots")"
-        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$snapshots")"
+        # We are using a standard environment that already has known snapshots
+        SNAPSHOTS="${builtins.toFile "snapshots.json" (builtins.toJSON constants.db-sync-snapshots)}"
+        SNAPSHOT_BASE_URL="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].base_url' < "$SNAPSHOTS")"
+        SNAPSHOT_FILE_NAME="$(jq -e -r --arg CARDENV "$ENVIRONMENT" '.[$CARDENV].file_name' < "$SNAPSHOTS")"
       fi
       if [ -n "''${SNAPSHOT_BASE_URL:-}" ]; then
         [ -z "''${PGPASSFILE-}" ] && echo "PGPASSFILE env var must be set (either manually or via vault kv discovery) -- aborting" && exit 1
         pull_snapshot
         extract_snapshot_tgz_to "$DB_DIR/db-sync"
         if [ -z "''${INITIALIZED:-}" ]; then
-          echo Loading snapshot into database ... >&2
+          echo "Loading snapshot into database ..." >&2
           DBNAME="$(cut -d ":" -f 3 "''${PGPASSFILE}")"
           DBUSER="$(cut -d ":" -f 4 "''${PGPASSFILE}")"
           DBHOST="$(cut -d ":" -f 1 "''${PGPASSFILE}")"
@@ -499,11 +501,11 @@ in {
         trap "kill" "''${sid[@]}" INT
 
         # SIGHUP reloads --topology
-        echo Running db-sync in background >&2
+        echo "Running db-sync in background" >&2
         ${packages.cardano-db-sync}/bin/cardano-db-sync "''${args[@]}" &
         DB_SYNC_PID="$!"
         sid=("$DB_SYNC_PID")
-        echo Running leader discovery loop >&2
+        echo "Running leader discovery loop" >&2
         watch_leader_discovery "$DB_SYNC_PID"
       else
         [ -z "''${PGPASSFILE:-}" ] && echo "PGPASSFILE env var must be set -- aborting" && exit 1
@@ -535,10 +537,9 @@ in {
       )
 
 
-      while ! CARDANO_NODE_SOCKET_PATH="$SOCKET_PATH" cardano-cli query tip "''${flags[@]}"
-      do
+      while ! CARDANO_NODE_SOCKET_PATH="$SOCKET_PATH" cardano-cli query tip "''${flags[@]}"; do
         sleep 30
-        echo Waiting for cardano socket to go live ... >&2
+        echo "Waiting for cardano socket to go live ..." >&2
       done
 
       # Build args array
@@ -651,7 +652,7 @@ in {
             ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
             PID="$!"
           elif [ "$ORIG" != "$NEW" ]; then
-            kill -s 1 "$PID"
+            kill -s SIGHUP "$PID"
             echo "Restarting metadata server due to database DNS change at $(date -u)"
             ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
             PID="$!"
@@ -661,7 +662,7 @@ in {
 
       function cleanup {
         echo "Received a SIGINT, exiting."
-        kill -s 1 "$PID"
+        kill -s SIGHUP "$PID"
         exit
       }
 
@@ -671,7 +672,7 @@ in {
       ${packages.metadata-server}/bin/metadata-server "''${args[@]}" &
 
       PID="$!"
-      echo Running leader discovery loop >&2
+      echo "Running leader discovery loop" >&2
       watch_leader_discovery
     '';
   };
@@ -706,7 +707,7 @@ in {
       # Sleep 1 hr and respond to sigint within 10 seconds without special job handling
       function delay {
         i=0
-        until [ "$i" == 360 ]; do
+        until [ "$i" -eq "360" ]; do
           sleep 10
           i=$((i + 1))
         done
@@ -717,7 +718,7 @@ in {
       while true; do
         echo "Starting metadata sync at $(date -u)"
         ${packages.metadata-sync}/bin/metadata-sync "''${args[@]}" | sed -E 's/password=[^ ]* //g'
-        echo "Sleeping 1 hour until the next sync..."
+        echo "Sleeping 1 hour until the next sync ..."
         echo
         delay
       done
@@ -754,7 +755,7 @@ in {
           eval "$(srvaddr -env PSQL="$MASTER_REPLICA_SRV_DNS")"
           NEW="$PSQL_ADDR0"
           if [ "$ORIG" != "$NEW" ]; then
-            kill -s 1 "$PID"
+            kill -s SIGHUP "$PID"
             echo "Restarting metadata webhook due to database DNS change at $(date -u)"
             ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}" &
             PID="$!"
@@ -764,7 +765,7 @@ in {
 
       function cleanup {
         echo "Received a SIGINT, exiting."
-        kill -s 1 "$PID"
+        kill -s SIGHUP "$PID"
         exit
       }
 
@@ -774,7 +775,7 @@ in {
       ${packages.metadata-webhook}/bin/metadata-webhook "''${args[@]}" &
 
       PID="$!"
-      echo Running leader discovery loop >&2
+      echo "Running leader discovery loop" >&2
       watch_leader_discovery
     '';
   };
