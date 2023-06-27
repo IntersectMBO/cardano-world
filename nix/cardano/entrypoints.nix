@@ -44,6 +44,12 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       [ "''${producer:-}" == "1" ] && load_kv_secrets
 
     # CASE: permissioned short running environment
+    # Job automation with custom config is an example use of this entrypoint case:
+    #   DATA_DIR="~/.local/share/bitte/cardano" \
+    #   NODE_CONFIG="custom-node-config.json" \
+    #   NODE_TOPOLOGY="topology-empty-p2p.json" \
+    #   SOCKET_PATH="$(pwd)/node.socket" \
+    #   nix run github:input-output-hk/cardano-world#x86_64-linux.cardano.entrypoints.cardano-node
     else
       echo "Using custom config: $NODE_CONFIG ..." >&2
 
