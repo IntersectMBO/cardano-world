@@ -333,9 +333,6 @@ in {
         srv_discovery
         args+=("--topology" "$NODE_TOPOLOGY")
 
-        # turn on bash's job control
-        set -m
-
         # Define handler for SIGINT
         trap "kill" "''${sid[@]}" INT
 
