@@ -1,5 +1,7 @@
 -- run `nix flake lock --update-input hackage` after updating index-state.
-index-state: 2022-07-01T00:00:00Z
+index-state:
+  , hackage.haskell.org 2023-05-10T10:34:57Z
+  , cardano-haskell-packages 2023-05-25T10:00:00Z
 
 repository cardano-haskell-packages
   url: https://input-output-hk.github.io/cardano-haskell-packages
@@ -14,6 +16,9 @@ repository cardano-haskell-packages
 
 packages:
     src/cardano-faucet
+
+extra-packages:
+    cardano-node
 
 constraints:
     hedgehog >= 1.0
