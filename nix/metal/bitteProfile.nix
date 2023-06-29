@@ -100,6 +100,22 @@ in {
                   services.nomad.client.meta.perf = "true";
                 }
               ];
+              securityGroupRules = {
+                inherit (sr) internet internal ssh;
+
+                perf-node = {
+                  from = 30000;
+                  to = 30053;
+                  protocols = ["tcp"];
+                  cidrs = ["0.0.0.0/0"];
+                };
+
+                perf-transport = {
+                  port = 32000;
+                  protocols = ["tcp"];
+                  cidrs = ["0.0.0.0/0"];
+                };
+              };
             })
             ++
             # Infra Nodes
