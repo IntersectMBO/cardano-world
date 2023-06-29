@@ -254,11 +254,11 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
           advertise: false,
           valency: 1
         })
-      }' || echo '{localRoots: []}') > ./local/topology-locals.json
+      }' || echo '{"localRoots": []}') > ./local/topology-locals.json
 
       FILTER=$(srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '
         .locals | map(.Host)
-      ')
+      ' || echo -n "[]")
 
       # Public roots
       (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq --argjson FILTER "$FILTER" '{
@@ -266,7 +266,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
           accessPoints: [{address: .Host, port: .Port}],
           advertise: false
         })
-      }' || echo '{publicRoots: []}') > ./local/topology-publics.json
+      }' || echo '{"publicRoots": []}') > ./local/topology-publics.json
 
       # Construe topology
       # Node will re-read p2p topology via SIGHUP signal
