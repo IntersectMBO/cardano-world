@@ -7,7 +7,7 @@ let
   inherit (nixpkgs) lib;
   inherit (nixpkgs.stdenv) hostPlatform;
   inherit (cells.automation.jobs) mkHydraRequiredJob;
-  inherit (cell.packages) project nodeProject ogmiosProject;
+  inherit (cell.packages) project ogmiosProject;
   baseJobs = {
     world = {
       inherit (project) exes checks benchmarks;
@@ -19,12 +19,12 @@ let
       };
     };
     node = {
-      inherit (nodeProject) exes checks benchmarks release;
+      inherit (project) exes checks benchmarks release;
       profiled = lib.genAttrs ([ "locli" ] ++ lib.optionals (!hostPlatform.isDarwin) [ "cardano-node" "tx-generator" ]) (n:
-        nodeProject.exes.${n}.passthru.profiled
+        project.exes.${n}.passthru.profiled
       );
       internal = {
-        inherit (nodeProject) roots plan-nix;
+        inherit (project) roots plan-nix;
       };
     };
     ogmios = {
@@ -42,7 +42,7 @@ let
           {
             node =
               let
-                muslProject = nodeProject.projectCross.musl64;
+                muslProject = project.projectCross.musl64;
               in
               {
                 cardano-node-linux = muslProject.release;
@@ -52,7 +52,7 @@ let
         windows =
           {
             node =
-              let windowsProject = nodeProject.projectCross.mingwW64;
+              let windowsProject = project.projectCross.mingwW64;
               in
               {
                 inherit (windowsProject) checks benchmarks;
@@ -69,9 +69,9 @@ let
           };
         };
         node = {
-          inherit (nodeProject) exes;
+          inherit (project) exes;
           internal = {
-            inherit (nodeProject) roots plan-nix;
+            inherit (project) roots plan-nix;
           };
         };
         ogmios = {
@@ -84,10 +84,10 @@ let
     };
     macos = lib.optionalAttrs hostPlatform.isDarwin {
       x86 = lib.optionalAttrs hostPlatform.isx86_64 (baseJobs // {
-        cardano-node-macos = nodeProject.release;
+        cardano-node-macos = project.release;
       });
       arm = lib.optionalAttrs hostPlatform.isAarch64 (baseJobs // {
-        cardano-node-macos = nodeProject.release;
+        cardano-node-macos = project.release;
       });
     };
   };

@@ -93,7 +93,7 @@
     # --- Explorer Specific ----------------------------------------
     explorer-cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
 
-    explorer-cardano-node.url = "github:input-output-hk/cardano-node/1.35.4";
+    explorer-cardano-node.url = "github:input-output-hk/cardano-node/hkm/1.35.4-for-ci";
 
     explorer-cardano-explorer-app = {
       url = "github:input-output-hk/cardano-explorer-app/1.6.0-mods";
@@ -116,7 +116,15 @@
     inherit (inputs.nixpkgs) lib;
     cloud = inputs.self.${system}.cloud;
     system = "x86_64-linux";
-  in
+    traceNames = prefix: builtins.mapAttrs (n: v:
+        if builtins.isAttrs v
+          then if v ? type && v.type == "derivation"
+            then __trace (prefix + n) v
+            else traceNames (prefix + n + ".") v
+          else v);
+
+    traceHydraJobs = x: x // { inherit (traceNames "" x) hydraJobs; };
+  in traceHydraJobs (
     inputs.std.growOn {
       inherit inputs;
       cellsFrom = ./nix;
@@ -230,7 +238,7 @@
     (inputs.tullia.fromStd {
       actions = inputs.std.harvest inputs.self ["cloud" "actions"];
       tasks = inputs.std.harvest inputs.self ["automation" "pipelines"];
-    });
+    }));
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {

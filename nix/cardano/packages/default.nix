@@ -33,7 +33,7 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
         crypto
         (final: prev: {
           haskellBuildUtils = prev.haskellBuildUtils.override {
-            inherit compiler-nix-name index-state evalSystem;
+            inherit compiler-nix-name evalSystem;
           };
         })
       ];
@@ -49,10 +49,22 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
       inherit (inputs) byron-chain;
       src = self;
       inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = inputs.CHaP; };
-    });
+    }).extend (final: prev: {
+    release = nixpkgs.callPackage ./binary-release.nix {
+      inherit (final.pkgs) stdenv;
+      inherit (final.pkgs.buildPackages) haskellBuildUtils;
+      exes =
+        lib.attrValues final.exes
+        ++ [
+          final.hsPkgs.bech32.components.exes.bech32
+        ];
+      inherit (final.hsPkgs.cardano-node.components.exes.cardano-node.identifier) version;
+      inherit (cardano.library) copyEnvsTemplate;
+      inherit (cardanoLib) environments;
+    };
+  });
 
   inherit (project.args) compiler-nix-name;
-  inherit (project) index-state;
 
   ogmiosProject = project.appendModule {
     name = "ogmios";
