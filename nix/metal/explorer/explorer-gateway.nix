@@ -88,20 +88,28 @@ in {
         };
       };
 
-      dynamicConfigOptions = {
+      dynamicConfigOptions = let
+        allExplorerHostnames = lib.concatStringsSep " || " (map (alias: "Host(`${alias}`)") ([explorerHostName] ++ explorerAliases));
+      in {
         http = {
           routers = {
-            explorer = {
-              rule = lib.concatStringsSep " || "
-                (map (alias: "Host(`${alias}`)") ([explorerHostName] ++ explorerAliases));
-              service = "explorer";
+            # Router rule priority by default is from longest to shortest
+            graphql = {
+              rule = "(${allExplorerHostnames}) && PathPrefix(`/graphql`)";
+              service = "graphql";
+              middlewares = ["graphqlRateLimit"];
               tls.certResolver = "default";
             };
 
             rosetta = {
-              rule = (lib.concatStringsSep " || "
-                (map (alias: "Host(`${alias}`)") ([explorerHostName] ++ explorerAliases))) + " && PathPrefix(`/rosetta`)";
+              rule = "(${allExplorerHostnames}) && PathPrefix(`/rosetta`)";
               service = "rosetta";
+              tls.certResolver = "default";
+            };
+
+            explorer = {
+              rule = allExplorerHostnames;
+              service = "explorer";
               tls.certResolver = "default";
             };
 
@@ -111,6 +119,19 @@ in {
               tls.certResolver = "default";
             };
           };
+
+          middlewares = {
+            graphqlRateLimit = {
+               # Apply a 3 minute rate limit window averaging 0.5 requests/second with up to 30 req burst
+               # These params should be loose enough to allow typical UI usage while avoiding 429s.
+               rateLimit = {
+                 average = 90;
+                 burst = 30;
+                 period = "180s";
+               };
+            };
+          };
+
           services = {
             explorer = {
               loadBalancer = {
@@ -119,6 +140,22 @@ in {
                   interval = "60s";
                   timeout = "10s";
                 };
+
+                servers = map (backend: {
+                  url = "http://${backend.name}";
+                }) explorerActiveBackends;
+              };
+            };
+
+            graphql = {
+              loadBalancer = {
+                healthCheck = {
+                  path = "/healthz";
+                  port = 9999;
+                  interval = "60s";
+                  timeout = "10s";
+                };
+
                 servers = map (backend: {
                   url = "http://${backend.name}";
                 }) explorerActiveBackends;
@@ -132,6 +169,7 @@ in {
                   interval = "60s";
                   timeout = "10s";
                 };
+
                 servers = map (backend: {
                   url = "http://${backend}";
                 }) explorerRosettaActiveBackends;
@@ -145,6 +183,7 @@ in {
                   interval = "60s";
                   timeout = "10s";
                 };
+
                 servers = map (backend: {
                   url = "http://${backend.name}:81";
                 }) explorerActiveBackends;
