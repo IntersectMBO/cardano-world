@@ -91,23 +91,23 @@
     # --------------------------------------------------------------
 
     # --- Explorer Specific ----------------------------------------
-    explorer-cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
+    explorer-cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.1.1.3";
 
-    explorer-cardano-node.url = "github:input-output-hk/cardano-node/1.35.4";
+    explorer-cardano-node.url = "github:input-output-hk/cardano-node/8.1.1";
 
     explorer-cardano-explorer-app = {
-      url = "github:input-output-hk/cardano-explorer-app/1.6.0-mods";
+      url = "github:input-output-hk/cardano-explorer-app";
       flake = false;
     };
 
-    explorer-cardano-graphql.url = "github:input-output-hk/cardano-graphql/fixes/incl-test-mod-master";
+    explorer-cardano-graphql.url = "github:input-output-hk/cardano-graphql";
 
-    explorer-cardano-rosetta.url = "github:input-output-hk/cardano-rosetta/1-8-stable-mods";
+    explorer-cardano-rosetta.url = "github:input-output-hk/cardano-rosetta/flake-package";
 
-    explorer-ogmios.url = "github:input-output-hk/cardano-ogmios/2253ef350822f3d18bf6ac579c5abc2a99c2ac4c";
+    explorer-ogmios.url = "github:input-output-hk/cardano-ogmios";
 
     explorer-cardano-ops = {
-      url = "github:input-output-hk/cardano-ops/master-graphql-mods";
+      url = "github:input-output-hk/cardano-ops";
       flake = false;
     };
     # --------------------------------------------------------------

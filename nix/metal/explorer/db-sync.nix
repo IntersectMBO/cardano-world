@@ -77,7 +77,7 @@ in {
       package = cardano-db-sync;
       cluster = cfg.environmentName;
       environment = environmentConfig;
-      socketPath = nodeCfg.socketPath;
+      socketPath = nodeCfg.socketPath 0;
       explorerConfig = environmentConfig.dbSyncConfig;
       logConfig = {};
       postgres.database = "cexplorer";

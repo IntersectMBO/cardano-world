@@ -151,7 +151,7 @@ in {
     services.cardano-ogmios = {
       enable = true;
       nodeConfig = cardanoNodeConfigPath;
-      nodeSocket = nodeCfg.socketPath;
+      nodeSocket = nodeCfg.socketPath 0;
       hostAddr = "127.0.0.1";
     };
 
@@ -197,7 +197,7 @@ in {
       cardanoCliPath = cardano-cli + /bin/cardano-cli;
       genesisPath = nodeCfg.nodeConfig.ShelleyGenesisFile;
       cardanoNodePath = cardano-node + /bin/cardano-node;
-      cardanoNodeSocketPath = nodeCfg.socketPath;
+      cardanoNodeSocketPath = nodeCfg.socketPath 0;
       bindAddress = "127.0.0.1";
       port = 8082;
       dbConnectionString = "socket://${dbSyncCfg.postgres.user}:*@${dbSyncCfg.postgres.socketdir}?db=${dbSyncCfg.postgres.database}";
@@ -273,7 +273,7 @@ in {
       port = 8101;
       environment = environmentConfig;
       config = environmentConfig.dbSyncConfig;
-      socketPath = config.services.cardano-node.socketPath;
+      socketPath = nodeCfg.socketPath 0;
       cardanoNodePackages = nodePkgs;
     };
 
@@ -290,6 +290,7 @@ in {
       # Accept this environment cluster explorer gateway's requests over wireguard
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
+      iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 9999 -m comment --comment "graphql-engine healthcheck" -j nixos-fw-accept
     '';
 
     users.users.dump-registered-relays-topology = {
