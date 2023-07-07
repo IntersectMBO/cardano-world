@@ -91,7 +91,7 @@ in rec {
       services.cardano-db-sync = {
         inherit environmentName;
         restoreSnapshot =
-          "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13/db-sync-snapshot-schema-13-block-8291499-x86_64.tgz";
+          "https://update-cardano-mainnet.iohk.io/cardano-db-sync/13.1/db-sync-snapshot-schema-13.1-block-8987999-x86_64.tgz";
       };
 
       services.explorer = {

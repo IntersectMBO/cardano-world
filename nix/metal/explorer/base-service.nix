@@ -66,7 +66,7 @@ in
 
   config = {
     environment.systemPackages = with nodePkgs; [ cardano-cli ];
-    environment.variables = environmentVariables // {CARDANO_NODE_SOCKET_PATH = cfg.socketPath;};
+    environment.variables = environmentVariables // {CARDANO_NODE_SOCKET_PATH = cfg.socketPath 0;};
 
     networking.firewall.allowedTCPPorts = [nodePort];
 
