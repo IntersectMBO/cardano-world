@@ -247,26 +247,36 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       jq -n --arg LEDGER_SLOT "$LEDGER_SLOT" '{ useLedgerAfterSlot: $LEDGER_SLOT | tonumber }' \
         > ./local/topology-common.json
 
-      # Local roots
-      (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '{
-        localRoots: .locals | map({
-          accessPoints: [{address: .Host, port: .Port}],
-          advertise: false,
-          valency: 1
-        })
-      }' || echo '{"localRoots": []}') > ./local/topology-locals.json
+      if [ -n "''${ALL_ROOTS_AS_LOCAL:-}" ]; then
+        (srvaddr -json locals="''${PUBLIC_ROOTS_SRV_DNS:-}" | jq '{
+          localRoots: .locals | map({
+            accessPoints: [{address: .Host, port: .Port}],
+            advertise: false,
+            valency: 1
+          })
+        }' || echo '{"localRoots": []}') > ./local/topology-locals.json
 
-      FILTER=$(srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '
-        .locals | map(.Host)
-      ' || echo -n "[]")
+        echo '{"publicRoots": []}' > ./local/topology-publics.json
+      else
+        (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '{
+          localRoots: .locals | map({
+            accessPoints: [{address: .Host, port: .Port}],
+            advertise: false,
+            valency: 1
+          })
+        }' || echo '{"localRoots": []}') > ./local/topology-locals.json
 
-      # Public roots
-      (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq --argjson FILTER "$FILTER" '{
-        publicRoots: .publics | map(select(.Host as $HOST | $FILTER | all(. != $HOST))) | map({
-          accessPoints: [{address: .Host, port: .Port}],
-          advertise: false
-        })
-      }' || echo '{"publicRoots": []}') > ./local/topology-publics.json
+        FILTER=$(srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '
+          .locals | map(.Host)
+        ' || echo -n "[]")
+
+        (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq --argjson FILTER "$FILTER" '{
+          publicRoots: .publics | map(select(.Host as $HOST | $FILTER | all(. != $HOST))) | map({
+            accessPoints: [{address: .Host, port: .Port}],
+            advertise: false
+          })
+        }' || echo '{"publicRoots": []}') > ./local/topology-publics.json
+      fi
 
       # Construe topology
       # Node will re-read p2p topology via SIGHUP signal
