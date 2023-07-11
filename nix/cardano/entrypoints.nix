@@ -248,7 +248,13 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
         > ./local/topology-common.json
 
       if [ -n "''${ALL_ROOTS_AS_LOCAL:-}" ]; then
-        (srvaddr -json locals="''${PUBLIC_ROOTS_SRV_DNS:-}" | jq '{
+        # Use all public roots as local roots, filtering out self
+        (srvaddr -json locals="''${PUBLIC_ROOTS_SRV_DNS:-}" \
+          | jq \
+            --arg NOMAD_HOST_IP_node "''${NOMAD_HOST_IP_node:-}" \
+            --arg NOMAD_HOST_PORT_node "''${NOMAD_HOST_PORT_node:-}" \
+            '.locals |= map(select((.IP != $NOMAD_HOST_IP_node) and (.Port != $NOMAD_HOST_PORT_node)))' \
+          | jq '{
           localRoots: .locals | map({
             accessPoints: [{address: .Host, port: .Port}],
             advertise: false,
@@ -258,7 +264,13 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
 
         echo '{"publicRoots": []}' > ./local/topology-publics.json
       else
-        (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" | jq '{
+        # Use only local roots as local roots, filtering out self
+        (srvaddr -json locals="''${LOCAL_ROOTS_SRV_DNS:-}" \
+          | jq \
+            --arg NOMAD_HOST_IP_node "''${NOMAD_HOST_IP_node:-}" \
+            --arg NOMAD_HOST_PORT_node "''${NOMAD_HOST_PORT_node:-}" \
+            '.locals |= map(select((.IP != $NOMAD_HOST_IP_node) and (.Port != $NOMAD_HOST_PORT_node)))' \
+          | jq '{
           localRoots: .locals | map({
             accessPoints: [{address: .Host, port: .Port}],
             advertise: false,
@@ -270,6 +282,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
           .locals | map(.Host)
         ' || echo -n "[]")
 
+        # Use only public roots as public roots, filtering out current sp-X job tasks
         (srvaddr -json publics="$PUBLIC_ROOTS_SRV_DNS" | jq --argjson FILTER "$FILTER" '{
           publicRoots: .publics | map(select(.Host as $HOST | $FILTER | all(. != $HOST))) | map({
             accessPoints: [{address: .Host, port: .Port}],
