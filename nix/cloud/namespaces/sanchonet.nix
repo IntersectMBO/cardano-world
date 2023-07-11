@@ -31,6 +31,7 @@ in {
           VAULT_KV_PATH = "kv/data/cardano/sanchonet/sp-1";
           LOCAL_ROOTS_SRV_DNS = "_sanchonet-${jobname}-node._tcp.service.consul";
           PUBLIC_ROOTS_SRV_DNS = "_sanchonet-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
         };
       };
     };
@@ -56,6 +57,7 @@ in {
           VAULT_KV_PATH = "kv/data/cardano/sanchonet/sp-2";
           LOCAL_ROOTS_SRV_DNS = "_sanchonet-${jobname}-node._tcp.service.consul";
           PUBLIC_ROOTS_SRV_DNS = "_sanchonet-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
         };
       };
     };
@@ -81,6 +83,7 @@ in {
           VAULT_KV_PATH = "kv/data/cardano/sanchonet/sp-3";
           LOCAL_ROOTS_SRV_DNS = "_sanchonet-${jobname}-node._tcp.service.consul";
           PUBLIC_ROOTS_SRV_DNS = "_sanchonet-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
         };
       };
     };
