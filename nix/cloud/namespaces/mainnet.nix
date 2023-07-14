@@ -31,6 +31,7 @@ in {
             EDGE_NODE = "1";
           };
         };
+
         db-sync = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;

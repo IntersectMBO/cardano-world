@@ -39,12 +39,12 @@ in {
       nomad.namespaces = {
         infra.description = "Shared Services for The Cardano World";
         mainnet.description = "Cardano Main Network";
-        shelley-qa.description = "Cardano Shelley Internal QA";
+        perf.description = "Cardano Performance Testing Environment";
         preprod.description = "Cardano Pre-Production Environment";
         preview.description = "Cardano Preview Environment";
-        sanchonet.description = "Cardano Sanchonet Environment";
         private.description = "Cardano Private Testing Environment";
-        perf.description = "Cardano Performance Testing Environment";
+        sanchonet.description = "Cardano Sanchonet Environment";
+        shelley-qa.description = "Cardano Shelley Internal QA";
       };
     };
 
@@ -139,27 +139,33 @@ in {
             policy = "write";
             intentions = "write";
           };
-          service_prefix."shelley-qa-" = {
+
+          service_prefix."perf-" = {
             policy = "write";
             intentions = "write";
           };
+
           service_prefix."preprod-" = {
             policy = "write";
             intentions = "write";
           };
+
           service_prefix."preview-" = {
             policy = "write";
             intentions = "write";
           };
-          service_prefix."sanchonet-" = {
-            policy = "write";
-            intentions = "write";
-          };
+
           service_prefix."private-" = {
             policy = "write";
             intentions = "write";
           };
-          service_prefix."perf-" = {
+
+          service_prefix."sanchonet-" = {
+            policy = "write";
+            intentions = "write";
+          };
+
+          service_prefix."shelley-qa-" = {
             policy = "write";
             intentions = "write";
           };
@@ -182,17 +188,7 @@ in {
               "alloc-lifecycle"
             ];
           };
-          namespace.shelley-qa = {
-            policy = "write";
-            capabilities = [
-              "submit-job"
-              "dispatch-job"
-              "read-logs"
-              "alloc-exec"
-              "alloc-node-exec"
-              "alloc-lifecycle"
-            ];
-          };
+
           namespace.preprod = {
             policy = "write";
             capabilities = [
@@ -204,6 +200,7 @@ in {
               "alloc-lifecycle"
             ];
           };
+
           namespace.preview = {
             policy = "write";
             capabilities = [
@@ -215,17 +212,7 @@ in {
               "alloc-lifecycle"
             ];
           };
-          namespace.sanchonet = {
-            policy = "write";
-            capabilities = [
-              "submit-job"
-              "dispatch-job"
-              "read-logs"
-              "alloc-exec"
-              "alloc-node-exec"
-              "alloc-lifecycle"
-            ];
-          };
+
           namespace.private = {
             policy = "write";
             capabilities = [
@@ -237,12 +224,37 @@ in {
               "alloc-lifecycle"
             ];
           };
+
+          namespace.sanchonet = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
+
+          namespace.shelley-qa = {
+            policy = "write";
+            capabilities = [
+              "submit-job"
+              "dispatch-job"
+              "read-logs"
+              "alloc-exec"
+              "alloc-node-exec"
+              "alloc-lifecycle"
+            ];
+          };
+
           host_volume."mainnet-*".policy = "write";
-          host_volume."shelley-qa-*".policy = "write";
           host_volume."preprod-*".policy = "write";
           host_volume."preview-*".policy = "write";
-          host_volume."sanchonet-*".policy = "write";
           host_volume."private-*".policy = "write";
+          host_volume."sanchonet-*".policy = "write";
+          host_volume."shelley-qa-*".policy = "write";
         };
 
         nomad.perf = {
@@ -266,11 +278,13 @@ in {
               "submit-job"
             ];
           };
+
           host_volume."perf-*".policy = "write";
           node.policy = "read";
         };
       };
     };
+
     # Observability State
     # --------------
     tf.hydrate-monitoring.configuration = {

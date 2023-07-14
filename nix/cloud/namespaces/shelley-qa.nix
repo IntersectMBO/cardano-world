@@ -7,67 +7,8 @@
   inherit (cell) constants;
 
   persistanceMount = "/persist";
+  LEDGER_SLOT = cardano.library.cardanoLib.environments.shelley_qa.usePeersFromLedgerAfterSlot;
 in {
-  bft-0 = let
-    jobname = "cardano-bft-0";
-  in
-    data-merge.merge (
-      cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
-        // {
-          datacenters = ["eu-central-1"];
-          inherit jobname;
-        })
-    ) {
-      job.${jobname}.group.cardano.task.node = {
-        # env.ENVIRONMENT = "testnet";
-        # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/bft-0";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-0";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
-      };
-    };
-  bft-1 = let
-    jobname = "cardano-bft-1";
-  in
-    data-merge.merge (
-      cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
-        // {
-          datacenters = ["eu-west-1"];
-          inherit jobname;
-        })
-    ) {
-      job.${jobname}.group.cardano.task.node = {
-        # env.ENVIRONMENT = "testnet";
-        # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/bft-1";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-1";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
-      };
-    };
-  bft-2 = let
-    jobname = "cardano-bft-2";
-  in
-    data-merge.merge (
-      cardano.nomadCharts.cardano-node (constants.envs.shelley-qa
-        // {
-          datacenters = ["us-east-2"];
-          inherit jobname;
-        })
-    ) {
-      job.${jobname}.group.cardano.task.node = {
-        # env.ENVIRONMENT = "testnet";
-        # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/bft-2";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/bft-2";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
-      };
-    };
   sp-1 = let
     jobname = "cardano-sp-1";
   in
@@ -83,13 +24,18 @@ in {
       job.${jobname}.group.cardano.task.node = {
         # env.ENVIRONMENT = "testnet";
         # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/sp-1";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-1";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+        env = {
+          inherit LEDGER_SLOT;
+          DATA_DIR = persistanceMount + "/sp-1";
+          CONSUL_KV_PATH = "config/cardano/shelley-qa";
+          VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-1";
+          LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+          PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
+        };
       };
     };
+
   sp-2 = let
     jobname = "cardano-sp-2";
   in
@@ -105,13 +51,18 @@ in {
       job.${jobname}.group.cardano.task.node = {
         # env.ENVIRONMENT = "testnet";
         # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/sp-2";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-2";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+        env = {
+          inherit LEDGER_SLOT;
+          DATA_DIR = persistanceMount + "/sp-2";
+          CONSUL_KV_PATH = "config/cardano/shelley-qa";
+          VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-2";
+          LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+          PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
+        };
       };
     };
+
   sp-3 = let
     jobname = "cardano-sp-3";
   in
@@ -127,13 +78,18 @@ in {
       job.${jobname}.group.cardano.task.node = {
         # env.ENVIRONMENT = "testnet";
         # env.DEBUG_SLEEP = 6000;
-        env.DATA_DIR = persistanceMount + "/sp-3";
-        env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-        env.VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-3";
-        env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-        env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+        env = {
+          inherit LEDGER_SLOT;
+          DATA_DIR = persistanceMount + "/sp-3";
+          CONSUL_KV_PATH = "config/cardano/shelley-qa";
+          VAULT_KV_PATH = "kv/data/cardano/shelley-qa/sp-3";
+          LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
+          PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+          ALL_ROOTS_AS_LOCAL = "true";
+        };
       };
     };
+
   ogmios-0 = let
     jobname = "ogmios-0";
   in
@@ -148,20 +104,26 @@ in {
         node = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
-          env.DATA_DIR = persistanceMount + "/ogmios-0";
-          env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-          env.EDGE_NODE = "1";
-          env.LOCAL_ROOTS_SRV_DNS = "_shelley-qa-${jobname}-node._tcp.service.consul";
-          env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+          env = {
+            DATA_DIR = persistanceMount + "/ogmios-0";
+            ENVIRONMENT = "shelley_qa";
+            CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
         };
+
         ogmios = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
-          env.DATA_DIR = persistanceMount + "/ogmios-0";
-          env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
+          env = {
+            DATA_DIR = persistanceMount + "/ogmios-0";
+            CONSUL_KV_PATH = "config/cardano/shelley-qa";
+          };
         };
       };
     };
+
   db-sync-0 = let
     jobname = "db-sync-0";
   in
@@ -177,19 +139,55 @@ in {
         node = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
-          env.DATA_DIR = persistanceMount + "/db-sync-0";
-          env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-          env.PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
-          env.EDGE_NODE = "1";
+          env = {
+            DATA_DIR = persistanceMount + "/db-sync-0";
+            ENVIRONMENT = "shelley_qa";
+            CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
         };
+
         db-sync = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
-          env.DB_NAME = "shelley_qa_dbsync";
-          env.DATA_DIR = persistanceMount + "/db-sync-0";
-          env.CONSUL_KV_PATH = "config/cardano/shelley-qa";
-          env.VAULT_KV_PATH = "kv/data/db-sync/shelley-qa";
-          env.MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          env = {
+            DB_NAME = "shelley_qa_dbsync";
+            ENVIRONMENT = "shelley_qa";
+            DATA_DIR = persistanceMount + "/db-sync-0";
+            CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            VAULT_KV_PATH = "kv/data/db-sync/shelley-qa";
+            MASTER_REPLICA_SRV_DNS = "_infra-database._master.service.eu-central-1.consul";
+          };
+        };
+      };
+    };
+
+  faucet = let
+    jobname = "faucet";
+  in
+    data-merge.merge (cardano.nomadCharts.cardano-faucet (
+      constants.envs.shelley-qa
+      // {
+        datacenters = ["eu-central-1"];
+        inherit jobname;
+        scaling = 1;
+      }
+    )) {
+      job.${jobname}.group.cardano-faucet.task = {
+        node = {
+          # env.ENVIRONMENT = "testnet";
+          # env.DEBUG_SLEEP = 6000;
+          env = {
+            DATA_DIR = persistanceMount + "/faucet";
+            ENVIRONMENT = "shelley_qa";
+            CONSUL_KV_PATH = "config/cardano/shelley-qa";
+            PUBLIC_ROOTS_SRV_DNS = "_shelley-qa-node._tcp.service.consul";
+            EDGE_NODE = "1";
+          };
+        };
+
+        cardano-faucet = {
         };
       };
     };
