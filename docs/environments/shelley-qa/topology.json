@@ -1,9 +1,21 @@
 {
-  "Producers": [
+  "localRoots": [
     {
-      "addr": "relays-new.shelley-qa.dev.cardano.org",
-      "port": 3001,
-      "valency": 2
+      "accessPoints": [],
+      "advertise": false,
+      "valency": 1
     }
-  ]
+  ],
+  "publicRoots": [
+    {
+      "accessPoints": [
+        {
+          "address": "shelley-qa-node.world.dev.cardano.org",
+          "port": 30003
+        }
+      ],
+      "advertise": false
+    }
+  ],
+  "useLedgerAfterSlot": 32000
 }
