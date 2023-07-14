@@ -58,7 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
+      url = "github:input-output-hk/iohk-nix/shelley-qa-update";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -125,12 +125,12 @@
         (inputs.std.data "constants")
         (inputs.std.data "namespaces/infra")
         (inputs.std.data "namespaces/mainnet")
-        (inputs.std.data "namespaces/shelley-qa")
+        (inputs.std.data "namespaces/perf")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
-        (inputs.std.data "namespaces/sanchonet")
         (inputs.std.data "namespaces/private")
-        (inputs.std.data "namespaces/perf")
+        (inputs.std.data "namespaces/sanchonet")
+        (inputs.std.data "namespaces/shelley-qa")
         (inputs.std.data "alerts")
         (inputs.std.data "dashboards")
         (inputs.std.devshells "devshells")
@@ -194,11 +194,12 @@
     in {
       infra = mkNomadJobs cloud."namespaces/infra";
       mainnet = mkNomadJobs cloud."namespaces/mainnet";
+      perf = mkNomadJobs cloud."namespaces/perf";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
-      sanchonet = mkNomadJobs cloud."namespaces/sanchonet";
       private = mkNomadJobs cloud."namespaces/private";
-      perf = mkNomadJobs cloud."namespaces/perf";
+      sanchonet = mkNomadJobs cloud."namespaces/sanchonet";
+      shelley-qa = mkNomadJobs cloud."namespaces/shelley-qa";
     })
 
     # 3) hydra jobs

@@ -34,6 +34,7 @@ in {
         };
       };
     };
+
   sp-2 = let
     jobname = "cardano-sp-2";
   in
@@ -59,6 +60,7 @@ in {
         };
       };
     };
+
   sp-3 = let
     jobname = "cardano-sp-3";
   in
@@ -108,6 +110,7 @@ in {
             EDGE_NODE = "1";
           };
         };
+
         db-sync = {
           # env.ENVIRONMENT = "testnet";
           # env.DEBUG_SLEEP = 6000;
@@ -120,7 +123,6 @@ in {
           };
         };
       };
-    };
 
   faucet = let
     jobname = "faucet";
@@ -144,6 +146,7 @@ in {
             EDGE_NODE = "1";
           };
         };
+
         cardano-faucet = {
         };
       };
