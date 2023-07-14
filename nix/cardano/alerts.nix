@@ -67,7 +67,7 @@ in
         }
         {
           alert = "chain_quality_degraded";
-          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real{namespace!="private"} * 20)) < ${chainDensityLow}'';
+          expr = ''100 * quantile by(namespace) (0.2, (cardano_node_metrics_density_real{namespace!~"private|sanchonet|shelley-qa"} * 20)) < ${chainDensityLow}'';
           for = "5m";
           labels = {
             severity = "page";
