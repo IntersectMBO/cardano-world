@@ -15,6 +15,7 @@ in {
   }: let
     inherit (self.inputs) bitte;
     inherit (config) cluster;
+
     sr = {
       inherit
         (bittelib.securityGroupRules config)
@@ -30,6 +31,19 @@ in {
         ziti-router-fabric
         ;
     };
+
+    mkCardanoVolume = namespace: (
+      bittelib.mkNomadHostVolumesConfig
+      ["${namespace}-persist-cardano-node-local"]
+      (n: "/var/lib/nomad-volumes/${n}")
+    );
+
+    mkDbsyncVolume = namespace: (
+      bittelib.mkNomadHostVolumesConfig
+      ["${namespace}-persist-db-sync-local"]
+      (n: "/mnt/gv0/${n}")
+    );
+
   in {
     secrets.encryptedRoot = ./encrypted;
 
@@ -57,9 +71,11 @@ in {
           (attrs // {region = "eu-west-1";})
           (attrs // {region = "us-east-2";})
         ];
+
         euCentral = attrs: [
           (attrs // {region = "eu-central-1";})
         ];
+
         perfNodes = attrs: [
           (attrs
             // {
@@ -128,9 +144,7 @@ in {
                 ++ [
                   (
                     bittelib.mkNomadHostVolumesConfig
-                    [
-                      "infra-database"
-                    ]
+                    [ "infra-database" ]
                     (n: "/var/lib/nomad-volumes/${n}")
                   )
                   # for scheduling constraints
@@ -139,7 +153,7 @@ in {
               node_class = "infra";
             })
             ++
-            # Vasil-QA nodes
+            # QA nodes
             (eachRegion {
               instanceType = "t3.2xlarge";
               desiredCapacity = 6;
@@ -147,67 +161,25 @@ in {
               modules =
                 defaultModules
                 ++ [
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["mainnet-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["mainnet-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["shelley-qa-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["shelley-qa-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["preprod-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["preprod-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["preview-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["preview-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["sanchonet-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["sanchonet-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["private-persist-cardano-node-local"]
-                    (n: "/var/lib/nomad-volumes/${n}")
-                  )
-                  (
-                    bittelib.mkNomadHostVolumesConfig
-                    ["private-persist-db-sync-local"]
-                    (n: "/mnt/gv0/${n}")
-                  )
-                  # for scheduling constraints
+                  (mkCardanoVolume "mainnet")
+                  (mkDbsyncVolume "mainnet")
+
+                  (mkCardanoVolume "preprod")
+                  (mkDbsyncVolume "preprod")
+
+                  (mkCardanoVolume "preview")
+                  (mkDbsyncVolume "preview")
+
+                  (mkCardanoVolume "private")
+                  (mkDbsyncVolume "private")
+
+                  (mkCardanoVolume "sanchonet")
+                  (mkDbsyncVolume "sanchonet")
+
+                  (mkCardanoVolume "shelley-qa")
+                  (mkDbsyncVolume "shelley-qa")
+
+                  # For scheduling constraints
                   {services.nomad.client.meta.cardano = "yeah";}
                 ];
               node_class = "qa";
