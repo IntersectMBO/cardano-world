@@ -11,9 +11,6 @@
   # OCI-Image Namer
   ociNamer = oci: builtins.unsafeDiscardStringContext "${oci.imageName}:${oci.imageTag}";
 
-  # Resources used in resource and RTS flags declaration
-  cpuMhz = 1000;
-  memoryMB = 8192;
 in
   {
     jobname ? "cardano",
@@ -23,6 +20,9 @@ in
     extraVector ? {},
     nodeClass,
     scaling,
+    # Resource specs used in both resource and RTS flags declaration
+    nodeCpuMhz ? 1000,
+    nodeMemoryMB ? 8192,
     ...
   }: let
     id = jobname;
@@ -129,9 +129,9 @@ in
                 # as some parameters are only determined at runtime.
                 # https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runtime_control.html
                 env.RTS_FLAGS = let
-                  threads = "$((${toString cpuMhz} / (INSTANCE_CPU / INSTANCE_CORES)))";
+                  threads = "$((${toString nodeCpuMhz} / (INSTANCE_CPU / INSTANCE_CORES)))";
                   nValue = ''if [ "${threads}" -eq "0" ]; then echo -n "1"; else echo -n "${threads}"; fi'';
-                in "+RTS -N$(${nValue}) -A16m -qg -qb -M${toString (memoryMB * 0.90)}M -RTS";
+                in "+RTS -N$(${nValue}) -A16m -qg -qb -M${toString (nodeMemoryMB * 0.90)}M -RTS";
 
                 template =
                   _utils.nomadFragments.workload-identity-vault {inherit vaultPkiPath;}
@@ -146,8 +146,8 @@ in
                 kill_signal = "SIGINT";
                 kill_timeout = "30s";
                 resources = {
-                  cpu = cpuMhz;
-                  memory = memoryMB;
+                  cpu = nodeCpuMhz;
+                  memory = nodeMemoryMB;
                 };
                 volume_mount = {
                   destination = persistanceMount;
