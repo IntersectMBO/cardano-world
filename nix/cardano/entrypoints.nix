@@ -33,8 +33,9 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
     if [ -n "''${ENVIRONMENT:-}" ]; then
       echo "Using the preset environment $ENVIRONMENT ..." >&2
 
-      NODE_CONFIG="$DATA_DIR/config/$ENVIRONMENT/config.json"
-      NODE_TOPOLOGY="''${NODE_TOPOLOGY:-$DATA_DIR/config/$ENVIRONMENT/topology.json}"
+      # Subst underscore for hyphen as iohk-nix envs historically use the former while cardano-world uses the later
+      NODE_CONFIG="$DATA_DIR/config/''${ENVIRONMENT/-/_}/config.json"
+      NODE_TOPOLOGY="''${NODE_TOPOLOGY:-$DATA_DIR/config/''${ENVIRONMENT/-/_}/topology.json}"
 
     # CASE: permissioned long running environment
     elif [ -n "''${CONSUL_KV_PATH:-}" ] || [ -n "''${VAULT_KV_PATH:-}" ]; then
