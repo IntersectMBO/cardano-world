@@ -123,6 +123,7 @@ in {
           };
         };
       };
+    };
 
   faucet = let
     jobname = "faucet";
