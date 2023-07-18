@@ -307,7 +307,7 @@ handleDelegateStake era FaucetState{fsPaymentSkey,fsUtxoTMVar,fsTxQueue,fsStakeT
       Left err -> left err
       Right ((stake_skey, creds), txinout) -> do
         let
-          cert = makeStakeAddressPoolDelegationCertificate creds poolId
+          cert = makeStakeAddressPoolDelegationCertificate sbe creds poolId
           stake_witness = WitnessStakeExtendedKey stake_skey
           x = BuildTxWith $ Map.fromList [(creds,KeyWitness KeyWitnessForStakeAddr)]
         supported <- maybe (left $ FaucetWebErrorTodo "cert error") pure $ certificatesSupportedInEra era

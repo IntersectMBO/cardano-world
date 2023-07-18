@@ -18,7 +18,7 @@ Flag unexpected_thunks
   Default:       False
 
 common base
-  build-depends: base >= 4.14 && < 4.15
+  build-depends: base
 
 common project-config
   default-language:     Haskell2010
@@ -34,8 +34,6 @@ common project-config
                         -Wredundant-constraints
                         -Wunused-packages
                         -Wno-orphans
-                        -- for the cardano-cli hack below
-                        -Wno-unused-packages
 
 common maybe-unix
   if !os(windows)
@@ -66,10 +64,8 @@ library
   build-depends:        aeson             >= 1.5.6.0
                       , MissingH
                       , bytestring
-                      -- should be in cardano-cli
-                      , optparse-applicative-fork == 0.16.1.0
                       , cardano-addresses
-                      , cardano-api
+                      , cardano-api == 8.8.0.0
                       , cardano-cli
                       , cardano-ledger-byron
                       , cardano-prelude

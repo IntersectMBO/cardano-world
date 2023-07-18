@@ -5,7 +5,7 @@
 module Cardano.Faucet.TxUtils where
 
 import Cardano.Api (Lovelace, IsShelleyBasedEra, ShelleyBasedEra, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(..), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx, ShelleyWitnessSigningKey)
-import Cardano.Api.Shelley (lovelaceToValue, Value, createAndValidateTransactionBody)
+import Cardano.Api.Shelley (lovelaceToValue, Value, createAndValidateTransactionBody, TxGovernanceActions(TxGovernanceActionsNone), TxVotes(TxVotesNone))
 import Cardano.CLI.Shelley.Run.Transaction
 import Cardano.CLI.Types
 import Cardano.Faucet.Misc (getValue, faucetValueToLovelace)
@@ -65,6 +65,8 @@ txBuild sbe (txin, txout) addressOrOutputs certs minting (Fee fixedFee) = do
     <*> pure TxUpdateProposalNone
     <*> pure minting
     <*> pure TxScriptValidityNone
+    <*> pure TxGovernanceActionsNone
+    <*> pure TxVotesNone
 
   case createAndValidateTransactionBody txBodyContent of
     Left err -> left $ FaucetWebErrorTodo $ show err

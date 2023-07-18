@@ -14,7 +14,7 @@ import Cardano.Address.Derivation (Depth(RootK, AccountK, PaymentK, PolicyK), XP
 import Cardano.Address.Style.Shelley (Shelley, Role(UTxOExternal, Stake), derivePolicyPrivateKey)
 import Cardano.Api (AnyCardanoEra, IsCardanoEra, TxIn, TxOut, CtxUTxO, TxInMode, CardanoMode, TxId, FileError, Lovelace, AddressAny(AddressByron, AddressShelley), AssetId(AssetId, AdaAssetId), Quantity, SigningKey, getVerificationKey, makeByronAddress, castVerificationKey, PaymentExtendedKey)
 import Cardano.Api.Shelley (PoolId, StakeExtendedKey, StakeCredential, AssetName(..), NetworkId(Testnet, Mainnet), NetworkMagic(NetworkMagic), ShelleyWitnessSigningKey)
-import Cardano.Api (EnvSocketError, InputDecodeError)
+import Cardano.Api (InputDecodeError)
 import Cardano.CLI.Shelley.Run.Address (SomeAddressVerificationKey(AByronVerificationKey, APaymentVerificationKey, APaymentExtendedVerificationKey, AGenesisUTxOVerificationKey), ShelleyAddressCmdError, buildShelleyAddress)
 import Cardano.CLI.Shelley.Run.Transaction (ShelleyTxCmdError, renderShelleyTxCmdError)
 import Cardano.Mnemonic (mkSomeMnemonic, getMkSomeMnemonicError)
@@ -56,7 +56,7 @@ instance FromHttpApiData ForwardedFor where
 
 -- errors not sent to users
 data FaucetError = FaucetErrorTodo ShelleyTxCmdError
-  | FaucetErrorSocketNotFound EnvSocketError
+  | FaucetErrorSocketNotFound
   | FaucetErrorLoadingKey (FileError InputDecodeError)
   | FaucetErrorParsingConfig String
   | FaucetErrorConfigFileNotSet
@@ -68,7 +68,7 @@ data FaucetError = FaucetErrorTodo ShelleyTxCmdError
 
 renderFaucetError :: FaucetError -> Text
 renderFaucetError (FaucetErrorTodo err) = renderShelleyTxCmdError err
-renderFaucetError (FaucetErrorSocketNotFound err) = show err
+renderFaucetError (FaucetErrorSocketNotFound) = "socket not found"
 renderFaucetError (FaucetErrorLoadingKey err) = show err
 renderFaucetError (FaucetErrorParsingConfig err) = show err
 renderFaucetError FaucetErrorConfigFileNotSet = "$CONFIG_FILE not set"

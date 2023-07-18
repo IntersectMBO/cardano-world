@@ -1,5 +1,7 @@
 -- run `nix flake lock --update-input hackage` after updating index-state.
-index-state: 2023-07-18T00:00:00Z
+index-state:
+  , hackage.haskell.org 2023-07-10T14:55:34Z
+  , cardano-haskell-packages 2023-07-16T00:00:00Z
 
 repository cardano-haskell-packages
   url: https://input-output-hk.github.io/cardano-haskell-packages
@@ -19,22 +21,22 @@ allow-newer:
   *:aeson,
   monoidal-containers:aeson,
   size-based:template-haskell,
-  attoparsec
+  attoparsec,
+  text
 
 constraints:
-  -- needed to make cardano-cli compile, as cardano-ping
-  -- changed the `logger` signature.
-  cardano-ping < 0.2
+  -- needed to make cardano-cli compile
+  optparse-applicative-fork == 0.16.1.0
 
 test-show-details: direct
 
 source-repository-package
-    type: git
-    location: https://github.com/input-output-hk/cardano-addresses
-    tag: 5ceb877c46a9dde9bde2032dbf94ed6dd84626a5
-    --sha256: 0hyvzr4jypl67lzfqq9hd354w4nrl0510fcsmqr6fgaik46j8pc9
-    subdir: command-line
-            core
+  type: git
+  location: https://github.com/input-output-hk/cardano-addresses
+  tag: 5565de283c5fcbb387267d0cd11ec6a742922096
+  --sha256: sha256-C9RNV0NQTVxK0ExtZh1UOFhcgihvmlTWSVVppER/BXc=
+  subdir: command-line
+          core
 
 -- TODO This is a compatibility shim to make it easier for our library dependencies to
 -- be compatible with both aeson 1 & 2.  Once downstream projects are all upgraded to
@@ -44,14 +46,8 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/haskell-works/hw-aeson
-    tag: d99d2f3e39a287607418ae605b132a3deb2b753f
-    --sha256: 1vxqcwjg9q37wbwi27y9ba5163lzfz51f1swbi0rp681yg63zvn4
-
---source-repository-package
---    type: git
---    location: https://github.com/haskell/aeson
---    tag: fa1370c56eb8fa95177ccfdd8cf860db95a92735
---    --sha256: sha256-Vee9DcH1iprImDRUOnKDARflWCz2WsxokSzgpzVBvAA=
+    tag: ba7c1e41c6e54d6bf9fd1cd013489ac713fc3153
+    --sha256: 1czyn0whgv7czzgwn5y1zgwlkb9p9sn9z9sc9gixrjprcyc0p15p
 
 package cryptonite
   -- Using RDRAND instead of /dev/urandom as an entropy source for key

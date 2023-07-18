@@ -18,7 +18,7 @@ module Cardano.Faucet (main) where
 
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
-import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress, EnvSocketError(..), ShelleyWitnessSigningKey(WitnessPaymentExtendedKey))
+import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress,  ShelleyWitnessSigningKey(WitnessPaymentExtendedKey), File(File))
 import Cardano.Api.Byron ()
 --import Cardano.CLI.Run.Friendly (friendlyTxBS)
 import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ConwayEra, ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo, UnsupportedNtcVersionError)
@@ -372,12 +372,12 @@ txMonitor FaucetConfigFile{fcfDebug} = LocalTxMonitorClient $ return $ CTxMon.Se
     getNextTx Nothing = do
       return $ CTxMon.SendMsgAwaitAcquire getSnapshot
 
-readEnvSocketPath :: IO (Either EnvSocketError Prelude.String)
+readEnvSocketPath :: IO (Either Text Prelude.String)
 readEnvSocketPath = do
     mEnvName <- lookupEnv envName
     case mEnvName of
       Just sPath -> return $ Right sPath
-      Nothing -> return . Left $ CliEnvVarLookup (Text.pack envName)
+      Nothing -> return . Left $ (Text.pack envName)
   where
     envName :: Prelude.String
     envName = "CARDANO_NODE_SOCKET_PATH"
@@ -399,7 +399,7 @@ main = do
     Right sockPath <- liftIO $ readEnvSocketPath
     let
       localNodeConnInfo :: LocalNodeConnectInfo CardanoMode
-      localNodeConnInfo = LocalNodeConnectInfo defaultCModeParams (fcfNetwork fsConfig) sockPath
+      localNodeConnInfo = LocalNodeConnectInfo defaultCModeParams (fcfNetwork fsConfig) (File sockPath)
 
     liftIO $ connectToLocalNode
       localNodeConnInfo
