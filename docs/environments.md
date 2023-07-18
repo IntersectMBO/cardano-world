@@ -22,32 +22,6 @@ Accountable: SRE Director
 Consulted: Release Manager
 Informed: Cardano Core Tribe
 
-## Shelley-QA (Internal Only)
-
-Usage: Testing all new functionality. Ideally automatically deployed off of master on every commit
-
-Ideally, stays long running to build up history, although the nature of early testing can potentially
-break it. In the past we have disaster recoveried it since we control all the keys.
-
-Upgrade Strategy: Deploy all nodes with every request
-
-Changes Requested by: QA Team
-Approvals Required: SRE Director or SRE Resident Manager
-
-Responsible: SRE
-Accountable: SRE Director/QA Manager
-Consulted: Release Manager
-Informed: QA Team
-
-- [Node Config](environments/shelley-qa/config.json)
-- [DB Sync Config](environments/shelley-qa/db-sync-config.json)
-- [Submit API Config](environments/shelley-qa/submit-api-config.json)
-- [Node Topology](environments/shelley-qa/topology.json)
-- [Byron Genesis](environments/shelley-qa/byron-genesis.json)
-- [Shelley Genesis](environments/shelley-qa/shelley-genesis.json)
-- [Alonzo Genesis](environments/shelley-qa/alonzo-genesis.json)
-- [Conway Genesis](environments/shelley-qa/conway-genesis.json)
-
 ## Sanchonet Testnet
 
 Usage: Testing Conway era functionality.
