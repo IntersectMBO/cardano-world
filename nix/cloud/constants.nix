@@ -6,15 +6,15 @@
 
   mkEnv = {
     name,
+    namespace ? name,
     nodeClass ? "qa",
     scaling ? 3,
     ...
   }@extraConfig: lib.flip lib.recursiveUpdate ({
     ${name} = {
-      inherit nodeClass scaling;
-      namespace = name;
-      domain = "${name}.${baseDomain}";
-    } // extraConfig;
+      inherit namespace nodeClass scaling;
+      domain = "${namespace}.${baseDomain}";
+    } // (builtins.removeAttrs extraConfig ["name"]);
   });
 
   # Metadata
