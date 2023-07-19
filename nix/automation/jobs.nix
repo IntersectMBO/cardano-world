@@ -293,8 +293,13 @@ in {
     name = "create-stake-pools";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_OUTPUT_DIR, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
+      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_OUTPUT_DIR, $POOL_PLEDGE, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
       [ -n "''${DEBUG:-}" ] && set -x
+
+      if [ -z "''${POOL_PLEDGE:-}" ]; do
+        echo "Pool pledge is defaulting to 1 million ADA"
+        POOL_PLEDGE="1000000000000"
+      fi
 
       WITNESSES=$(("$NUM_POOLS" * 2 + 1))
       END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
@@ -370,7 +375,7 @@ in {
           --pool-cost 500000000 \
           --pool-margin 1 \
           --pool-owner-stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
-          --pool-pledge 100000000000000 \
+          --pool-pledge "$POOL_PLEDGE" \
           --single-host-pool-relay "$POOL_RELAY" \
           --pool-relay-port "$POOL_RELAY_PORT" \
           --pool-reward-account-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-0-reward-stake.vkey \
@@ -397,7 +402,7 @@ in {
           --stake-verification-key-file "$STAKE_POOL_OUTPUT_DIR"/sp-"$i"-owner-stake.vkey \
           --testnet-magic "$TESTNET_MAGIC"
         )
-        BUILD_TX_ARGS+=("--tx-out" "$STAKE_POOL_ADDR+100000000000000")
+        BUILD_TX_ARGS+=("--tx-out" "$STAKE_POOL_ADDR+$POOL_PLEDGE")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-owner-registration.cert")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-registration.cert")
         BUILD_TX_ARGS+=("--certificate-file" "sp-$i-owner-delegation.cert")
@@ -429,8 +434,13 @@ in {
     name = "update-stake-pools";
     runtimeInputs = [nixpkgs.jq nixpkgs.coreutils];
     text = ''
-      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
+      # Inputs: $PAYMENT_KEY, $NUM_POOLS, $START_INDEX, $STAKE_POOL_DIR, $POOL_PLEDGE, $POOL_RELAY, $POOL_RELAY_PORT, $SUBMIT_TX, $ERA, $DEBUG
       [ -n "''${DEBUG:-}" ] && set -x
+
+      if [ -z "''${POOL_PLEDGE:-}" ]; do
+        echo "Pool pledge is defaulting to 1 million ADA"
+        POOL_PLEDGE="1000000000000"
+      fi
 
       WITNESSES=$(("$NUM_POOLS" * 2 + 1))
       END_INDEX=$(("$START_INDEX" + "$NUM_POOLS"))
@@ -449,7 +459,7 @@ in {
           --pool-cost 500000000 \
           --pool-margin 1 \
           --pool-owner-stake-verification-key-file "$STAKE_POOL_DIR"/sp-"$i"-owner-stake.vkey \
-          --pool-pledge 100000000000000 \
+          --pool-pledge "$POOL_PLEDGE" \
           --single-host-pool-relay "$POOL_RELAY" \
           --pool-relay-port "$POOL_RELAY_PORT" \
           --pool-reward-account-verification-key-file "$STAKE_POOL_DIR"/sp-0-reward-stake.vkey \
