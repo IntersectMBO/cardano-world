@@ -58,7 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix/shelley-qa-update";
+      url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
