@@ -8,7 +8,6 @@ let
   inherit (cell) packages;
   inherit (packages.project.pkgs) haskell-nix;
   inherit (packages.project.args) compiler-nix-name;
-  inherit (packages.project) index-state;
 
 in
 rec {
@@ -65,7 +64,6 @@ rec {
       #{
       #  package = haskell-nix.tool compiler-nix-name "hlint" {
       #    version = "3.2.7";
-      #    inherit index-state;
       #  };
       #  name = "hlint";
       #  category = "development";
@@ -73,7 +71,6 @@ rec {
       {
         package = haskell-nix.tool compiler-nix-name "ghcid" {
           version = "0.8.7";
-          inherit index-state;
         };
         name = "ghcid";
         category = "development";
@@ -81,7 +78,6 @@ rec {
       #{
       #  package = haskell-nix.tool compiler-nix-name "haskell-language-server" {
       #    version = "1.6.1.1";
-      #    inherit index-state;
       #  };
       #  name = "haskell-language-server";
       #  category = "development";
@@ -89,7 +85,6 @@ rec {
       #{
       #  package = haskell-nix.tool compiler-nix-name "stylish-haskell" {
       #    version = "0.13.0.0";
-      #    inherit index-state;
       #  };
       #  name = "stylish-haskell";
       #  category = "development";

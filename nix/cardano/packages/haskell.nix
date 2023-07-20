@@ -82,6 +82,11 @@ in
         packageNames = builtins.attrNames packagesExes;
       in
       [
+        ({ pkgs, ... }: {
+          # Use the VRF fork of libsodium
+          packages.cardano-crypto-praos.components.library.pkgconfig = lib.mkForce [ [ pkgs.libsodium-vrf ] ];
+          packages.cardano-crypto-class.components.library.pkgconfig = lib.mkForce [ [ pkgs.libsodium-vrf pkgs.secp256k1 ] ];
+        })
         # Allow reinstallation of Win32
         ({ pkgs, ... }: lib.mkIf pkgs.stdenv.hostPlatform.isWindows {
           # When cross compfixesiling we don't have a `ghc` package
@@ -206,7 +211,7 @@ in
           packages =
             let
               # TODO: empty this list:
-              packagesWithWarnings = [ "ouroboros-consensus" ];
+              packagesWithWarnings = [ "ouroboros-consensus" "cardano-cli"];
             in
             lib.genAttrs (lib.subtractLists packagesWithWarnings packageNames)
               (name: { configureFlags = [ "--ghc-option=-Werror" ]; });

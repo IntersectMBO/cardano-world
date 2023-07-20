@@ -4,15 +4,15 @@
 
 module Cardano.Faucet.TxUtils where
 
-import Cardano.Api (Lovelace, IsShelleyBasedEra, ShelleyBasedEra, NetworkId, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(..), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx)
+import Cardano.Api (Lovelace, IsShelleyBasedEra, ShelleyBasedEra, TxIn, TxOut(TxOut), CtxUTxO, TxBody, TxBodyContent(TxBodyContent), Witness(KeyWitness), KeyWitnessInCtx(KeyWitnessForSpending), TxInsCollateral(TxInsCollateralNone), TxInsReference(TxInsReferenceNone), TxTotalCollateral(TxTotalCollateralNone), TxReturnCollateral(TxReturnCollateralNone), TxMetadataInEra(TxMetadataNone), TxAuxScripts(TxAuxScriptsNone), TxExtraKeyWitnesses(TxExtraKeyWitnessesNone), TxWithdrawals(TxWithdrawalsNone), TxCertificates, BuildTxWith(BuildTxWith), TxUpdateProposal(TxUpdateProposalNone), TxMintValue(..), TxScriptValidity(TxScriptValidityNone), shelleyBasedToCardanoEra, Tx, makeShelleyKeyWitness, makeSignedTransaction, AddressAny, TxId, getTxId, BuildTx, ShelleyWitnessSigningKey)
+import Cardano.Api.Shelley (lovelaceToValue, Value, createAndValidateTransactionBody, TxGovernanceActions(TxGovernanceActionsNone), TxVotes(TxVotesNone))
 import Cardano.CLI.Shelley.Run.Transaction
-import Cardano.Api.Shelley (lovelaceToValue, makeTransactionBody, Value)
 import Cardano.CLI.Types
+import Cardano.Faucet.Misc (getValue, faucetValueToLovelace)
 import Cardano.Faucet.Types (FaucetWebError(..), FaucetValue)
 import Cardano.Faucet.Utils
-import Cardano.Faucet.Misc (getValue, faucetValueToLovelace)
 import Cardano.Prelude hiding ((%))
-import Control.Monad.Trans.Except.Extra (firstExceptT, left, hoistEither)
+import Control.Monad.Trans.Except.Extra (left)
 
 getMintedValue :: TxMintValue BuildTx era -> Value
 getMintedValue (TxMintValue _ val _) = val
@@ -65,8 +65,10 @@ txBuild sbe (txin, txout) addressOrOutputs certs minting (Fee fixedFee) = do
     <*> pure TxUpdateProposalNone
     <*> pure minting
     <*> pure TxScriptValidityNone
+    <*> pure TxGovernanceActionsNone
+    <*> pure TxVotesNone
 
-  case makeTransactionBody txBodyContent of
+  case createAndValidateTransactionBody txBodyContent of
     Left err -> left $ FaucetWebErrorTodo $ show err
     Right txbody -> pure txbody
   {-
@@ -112,20 +114,14 @@ txBuild sbe (txin, txout) addressOrOutputs certs minting (Fee fixedFee) = do
   -}
 
 txSign :: IsShelleyBasedEra era
-  => NetworkId
-  -> TxBody era
-  -> [SomeWitness]
+  => TxBody era
+  -> [ShelleyWitnessSigningKey]
   -> ExceptT ShelleyTxCmdError IO (Tx era)
-txSign networkId txBody sks = do
-  let (sksByron, sksShelley) = partitionSomeWitnesses $ map categoriseSomeWitness sks
+txSign txBody sks = do
+  --let (sksByron, sksShelley) = partitionSomeWitnesses $ map categoriseSomeWitness sks
 
-  -- Byron witnesses require the network ID. This can either be provided
-  -- directly or derived from a provided Byron address.
-  byronWitnesses <- firstExceptT (ShelleyTxCmdBootstrapWitnessError) . hoistEither $
-    mkShelleyBootstrapWitnesses (Just networkId) txBody sksByron
-
-  let shelleyKeyWitnesses = map (makeShelleyKeyWitness txBody) sksShelley
-  let tx = makeSignedTransaction (byronWitnesses ++ shelleyKeyWitnesses) txBody
+  let shelleyKeyWitnesses = map (makeShelleyKeyWitness txBody) sks
+  let tx = makeSignedTransaction shelleyKeyWitnesses txBody
 
   return tx
 
@@ -133,18 +129,17 @@ makeAndSignTx :: IsShelleyBasedEra era
   => ShelleyBasedEra era
   -> (TxIn, TxOut CtxUTxO era)
   -> Either AddressAny [TxOutAnyEra]
-  -> NetworkId
-  -> [SomeWitness]
+  -> [ShelleyWitnessSigningKey]
   -> TxCertificates BuildTx era
   -> TxMintValue BuildTx era
   -> Fee
   -> ExceptT FaucetWebError IO (Tx era, TxId)
-makeAndSignTx sbe txinout addressOrOutputs network skeys certs minting fee = do
+makeAndSignTx sbe txinout addressOrOutputs skeys certs minting fee = do
   -- instead of having to specify an output that is exactly equal to input-fees
   -- i specify no outputs, and set the change addr to the end-user
   unsignedTx <- txBuild sbe txinout addressOrOutputs certs minting fee
   let
     txid :: TxId
     txid = getTxId unsignedTx
-  signedTx <- withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ txSign network unsignedTx skeys
+  signedTx <- withExceptT (FaucetWebErrorTodo . renderShelleyTxCmdError) $ txSign unsignedTx skeys
   pure (signedTx, txid)

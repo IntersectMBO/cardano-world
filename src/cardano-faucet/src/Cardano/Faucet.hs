@@ -18,14 +18,11 @@ module Cardano.Faucet (main) where
 
 import Cardano.Address.Derivation (Depth(AccountK), XPrv)
 import Cardano.Address.Style.Shelley (getKey, Shelley)
-import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress)
+import Cardano.Api (TxInMode, CardanoMode, AddressAny, EraInMode, IsShelleyBasedEra, QueryInMode(QueryInEra, QueryCurrentEra), UTxO(unUTxO), QueryUTxOFilter(QueryUTxOByAddress), BlockInMode, ChainPoint, AnyCardanoEra(AnyCardanoEra), CardanoEraStyle(ShelleyBasedEra), LocalNodeConnectInfo(LocalNodeConnectInfo), LocalNodeClientProtocols(LocalNodeClientProtocols, localChainSyncClient, localStateQueryClient, localTxSubmissionClient, localTxMonitoringClient), toEraInMode, ConsensusMode(CardanoMode), QueryInEra(QueryInShelleyBasedEra), QueryInShelleyBasedEra(QueryUTxO, QueryStakeAddresses), LocalStateQueryClient(LocalStateQueryClient), ConsensusModeIsMultiEra(CardanoModeIsMultiEra), cardanoEraStyle, connectToLocalNode, LocalChainSyncClient(NoLocalChainSyncClient), SigningKey(PaymentExtendedSigningKey), getVerificationKey, Lovelace, serialiseAddress,  ShelleyWitnessSigningKey(WitnessPaymentExtendedKey), File(File))
 import Cardano.Api.Byron ()
 --import Cardano.CLI.Run.Friendly (friendlyTxBS)
-import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo)
-import Cardano.CLI.Environment (readEnvSocketPath)
+import Cardano.Api.Shelley (makeStakeAddress, StakeCredential(StakeCredentialByKey), verificationKeyHash, castVerificationKey, SigningKey(StakeExtendedSigningKey), StakeAddress, PoolId, NetworkId, StakeExtendedKey, queryExpr, LocalStateQueryExpr, determineEraExpr, CardanoEra, CardanoEra(ConwayEra, ShelleyEra, AllegraEra, AlonzoEra, MaryEra, BabbageEra, ByronEra), shelleyBasedEra, IsCardanoEra, LocalTxMonitorClient(..), SlotNo, UnsupportedNtcVersionError)
 import Cardano.CLI.Shelley.Run.Address
-import Cardano.CLI.Shelley.Run.Transaction
-import Cardano.CLI.Types
 import Cardano.Faucet.Misc
 import Cardano.Faucet.Types
 import Cardano.Faucet.Utils
@@ -37,6 +34,7 @@ import Data.List.Utils (uniq)
 import Data.Map qualified as Map
 import Data.Map.Merge.Lazy as Map
 import Data.Set qualified as Set
+import Data.Text qualified as Text
 import Formatting ((%), format)
 import Formatting.ShortFormatters hiding (x, b, f, l)
 import Network.Wai.Handler.Warp
@@ -219,13 +217,15 @@ submissionClient dryRun txQueue = Net.Tx.LocalTxSubmissionClient waitForTxAndLoo
           --print result
           waitForTxAndLoop
 
-withEra :: AnyCardanoEra -> (forall era. IsShelleyBasedEra era => CardanoEra era -> a) -> a
-withEra (AnyCardanoEra ByronEra) _ = Prelude.error "byron not supported"
-withEra (AnyCardanoEra AllegraEra) action = action AllegraEra
-withEra (AnyCardanoEra AlonzoEra) action = action AlonzoEra
-withEra (AnyCardanoEra BabbageEra) action = action BabbageEra
-withEra (AnyCardanoEra MaryEra) action = action MaryEra
-withEra (AnyCardanoEra ShelleyEra) action = action ShelleyEra
+withEra :: Either UnsupportedNtcVersionError AnyCardanoEra -> (forall era. IsShelleyBasedEra era => CardanoEra era -> a) -> a
+withEra (Right (AnyCardanoEra ByronEra)) _ = Prelude.error "byron not supported"
+withEra (Right (AnyCardanoEra AllegraEra)) action = action AllegraEra
+withEra (Right (AnyCardanoEra AlonzoEra)) action = action AlonzoEra
+withEra (Right (AnyCardanoEra BabbageEra)) action = action BabbageEra
+withEra (Right (AnyCardanoEra MaryEra)) action = action MaryEra
+withEra (Right (AnyCardanoEra ShelleyEra)) action = action ShelleyEra
+withEra (Right (AnyCardanoEra ConwayEra)) action = action ConwayEra
+withEra (Left _) _ = Prelude.error "withEra ntc error"
 
 queryManyStakeAddr :: forall era mode . IsShelleyBasedEra era => NetworkId -> Maybe (EraInMode era mode) -> [StakeCredential] -> QueryInMode mode (Either EraMismatch (Map StakeAddress Lovelace, Map StakeAddress PoolId))
 queryManyStakeAddr _ Nothing _ = Prelude.error "not handled"
@@ -242,7 +242,7 @@ newFaucetState fsConfig fsTxQueue = do
     addrK = accountKeyToPaymentKey fsAcctKey (fcfAddressIndex fsConfig)
     pay_skey = PaymentExtendedSigningKey $ getKey addrK
     pay_vkey = getVerificationKey pay_skey
-    fsPaymentSkey = APaymentExtendedSigningKey pay_skey
+    fsPaymentSkey = WitnessPaymentExtendedKey pay_skey
     fsPaymentVkey = APaymentExtendedVerificationKey pay_vkey
     fsBucketSizes = findAllSizes fsConfig
     fsNetwork = fcfNetwork fsConfig
@@ -260,11 +260,12 @@ _newQueryClient port config txQueue = do
     _child <- liftIO $ forkIO $ startApiServer era faucetState port
     eUtxoResult <- queryExpr $ getUtxoQuery (fsOwnAddress faucetState) $ toEraInMode era CardanoMode
     case eUtxoResult of
-      Right result -> do
+      Right (Right result) -> do
         let stats = computeUtxoStats (unUTxO result)
         print stats
         liftIO $ atomically $ putTMVar (fsUtxoTMVar faucetState) (unUTxO result)
         putStrLn @Text "utxo set initialized"
+      Right (Left err) -> print err
       Left err -> print err
     case fcfMaxStakeKeyIndex config of
       Just count -> do
@@ -276,7 +277,7 @@ _newQueryClient port config txQueue = do
         eResult <- queryExpr (queryManyStakeAddr (fcfNetwork config) (toEraInMode era CardanoMode) x)
         print eResult
         case eResult of
-          Right result -> do
+          Right (Right result) -> do
             let
               (notRegistered, notDelegated, delegated) = sortStakeKeys result manyStakeKeys
             case fcfDebug config of
@@ -287,6 +288,7 @@ _newQueryClient port config txQueue = do
               False -> do
                 putStrLn $ format (d % " stake keys not registered, " % d % " stake keys registered and ready for use, "%d%" stake keys delegated to pools") (length notRegistered) (length notDelegated) (length delegated)
             liftIO $ atomically $ putTMVar (fsStakeTMVar faucetState) (notDelegated, delegated)
+          Right (Left err) -> print err
           Left err -> print err
       Nothing -> pure ()
     pure ()
@@ -370,6 +372,16 @@ txMonitor FaucetConfigFile{fcfDebug} = LocalTxMonitorClient $ return $ CTxMon.Se
     getNextTx Nothing = do
       return $ CTxMon.SendMsgAwaitAcquire getSnapshot
 
+readEnvSocketPath :: IO (Either Text Prelude.String)
+readEnvSocketPath = do
+    mEnvName <- lookupEnv envName
+    case mEnvName of
+      Just sPath -> return $ Right sPath
+      Nothing -> return . Left $ (Text.pack envName)
+  where
+    envName :: Prelude.String
+    envName = "CARDANO_NODE_SOCKET_PATH"
+
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
@@ -384,10 +396,10 @@ main = do
       port = Prelude.read $ portString
     bar <- unmaybe configFilePath
     fsConfig <- parseConfig bar
-    SocketPath sockPath <- withExceptT FaucetErrorSocketNotFound readEnvSocketPath
+    Right sockPath <- liftIO $ readEnvSocketPath
     let
       localNodeConnInfo :: LocalNodeConnectInfo CardanoMode
-      localNodeConnInfo = LocalNodeConnectInfo defaultCModeParams (fcfNetwork fsConfig) sockPath
+      localNodeConnInfo = LocalNodeConnectInfo defaultCModeParams (fcfNetwork fsConfig) (File sockPath)
 
     liftIO $ connectToLocalNode
       localNodeConnInfo
