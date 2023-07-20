@@ -8521,16 +8521,15 @@
         "sodium": "sodium_5"
       },
       "locked": {
-        "lastModified": 1689297652,
+        "lastModified": 1689811313,
         "narHash": "sha256-ViV2uss0evb7t/g41vmpEvXZUsvf6wNGGs5BrM5b0/k=",
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "79dd98fe6f2f88ddb2d2216a8522a0aa758ac68a",
+        "rev": "7ce47087c4213f28aeb893049290ed7f09845aeb",
         "type": "github"
       },
       "original": {
         "owner": "input-output-hk",
-        "ref": "shelley-qa-update",
         "repo": "iohk-nix",
         "type": "github"
       }
