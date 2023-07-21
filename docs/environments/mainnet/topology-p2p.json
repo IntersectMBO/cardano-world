@@ -15,7 +15,32 @@
         }
       ],
       "advertise": false
+    },
+    {
+      "accessPoints": [
+        {
+          "address": "backbone-01.emurgornd.com",
+          "port": 3001
+        },
+        {
+          "address": "backbone-01.emurgornd.com",
+          "port": 3002
+        },
+        {
+          "address": "backbone-01.emurgornd.com",
+          "port": 3003
+        },
+        {
+          "address": "backbone-01.emurgornd.com",
+          "port": 3004
+        },
+        {
+          "address": "backbone-01.emurgornd.com",
+          "port": 3005
+        }
+      ],
+      "advertise": false
     }
   ],
-  "useLedgerAfterSlot": 84916732
+  "useLedgerAfterSlot": 97804807
 }
