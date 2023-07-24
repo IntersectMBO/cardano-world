@@ -8521,11 +8521,11 @@
         "sodium": "sodium_5"
       },
       "locked": {
-        "lastModified": 1689811313,
-        "narHash": "sha256-ViV2uss0evb7t/g41vmpEvXZUsvf6wNGGs5BrM5b0/k=",
+        "lastModified": 1689951725,
+        "narHash": "sha256-iA3Rm1qdYOm85brH94+GWQ14aj8r0RUcykqEd+wVUIU=",
         "owner": "input-output-hk",
         "repo": "iohk-nix",
-        "rev": "7ce47087c4213f28aeb893049290ed7f09845aeb",
+        "rev": "0ca907c6f63863ad24b950c5e50d976ac788b0d1",
         "type": "github"
       },
       "original": {
