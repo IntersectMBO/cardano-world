@@ -153,8 +153,8 @@ in
                   driver = "docker";
                   kill_signal = "SIGINT";
                   kill_timeout = "30s";
-                  resources.cpu = 2000;
-                  resources.memory = 4096;
+                  resources.cpu = 1000;
+                  resources.memory = 512;
                   vault = {
                     change_mode = "noop";
                     env = true;

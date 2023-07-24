@@ -131,7 +131,7 @@ in {
     data-merge.merge (cardano.nomadCharts.cardano-faucet (
       constants.envs.preview
       // {
-        datacenters = ["eu-central-1"];
+        datacenters = ["us-east-2"];
         inherit jobname;
         scaling = 1;
       }
