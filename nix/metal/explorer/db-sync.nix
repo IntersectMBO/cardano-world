@@ -8,7 +8,35 @@ let
   cardanoNodeConfigPath = builtins.toFile "cardano-node-config.json" (builtins.toJSON nodeCfg.nodeConfig);
 
   environments = pkgs.cardanoLib.environments;
-  environmentConfig = environments.${cfg.environmentName};
+
+  # Required since db-sync still requires legacy byron application parameters.
+  # Issue: https://github.com/input-output-hk/cardano-db-sync/issues/1473
+  #
+  # environmentConfig = environments.${cfg.environmentName}.nodeConfig;
+  #
+  environmentConfig = let
+    inherit
+      (environments.${cfg.environmentName})
+      networkConfig
+      nodeConfig
+      ;
+
+    legacyParams = {
+      ApplicationName = "cardano-sl";
+      ApplicationVersion = if cfg.environmentName == "mainnet" then 1 else 0;
+    };
+
+    networkConfig' = networkConfig // legacyParams;
+    nodeConfig' = nodeConfig // legacyParams;
+    NodeConfigFile' = "${__toFile "config-${cfg.environmentName}.json" (__toJSON nodeConfig')}";
+
+  in lib.recursiveUpdate environments.${cfg.environmentName} {
+    dbSyncConfig.NodeConfigFile = NodeConfigFile';
+    explorerConfig.NodeConfigFile = NodeConfigFile';
+
+    networkConfig = networkConfig';
+    nodeConfig = nodeConfig';
+  };
 
   dbSyncPkgs = self.inputs.explorer-cardano-db-sync.legacyPackages.${cfg.system};
   inherit (dbSyncPkgs) cardano-db-sync cardano-db-tool;
