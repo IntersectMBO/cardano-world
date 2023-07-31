@@ -42,7 +42,7 @@ in nixpkgs.lib.makeOverridable ({ evalSystem ? throw "unreachable" }@args: let
       echo "Using a long running environment as defined by kv (consul & vault) ..." >&2
 
       load_kv_config
-      [ "''${PRODUCER:-}" -eq "1" ] && load_kv_secrets
+      [ "''${PRODUCER:-0}" -eq "1" ] && load_kv_secrets
 
     # CASE: permissioned short running environment
     # Job automation with custom config is an example use of this entrypoint case:
@@ -419,6 +419,19 @@ in {
 
       ${prelude}
       DB_SYNC_CONFIG="$DATA_DIR/config/''${ENVIRONMENT:-custom}/db-sync-config.json"
+
+      # Required since db-sync still requires legacy byron application parameters as of 13.1.1.2.
+      # Issue: https://github.com/input-output-hk/cardano-db-sync/issues/1473
+      #
+      if [ "''${ENVIRONMENT:-custom}" = "mainnet" ]; then
+        BYRON_APP_VER=1
+      else
+        BYRON_APP_VER=0
+      fi
+      jq --arg BYRON_APP_VER "$BYRON_APP_VER" \
+        '. += {"ApplicationName":"cardano-sl","ApplicationVersion":($BYRON_APP_VER | tonumber)}' \
+        < "$NODE_CONFIG" > "$NODE_CONFIG.tmp"
+      mv "$NODE_CONFIG.tmp" "$NODE_CONFIG"
 
       function watch_leader_discovery {
         declare -i PID_TO_SIGNAL="$1"

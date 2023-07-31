@@ -9,7 +9,7 @@ let
 
   environments = pkgs.cardanoLib.environments;
 
-  # Required since db-sync still requires legacy byron application parameters.
+  # Required since db-sync still requires legacy byron application parameters as of 13.1.1.2.
   # Issue: https://github.com/input-output-hk/cardano-db-sync/issues/1473
   #
   # environmentConfig = environments.${cfg.environmentName}.nodeConfig;
