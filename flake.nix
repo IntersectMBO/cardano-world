@@ -69,6 +69,7 @@
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
     cardano-node.url = "github:input-output-hk/cardano-node/8.1.2";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
+    mithril.url = "github:input-output-hk/mithril";
     offchain-metadata-tools = {
       url = "github:input-output-hk/offchain-metadata-tools/pg-cli-mods";
       flake = false;

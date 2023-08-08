@@ -623,6 +623,40 @@ in {
     '';
   };
 
+  mithril-signer = writeShellApplication {
+    runtimeInputs = prelude-runtime ++ [packages.mithril-signer packages.cardano-cli];
+    debugInputs = [packages.cardano-node];
+    name = "entrypoint";
+    text = ''
+
+      ${prelude}
+
+      # Build args array
+      # INFO logs
+      args+=("-vv")
+      if [ -n "''${ENVIRONMENT:-}" ]; then
+        args+=("--configuration-dir" "$DATA_DIR/config/$ENVIRONMENT")
+        args+=("--run-mode" "mithril-signer-config")
+      fi
+
+      # some default env vars config values
+      [ -z "''${CARDANO_CLI_PATH:-}" ] && CARDANO_CLI_PATH="${packages.cardano-cli}/bin/cardano-cli"
+      [ -z "''${DB_DIRECTORY:-}" ] && DB_DIRECTORY="$DATA_DIR/db-''${ENVIRONMENT:-custom}/node"
+      [ -z "''${DATA_STORES_DIRECTORY:-}" ] && DATA_STORES_DIRECTORY="$DATA_DIR/db-''${ENVIRONMENT:-custom}/mithril-signer"
+
+      export CARDANO_CLI_PATH
+      export DB_DIRECTORY
+      export DATA_STORES_DIRECTORY
+
+      while [ ! -S "$CARDANO_NODE_SOCKET_PATH" ]; do
+        echo "Waiting for cardano node socket to become available"
+        sleep 15
+      done
+      echo ${packages.mithril-signer}/bin/mithril-signer "''${args[@]}"
+      exec ${packages.mithril-signer}/bin/mithril-signer "''${args[@]}"
+    '';
+  };
+
   ogmios = writeShellApplication {
     runtimeInputs = prelude-runtime;
     debugInputs = [packages.ogmios];
