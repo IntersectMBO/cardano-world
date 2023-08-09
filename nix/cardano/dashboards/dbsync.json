@@ -24,8 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 14,
-  "iteration": 1662488347343,
+  "id": 5,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -97,7 +96,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.1",
+      "pluginVersion": "9.1.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -194,7 +193,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.1",
+      "pluginVersion": "9.1.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -291,7 +290,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.1",
+      "pluginVersion": "9.1.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -388,7 +387,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.1",
+      "pluginVersion": "9.1.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -485,7 +484,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "9.0.1",
+      "pluginVersion": "9.1.5",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -539,15 +538,214 @@
       "yaxis": {
         "align": false
       }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds}"
+      },
+      "description": "Show explorer topology file size in bytes, if available.",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "hiddenSeries": false,
+      "id": 22,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "expr": "explorer_topology_bytes{namespace=\"$namespace\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{nomad_alloc_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Explorer Topology Size (bytes)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1041",
+          "format": "none",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1042",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${ds}"
+      },
+      "description": "Show explorer topology file modified time in unix epoch timestamp, if available.",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "hiddenSeries": false,
+      "id": 23,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "9.1.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${ds}"
+          },
+          "editorMode": "code",
+          "expr": "explorer_topology_mtime{namespace=\"$namespace\"}",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "{{nomad_alloc_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Explorer Topology Modified Time (TS)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:1041",
+          "format": "none",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:1042",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 36,
+  "schemaVersion": 37,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
+        "current": {
+          "selected": false,
+          "text": "metal-explorer-mainnet",
+          "value": "metal-explorer-mainnet"
+        },
         "datasource": {
           "type": "prometheus",
           "uid": "${ds}"
@@ -573,7 +771,7 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "VictoriaMetrics",
           "value": "VictoriaMetrics"
         },

@@ -377,6 +377,26 @@ in
           description = "{{$labels.alias}}: Consider increasing varnish malloc limit or decreasing beresp.ttl";
         };
       }
+      {
+        alert = "explorer_relay_topology_empty";
+        expr = ''explorer_topology_bytes == 0'';
+        for = "12h";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: The explorer relay topology file is empty";
+          description = "{{$labels.alias}}: The explorer relay topology file has been empty for more than 12 hours";
+        };
+      }
+      {
+        alert = "explorer_relay_topology_not_updated";
+        expr = ''timestamp(explorer_topology_mtime) - explorer_topology_mtime > 12 * 3600'';
+        for = "12h";
+        labels.severity = "page";
+        annotations = {
+          summary = "{{$labels.alias}}: The explorer relay topology file is not being updated";
+          description = "{{$labels.alias}}: The explorer relay topology file has not been updated for more than 1 day";
+        };
+      }
     ];
   };
 }
