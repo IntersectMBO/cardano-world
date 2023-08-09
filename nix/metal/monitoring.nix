@@ -113,6 +113,12 @@ in {
         static_configs = map (attr: mkTarget attr.ip 8080 attr.machine) explorerTargetList;
       }
       {
+        job_name = "explorer-topology";
+        scrape_interval = "60s";
+        metrics_path = "/";
+        static_configs = map (attr: mkTarget attr.ip 8888 attr.machine) explorerTargetList;
+      }
+      {
         job_name = "blackbox-explorer-graphql-healthcheck";
         scrape_interval = "60s";
         metrics_path = "/probe";
