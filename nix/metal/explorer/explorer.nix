@@ -280,6 +280,7 @@ in {
     networking.firewall.extraCommands = ''
       # Allow scrapes for metrics to the private IP from the monitoring server
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 8080 -m comment --comment "dbsync metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 8888 -m comment --comment "explorer topology metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node-exporter metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9113 -m comment --comment "nginx metrics exporter" -j nixos-fw-accept
       iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9131 -m comment --comment "varnish metrics exporter" -j nixos-fw-accept
@@ -292,6 +293,35 @@ in {
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 81 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 9999 -m comment --comment "graphql-engine healthcheck" -j nixos-fw-accept
     '';
+
+    systemd.services.explorer-topology-metrics-exporter = lib.mkIf config.services.nginx.enable {
+      wantedBy = ["multi-user.target"];
+      path = with pkgs; [coreutils netcat];
+      script = ''
+        IP="${privateIP}"
+        PORT=8888
+        FILE="/var/lib/registered-relays-dump/relays/topology.json"
+
+        echo "Serving explorer topology metrics exporter for file $FILE at $IP:$PORT..."
+
+        while true; do
+          MTIME=$(date -r "$FILE" +%s || echo -n "0")
+          BYTES=$(stat -c %s "$FILE" || echo -n "0")
+          MTIME_DESC="# TYPE explorer_topology_mtime gauge"
+          MTIME_SERIES="explorer_topology_mtime $MTIME"
+          SIZE_DESC="# TYPE explorer_topology_bytes gauge"
+          SIZE_SERIES="explorer_topology_bytes $BYTES"
+          echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain; version=0.0.4\r\n\r\n$MTIME_DESC\n$MTIME_SERIES\n$SIZE_DESC\n$SIZE_SERIES" | nc -W 1 -l "$IP" "$PORT"
+          echo "$MTIME_SERIES"
+          echo "$SIZE_SERIES"
+        done
+      '';
+
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = "30s";
+      };
+    };
 
     users.users.dump-registered-relays-topology = {
       isSystemUser = true;
