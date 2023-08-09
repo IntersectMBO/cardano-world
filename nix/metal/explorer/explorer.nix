@@ -331,6 +331,8 @@ in {
     users.groups.dump-registered-relays-topology = {};
 
     systemd.services.dump-registered-relays-topology = lib.mkIf config.services.nginx.enable {
+      wantedBy = ["multi-user.target"];
+      after = ["network-online.target"];
       path = with pkgs; config.environment.systemPackages
         ++ [ config.services.postgresql.package jq netcat curl dnsutils ];
       environment = config.environment.variables;
@@ -466,6 +468,7 @@ in {
         done
       '';
 
+      startLimitIntervalSec = 0;
       serviceConfig = {
         User = "dump-registered-relays-topology";
         # Need for cardano-cli:
@@ -473,7 +476,6 @@ in {
         StateDirectory = "registered-relays-dump";
         Restart = "always";
         RestartSec = "30s";
-        StartLimitBurst = 3;
       };
     };
 
