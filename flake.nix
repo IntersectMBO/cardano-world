@@ -125,7 +125,6 @@
         (inputs.std.data "constants")
         (inputs.std.data "namespaces/infra")
         (inputs.std.data "namespaces/mainnet")
-        (inputs.std.data "namespaces/perf")
         (inputs.std.data "namespaces/preprod")
         (inputs.std.data "namespaces/preview")
         (inputs.std.data "namespaces/private")
@@ -194,7 +193,6 @@
     in {
       infra = mkNomadJobs cloud."namespaces/infra";
       mainnet = mkNomadJobs cloud."namespaces/mainnet";
-      perf = mkNomadJobs cloud."namespaces/perf";
       preprod = mkNomadJobs cloud."namespaces/preprod";
       preview = mkNomadJobs cloud."namespaces/preview";
       private = mkNomadJobs cloud."namespaces/private";

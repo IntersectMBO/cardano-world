@@ -32,10 +32,6 @@ in {
     (mkEnv {
       name = "mainnet";
     })
-    (mkEnv {
-      name = "perf";
-      nodeClass = "perf";
-    })
 
     # Memory for node needs to be adjusted for chain size.
     # Since memory exhausted clients can be CPU under-utilized,

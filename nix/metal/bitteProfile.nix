@@ -75,65 +75,11 @@ in {
         euCentral = attrs: [
           (attrs // {region = "eu-central-1";})
         ];
-
-        perfNodes = attrs: [
-          (attrs
-            // {
-              region = "eu-central-1";
-              desiredCapacity = 18;
-            })
-          (attrs
-            // {
-              region = "eu-central-1";
-              desiredCapacity = 1;
-              instanceType = "m5.4xlarge";
-            })
-          (attrs
-            // {
-              region = "us-east-1";
-              desiredCapacity = 17;
-            })
-          (attrs
-            // {
-              region = "ap-southeast-2";
-              desiredCapacity = 17;
-            })
-        ];
       in
         lib.listToAttrs
         (
           lib.forEach
           (
-            # Perf Nodes
-            (perfNodes {
-              instanceType = "c5.2xlarge";
-              volumeSize = 60;
-              node_class = "perf";
-              maxSize = 20;
-              modules = defaultModules ++ [
-                {
-                  services.zfs-client-options.enableZfsSnapshots = false;
-                  services.nomad.client.meta.perf = "true";
-                }
-              ];
-              securityGroupRules = {
-                inherit (sr) internet internal ssh;
-
-                perf-node = {
-                  from = 30000;
-                  to = 30053;
-                  protocols = ["tcp"];
-                  cidrs = ["0.0.0.0/0"];
-                };
-
-                perf-transport = {
-                  port = 32000;
-                  protocols = ["tcp"];
-                  cidrs = ["0.0.0.0/0"];
-                };
-              };
-            })
-            ++
             # Infra Nodes
             (euCentral {
               instanceType = "t3.2xlarge";
