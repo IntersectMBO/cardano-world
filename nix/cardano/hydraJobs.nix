@@ -9,15 +9,6 @@ let
   inherit (cells.automation.jobs) mkHydraRequiredJob;
   inherit (cell.packages) project nodeProject ogmiosProject;
   baseJobs = {
-    world = {
-      inherit (project) exes checks benchmarks;
-      profiled = lib.genAttrs (lib.optionals (!hostPlatform.isDarwin) [ "cardano-new-faucet" ]) (n:
-        project.exes.${n}.passthru.profiled
-      );
-      internal = {
-        inherit (project) roots plan-nix;
-      };
-    };
     node = {
       inherit (nodeProject) exes checks benchmarks release;
       profiled = lib.genAttrs ([ "locli" ] ++ lib.optionals (!hostPlatform.isDarwin) [ "cardano-node" "tx-generator" ]) (n:

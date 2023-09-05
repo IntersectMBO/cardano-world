@@ -652,7 +652,7 @@ in {
         echo "Waiting for cardano node socket to become available"
         sleep 15
       done
-      exec ${packages.cardano-new-faucet}/bin/cardano-new-faucet
+      exec ${packages.cardano-faucet}/bin/cardano-faucet
     '';
   };
 
