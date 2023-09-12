@@ -122,12 +122,12 @@ in {
 
           middlewares = {
             graphqlRateLimit = {
-               # Apply a 3 minute rate limit window averaging 0.5 requests/second with up to 30 req burst
+               # Apply a 1 minute rate limit window averaging 0.25 requests/second with up to 15 req burst
                # These params should be loose enough to allow typical UI usage while avoiding 429s.
                rateLimit = {
-                 average = 90;
-                 burst = 30;
-                 period = "180s";
+                 average = 15;
+                 burst = 15;
+                 period = "60s";
                };
             };
           };
