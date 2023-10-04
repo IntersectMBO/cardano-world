@@ -196,7 +196,7 @@ in {
           instanceType = "t3a.xlarge";
           privateIP = "172.16.0.20";
           subnet = cluster.vpc.subnets.core-1;
-          volumeSize = 500;
+          volumeSize = 700;
           ebsOptimized = true;
           securityGroupRules = {inherit (sr) internet internal ssh http https;};
           modules = [
