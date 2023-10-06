@@ -68,7 +68,7 @@
     # --- Bridge Heads----------------------------------------------
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
     cardano-faucet.url = "github:input-output-hk/cardano-faucet/node-8.3";
-    cardano-node.url = "github:input-output-hk/cardano-node/8.4.0-pre";
+    cardano-node.url = "github:input-output-hk/cardano-node/8.5.0-pre";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     offchain-metadata-tools = {
       url = "github:input-output-hk/offchain-metadata-tools/pg-cli-mods";
