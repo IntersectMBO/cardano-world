@@ -58,7 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix";
+      url = "github:input-output-hk/iohk-nix/mig-sancho";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
