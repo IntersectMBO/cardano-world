@@ -21,14 +21,14 @@
     "traefik.enable=true"
 
     # Metadata get
-    "traefik.http.routers.${namespace}-metadata.rule=Host(`metadata.world.dev.cardano.org`,`metadata.cardano-testnet.iohkdev.io`) && PathPrefix(`/metadata`) && Method(`GET`,`OPTIONS`)"
+    "traefik.http.routers.${namespace}-metadata.rule=Host(`metadata.world.dev.cardano.org`,`metadata.play.dev.cardano.org`) && PathPrefix(`/metadata`) && Method(`GET`,`OPTIONS`)"
     "traefik.http.routers.${namespace}-metadata.entrypoints=https"
     "traefik.http.routers.${namespace}-metadata.tls=true"
     "traefik.http.routers.${namespace}-metadata.tls.certresolver=acme"
     "traefik.http.routers.${namespace}-metadata.middlewares=${namespace}-metadata-cors-headers"
 
     # Metadata batch
-    "traefik.http.routers.${namespace}-metadata-batch.rule=Host(`metadata.world.dev.cardano.org`,`metadata.cardano-testnet.iohkdev.io`) && PathPrefix(`/metadata/query`) && Method(`POST`,`OPTIONS`)"
+    "traefik.http.routers.${namespace}-metadata-batch.rule=Host(`metadata.world.dev.cardano.org`,`metadata.play.dev.cardano.org`) && PathPrefix(`/metadata/query`) && Method(`POST`,`OPTIONS`)"
     "traefik.http.routers.${namespace}-metadata-batch.entrypoints=https"
     "traefik.http.routers.${namespace}-metadata-batch.tls=true"
     "traefik.http.routers.${namespace}-metadata-batch.tls.certresolver=acme"

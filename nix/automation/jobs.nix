@@ -24,7 +24,7 @@
         --address "$CHANGE_ADDRESS" \
         --testnet-magic "$TESTNET_MAGIC" \
         --out-file /dev/stdout \
-      | jq -r 'to_entries[0] | .key'
+      | jq -r '(to_entries | sort_by(.value.value.lovelace) | reverse)[0].key'
     )
 
     EPOCH=$(

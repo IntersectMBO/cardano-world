@@ -20,7 +20,7 @@
     "traefik.enable=true"
 
     # Metadata webhook
-    "traefik.http.routers.${namespace}-metadata-webhook.rule=Host(`metadata.world.dev.cardano.org`) && PathPrefix(`/webhook`) && Method(`POST`)"
+    "traefik.http.routers.${namespace}-metadata-webhook.rule=Host(`metadata.world.dev.cardano.org`,`metadata.play.dev.cardano.org`) && PathPrefix(`/webhook`) && Method(`POST`)"
     "traefik.http.routers.${namespace}-metadata-webhook.entrypoints=https"
     "traefik.http.routers.${namespace}-metadata-webhook.tls=true"
     "traefik.http.routers.${namespace}-metadata-webhook.tls.certresolver=acme"
