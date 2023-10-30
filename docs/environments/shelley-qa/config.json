@@ -1,12 +1,10 @@
 {
   "AlonzoGenesisFile": "alonzo-genesis.json",
   "AlonzoGenesisHash": "8bedcaea62107d8a79ed5293b0027b3f8706a4bc2422f33380cb1fd01c6fa6ec",
-  "ApplicationName": "cardano-sl",
-  "ApplicationVersion": 0,
   "ByronGenesisFile": "byron-genesis.json",
   "ByronGenesisHash": "273cd12237b98d02f108c9c50063d29a8d1d7f32e9a75ade7cd48e08b3070258",
   "ConwayGenesisFile": "conway-genesis.json",
-  "ConwayGenesisHash": "b9430bf2ed3ae29d7afa07fb08281e652550f613e282d06f32abfefce311f0de",
+  "ConwayGenesisHash": "f7d46bdd3b3c8caf38351c4eef3346a89241707270be0d6106e8a407db294cc6",
   "EnableP2P": true,
   "ExperimentalHardForksEnabled": true,
   "ExperimentalProtocolsEnabled": true,

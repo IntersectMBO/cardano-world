@@ -58,7 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix/mig-sancho";
+      url = "github:input-output-hk/iohk-nix/migrate-to-play";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
