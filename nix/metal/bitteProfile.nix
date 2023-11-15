@@ -102,7 +102,7 @@ in {
             # QA nodes
             (eachRegion {
               instanceType = "t3.2xlarge";
-              desiredCapacity = 6;
+              desiredCapacity = 0;
               volumeSize = 500;
               modules =
                 defaultModules
