@@ -12,6 +12,7 @@ let
     cardano-node
     cardano-wallet
     cardano-db-sync
+    mithril
     ogmios
     cardano-graphql
     offchain-metadata-tools
@@ -27,10 +28,11 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
     (import inputs.nixpkgs-haskell {
       inherit (nixpkgs) system;
       inherit (inputs.haskell-nix) config;
-      overlays = with iohk-nix.overlays; [
+      overlays = [
+        iohk-nix.overlays.crypto
         inputs.haskell-nix.overlay
-        haskell-nix-extra
-        crypto
+        iohk-nix.overlays.haskell-nix-crypto
+        iohk-nix.overlays.haskell-nix-extra
         (final: prev: {
           haskellBuildUtils = prev.haskellBuildUtils.override {
             inherit compiler-nix-name index-state evalSystem;
@@ -81,6 +83,7 @@ in
   inherit (project.exes) cardano-new-faucet;
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;
+  inherit (mithril.packages) mithril-signer mithril-client;
   inherit (cardano-db-sync.packages) cardano-db-sync cardano-db-tool;
   inherit (ogmiosProject.hsPkgs.ogmios.components.exes) ogmios;
   inherit nix-inclusive; # TODO REMOVE

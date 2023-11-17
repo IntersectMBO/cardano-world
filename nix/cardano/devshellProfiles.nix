@@ -51,7 +51,7 @@ rec {
   dev = _: {
     imports = [
       minimal
-      packages.project.devshell
+      (haskell-nix.haskellLib.devshellFor packages.project)
     ];
 
     commands = [
