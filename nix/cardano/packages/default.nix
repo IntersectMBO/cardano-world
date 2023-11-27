@@ -10,6 +10,7 @@ let
     nixpkgs
     iohk-nix
     cardano-node
+    cardano-cli
     cardano-wallet
     cardano-db-sync
     ogmios
@@ -77,7 +78,8 @@ in lib.makeOverridable ({ evalSystem ? nixpkgs.system }: let
 in
 {
   inherit project ogmiosProject;
-  inherit (cardano-node.packages) cardano-node cardano-cli cardano-submit-api cardano-tracer bech32 db-synthesizer db-analyser;
+  inherit (cardano-node.packages) cardano-node cardano-submit-api cardano-tracer bech32 db-synthesizer db-analyser db-truncater;
+  inherit (cardano-cli.legacyPackages) cardano-cli;
   inherit (project.exes) cardano-new-faucet;
   inherit (cardano-wallet.packages) cardano-wallet;
   inherit (cardano-wallet.packages) cardano-address;

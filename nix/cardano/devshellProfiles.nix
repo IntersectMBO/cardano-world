@@ -43,6 +43,11 @@ rec {
         category = "cardano";
       }
       {
+        package = packages.db-truncater;
+        name = "db-truncater";
+        category = "cardano";
+      }
+      {
         package = inputs.cells.automation.jobs.update-cabal-source-repo-checksums;
         category = "nix-build";
       }
