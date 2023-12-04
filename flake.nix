@@ -58,7 +58,7 @@
     };
 
     iohk-nix = {
-      url = "github:input-output-hk/iohk-nix/migrate-to-play";
+      url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
