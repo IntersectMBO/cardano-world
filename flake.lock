@@ -914,6 +914,23 @@
         "type": "github"
       }
     },
+    "blst_7": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1656163412,
+        "narHash": "sha256-xero1aTe2v4IhWIJaEDUsVDOfE77dOV5zKeHWntHogY=",
+        "owner": "supranational",
+        "repo": "blst",
+        "rev": "03b5124029979755c752eec45f3c29674b558446",
+        "type": "github"
+      },
+      "original": {
+        "owner": "supranational",
+        "repo": "blst",
+        "rev": "03b5124029979755c752eec45f3c29674b558446",
+        "type": "github"
+      }
+    },
     "byron-chain": {
       "flake": false,
       "locked": {
@@ -4469,6 +4486,30 @@
         "owner": "input-output-hk",
         "ref": "flake-package",
         "repo": "cardano-rosetta",
+        "type": "github"
+      }
+    },
+    "explorer-iohk-nix": {
+      "inputs": {
+        "blst": "blst_5",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "secp256k1": "secp256k1_5",
+        "sodium": "sodium_5"
+      },
+      "locked": {
+        "lastModified": 1701181091,
+        "narHash": "sha256-UGYNgPdqJzFVENiLCV1wvbRHoaV6FMz1SvHfbEKVWT8=",
+        "owner": "input-output-hk",
+        "repo": "iohk-nix",
+        "rev": "310f8fa6d8ad99e8950c2aaf6f518a59d32f528c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "ref": "migrate-to-play-legacy",
+        "repo": "iohk-nix",
         "type": "github"
       }
     },
@@ -9067,12 +9108,12 @@
     },
     "iohk-nix": {
       "inputs": {
-        "blst": "blst_6",
+        "blst": "blst_7",
         "nixpkgs": [
           "nixpkgs"
         ],
-        "secp256k1": "secp256k1_6",
-        "sodium": "sodium_6"
+        "secp256k1": "secp256k1_7",
+        "sodium": "sodium_7"
       },
       "locked": {
         "lastModified": 1701223254,
@@ -9182,13 +9223,13 @@
     },
     "iohkNix_13": {
       "inputs": {
-        "blst": "blst_5",
+        "blst": "blst_6",
         "nixpkgs": [
           "explorer-ogmios",
           "nixpkgs"
         ],
-        "secp256k1": "secp256k1_5",
-        "sodium": "sodium_5"
+        "secp256k1": "secp256k1_6",
+        "sodium": "sodium_6"
       },
       "locked": {
         "lastModified": 1687951625,
@@ -16340,6 +16381,7 @@
         "explorer-cardano-node": "explorer-cardano-node",
         "explorer-cardano-ops": "explorer-cardano-ops",
         "explorer-cardano-rosetta": "explorer-cardano-rosetta",
+        "explorer-iohk-nix": "explorer-iohk-nix",
         "explorer-ogmios": "explorer-ogmios",
         "flake-compat": "flake-compat_36",
         "hackage": "hackage_15",
@@ -16651,6 +16693,23 @@
         "type": "github"
       }
     },
+    "secp256k1_7": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1683999695,
+        "narHash": "sha256-9nJJVENMXjXEJZzw8DHzin1DkFkF8h9m/c6PuM7Uk4s=",
+        "owner": "bitcoin-core",
+        "repo": "secp256k1",
+        "rev": "acf5c55ae6a94e5ca847e07def40427547876101",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bitcoin-core",
+        "ref": "v0.3.2",
+        "repo": "secp256k1",
+        "type": "github"
+      }
+    },
     "sodium": {
       "flake": false,
       "locked": {
@@ -16737,6 +16796,23 @@
       }
     },
     "sodium_6": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1675156279,
+        "narHash": "sha256-0uRcN5gvMwO7MCXVYnoqG/OmeBFi8qRVnDWJLnBb9+Y=",
+        "owner": "input-output-hk",
+        "repo": "libsodium",
+        "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "libsodium",
+        "rev": "dbb48cce5429cb6585c9034f002568964f1ce567",
+        "type": "github"
+      }
+    },
+    "sodium_7": {
       "flake": false,
       "locked": {
         "lastModified": 1675156279,

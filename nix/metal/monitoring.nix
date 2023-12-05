@@ -1,6 +1,17 @@
-{self, pkgs, lib, config, ...}:
-let
+{
+  self,
+  pkgs,
+  lib,
+  config,
+  etcEncrypted,
+  ...
+}: let
+  inherit (auxConfig.mainnet) explorerActiveBackends;
+
   auxConfig = import ./explorer/aux-config.nix self.inputs;
+
+  # Obtain the explorer name index number
+  explorerNum = backendName: builtins.elemAt (lib.splitString "-" backendName) 1;
 in {
   # No longer effective; needs manual purging until a monitoring PR update
   # services.loki.configuration.table_manager = {
@@ -136,4 +147,43 @@ in {
     ++
     (mkExplorerTargets (map (backend: {ip = config.cluster.awsExtNodes.${backend.name}.privateIP; machine = backend.name;}) explorerActiveBackends))
   );
+
+  networking = {
+    # See the bitte profiles/multicloud/equinix.nix for equinix firewall handling
+    firewall.allowedUDPPorts = lib.mkForce [51820];
+    wireguard = {
+      enable = true;
+      interfaces.wg = {
+        listenPort = 51820;
+        ips = ["192.168.254.100/32"];
+        privateKeyFile = "/etc/wireguard/private.key";
+        peers = (map (backend: {
+          inherit (backend) publicKey;
+          allowedIPs = ["192.168.254.${explorerNum backend.name}/32"];
+          endpoint = "${config.cluster.awsExtNodes.${backend.name}.privateIP}:51820";
+          persistentKeepalive = 30;
+        }) explorerActiveBackends) ++ [
+          # cardano-world explorer gateway
+          # wg pubkey < <(sops -d ../encrypted/wg/explorer-private)
+          {
+            publicKey = "4DEOtdKOu8h284ZwjOsd/cKqSmuQnI+Jy2yiUPxG9B8=";
+            allowedIPs = ["192.168.254.254/32"];
+            endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
+            persistentKeepalive = 30;
+          }
+        ];
+      };
+    };
+  };
+
+  secrets.install.wg-private = {
+    source = "${etcEncrypted}/wg/monitoring-private";
+    target = "/etc/wireguard/private.key";
+    outputType = "binary";
+    extraPackages = [pkgs.wireguard-tools];
+    script = ''
+      chmod 0400 /etc/wireguard/private.key
+      wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
+    '';
+  };
 }

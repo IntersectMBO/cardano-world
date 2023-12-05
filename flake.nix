@@ -111,6 +111,11 @@
       url = "github:input-output-hk/cardano-ops";
       flake = false;
     };
+
+    explorer-iohk-nix = {
+      url = "github:input-output-hk/iohk-nix/migrate-to-play-legacy";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # --------------------------------------------------------------
   };
   outputs = inputs: let

@@ -12,7 +12,8 @@ let
   nodeCfg = config.services.cardano-node;
   ogmiosCfg = config.services.cardano-ogmios;
 
-  environments = pkgs.cardanoLib.environments;
+  cardanoLibExplorer = self.inputs.explorer-iohk-nix.pkgs.cardanoLib;
+  environments = cardanoLibExplorer.environments;
   environmentConfig = environments.${cfg.environmentName};
   auxConfig = import ./aux-config.nix self.inputs;
 
@@ -70,12 +71,41 @@ in {
   };
 
   config = {
-    services.cardano-db-sync.additionalDbUsers = [
-      "cardano-graphql"
-      "smash"
-      "cardano-rosetta-server"
-      "dump-registered-relays-topology"
-    ];
+    services.cardano-db-sync = let
+      environmentConfig = let
+        inherit
+          (environments.${cfg.environmentName})
+          networkConfig
+          nodeConfig
+          ;
+
+        legacyParams = {
+          ApplicationName = "cardano-sl";
+          ApplicationVersion = if cfg.environmentName == "mainnet" then 1 else 0;
+        };
+
+        networkConfig' = networkConfig // legacyParams;
+        nodeConfig' = nodeConfig // legacyParams;
+        NodeConfigFile' = "${__toFile "config-${cfg.environmentName}.json" (__toJSON nodeConfig')}";
+
+      in lib.recursiveUpdate environments.${cfg.environmentName} {
+        dbSyncConfig.NodeConfigFile = NodeConfigFile';
+        explorerConfig.NodeConfigFile = NodeConfigFile';
+
+        networkConfig = networkConfig';
+        nodeConfig = nodeConfig';
+      };
+    in {
+      additionalDbUsers = [
+        "cardano-graphql"
+        "smash"
+        "cardano-rosetta-server"
+        "dump-registered-relays-topology"
+      ];
+
+      environment = environmentConfig;
+      explorerConfig = environmentConfig.dbSyncConfig;
+    };
 
     services.varnish = {
       enable = true;
@@ -148,6 +178,11 @@ in {
       '';
     };
 
+    services.cardano-node = {
+      environments.${cfg.environmentName} = environmentConfig;
+      nodeConfig = environmentConfig.nodeConfig;
+    };
+
     services.cardano-ogmios = {
       enable = true;
       nodeConfig = cardanoNodeConfigPath;
@@ -190,7 +225,7 @@ in {
     services.cardano-rosetta-server = {
       enable = true;
       package = rosettaPkgs.cardano-rosetta-server;
-      topologyFilePath = pkgs.cardanoLib.mkEdgeTopology {
+      topologyFilePath = cardanoLibExplorer.mkEdgeTopology {
         edgeNodes = map (p: p.addr) nodeCfg.producers;
         port = nodeCfg.port;
       };

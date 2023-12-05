@@ -7,6 +7,7 @@ name: environmentName: {
   ...
 }: let
   inherit (auxConfig.${environmentName}) explorerActiveBackends;
+  inherit (config.cluster) domain;
   auxConfig = import ./aux-config.nix self.inputs;
 
   # Obtain the explorer name index number
@@ -22,12 +23,21 @@ in {
         # There should be only 1 traefik gateway per explorer environment, so we can fix this ip
         ips = ["192.168.254.254/32"];
         privateKeyFile = "/etc/wireguard/private.key";
-        peers = map (backend: {
+        peers = (map (backend: {
           inherit (backend) publicKey;
           allowedIPs = ["192.168.254.${explorerNum backend.name}/32"];
           endpoint = "${config.cluster.awsExtNodes.${backend.name}.privateIP}:51820";
           persistentKeepalive = 30;
-        }) explorerActiveBackends;
+        }) explorerActiveBackends) ++ [
+          # cardano-world monitoring server
+          # wg pubkey < <(sops -d ../encrypted/wg/monitoring-private)
+          {
+            publicKey = "nIxaHgQhzVfh1U/ZgwHdhcDczNJEbHEXWXVAo3EyOWE=";
+            allowedIPs = ["192.168.254.100/32"];
+            endpoint = "monitoring.${domain}:51820";
+            persistentKeepalive = 30;
+          }
+        ];
       };
     };
   };
