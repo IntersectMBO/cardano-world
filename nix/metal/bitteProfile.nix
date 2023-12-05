@@ -25,10 +25,6 @@ in {
         http
         https
         routing
-        ziti-controller-mgmt
-        ziti-controller-rest
-        ziti-router-edge
-        ziti-router-fabric
         ;
     };
 
@@ -73,7 +69,7 @@ in {
             # Infra Nodes
             (euCentral {
               instanceType = "t3.2xlarge";
-              desiredCapacity = 3;
+              desiredCapacity = 0;
               volumeSize = 500;
               modules =
                 defaultModules
@@ -143,7 +139,7 @@ in {
 
       instances = {
         core-1 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.0.10";
           subnet = cluster.vpc.subnets.core-1;
           volumeSize = 100;
@@ -157,7 +153,7 @@ in {
         };
 
         core-2 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.1.10";
           subnet = cluster.vpc.subnets.core-2;
           volumeSize = 100;
@@ -170,7 +166,7 @@ in {
         };
 
         core-3 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.2.10";
           subnet = cluster.vpc.subnets.core-3;
           volumeSize = 100;
@@ -183,7 +179,7 @@ in {
         };
 
         monitoring = {
-          instanceType = "t3a.xlarge";
+          instanceType = "t3a.medium";
 
           privateIP = "172.16.0.20";
           subnet = cluster.vpc.subnets.core-1;
@@ -242,52 +238,6 @@ in {
               };
             }
           ];
-        };
-
-        # GlusterFS storage nodes
-        storage-0 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.0.30";
-          subnet = config.cluster.vpc.subnets.core-1;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        storage-1 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.1.30";
-          subnet = config.cluster.vpc.subnets.core-2;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        storage-2 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.2.30";
-          subnet = config.cluster.vpc.subnets.core-3;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
         };
       };
 
