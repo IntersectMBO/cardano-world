@@ -32,7 +32,6 @@
       flake = false;
     };
 
-    openziti.url = "github:johnalotoski/openziti-bins/large-tcp";
     deploy-rs.url = "github:serokell/deploy-rs";
     # --------------------------------------------------------------
 
@@ -67,7 +66,8 @@
 
     # --- Bridge Heads----------------------------------------------
     cardano-db-sync.url = "github:input-output-hk/cardano-db-sync/13.0.4";
-    cardano-node.url = "github:input-output-hk/cardano-node/8.1.2";
+    cardano-faucet.url = "github:input-output-hk/cardano-faucet/node-8.3";
+    cardano-node.url = "github:input-output-hk/cardano-node/8.5.0-pre";
     cardano-wallet.url = "github:input-output-hk/cardano-wallet/v2022-07-01";
     offchain-metadata-tools = {
       url = "github:input-output-hk/offchain-metadata-tools/pg-cli-mods";
@@ -109,6 +109,11 @@
     explorer-cardano-ops = {
       url = "github:input-output-hk/cardano-ops";
       flake = false;
+    };
+
+    explorer-iohk-nix = {
+      url = "github:input-output-hk/iohk-nix/migrate-to-play-legacy";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     # --------------------------------------------------------------
   };

@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) openziti nixpkgs;
+  inherit (inputs) nixpkgs;
 in {
   default = {
     self,
@@ -25,10 +25,6 @@ in {
         http
         https
         routing
-        ziti-controller-mgmt
-        ziti-controller-rest
-        ziti-router-edge
-        ziti-router-fabric
         ;
     };
 
@@ -52,16 +48,6 @@ in {
       flakePath = "${inputs.self}";
       vbkBackend = "local";
       infraType = "awsExt";
-      transitGateway = {
-        enable = true;
-        transitRoutes = [
-          # Equinix, cardano project
-          {
-            gatewayCoreNodeName = "zt";
-            cidrRange = "10.12.171.0/24";
-          }
-        ];
-      };
 
       autoscalingGroups = let
         defaultModules = [(bitte + "/profiles/client.nix")];
@@ -83,7 +69,7 @@ in {
             # Infra Nodes
             (euCentral {
               instanceType = "t3.2xlarge";
-              desiredCapacity = 3;
+              desiredCapacity = 0;
               volumeSize = 500;
               modules =
                 defaultModules
@@ -153,7 +139,7 @@ in {
 
       instances = {
         core-1 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.0.10";
           subnet = cluster.vpc.subnets.core-1;
           volumeSize = 100;
@@ -167,7 +153,7 @@ in {
         };
 
         core-2 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.1.10";
           subnet = cluster.vpc.subnets.core-2;
           volumeSize = 100;
@@ -180,7 +166,7 @@ in {
         };
 
         core-3 = {
-          instanceType = "r5.xlarge";
+          instanceType = "t3a.medium";
           privateIP = "172.16.2.10";
           subnet = cluster.vpc.subnets.core-3;
           volumeSize = 100;
@@ -193,12 +179,13 @@ in {
         };
 
         monitoring = {
-          instanceType = "t3a.xlarge";
+          instanceType = "t3a.medium";
+
           privateIP = "172.16.0.20";
           subnet = cluster.vpc.subnets.core-1;
           volumeSize = 700;
           ebsOptimized = true;
-          securityGroupRules = {inherit (sr) internet internal ssh http https;};
+          securityGroupRules = {inherit (sr) internet internal ssh http https;} // {wireguard = {cidrs = ["0.0.0.0/0"]; port = 51820; protocols = ["udp"];};};
           modules = [
             (bitte + /profiles/monitoring.nix)
             ./monitoring.nix
@@ -252,87 +239,6 @@ in {
             }
           ];
         };
-
-        # GlusterFS storage nodes
-        storage-0 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.0.30";
-          subnet = config.cluster.vpc.subnets.core-1;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        storage-1 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.1.30";
-          subnet = config.cluster.vpc.subnets.core-2;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        storage-2 = {
-          instanceType = "t3a.small";
-          privateIP = "172.16.2.30";
-          subnet = config.cluster.vpc.subnets.core-3;
-          volumeSize = 40;
-          modules = [(bitte + /profiles/storage.nix)];
-          securityGroupRules = {inherit (sr) internal internet ssh;};
-          ebsVolume = {
-            iops = 3000; # 3000..16000
-            size = 500; # GiB
-            type = "gp3";
-            throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        zt = {
-          # https://support.netfoundry.io/hc/en-us/articles/360025875331-Edge-Router-VM-Sizing-Guide
-          instanceType = "c5.large";
-          privateIP = "172.16.0.100";
-          subnet = cluster.vpc.subnets.core-1;
-          volumeSize = 100;
-          route53.domains = ["zt.${cluster.domain}"];
-          sourceDestCheck = false;
-
-          modules = [
-            inputs.bitte.profiles.common
-            inputs.bitte.profiles.consul-common
-            inputs.bitte.profiles.vault-cache
-            openziti.nixosModules.ziti-controller
-            openziti.nixosModules.ziti-router
-            openziti.nixosModules.ziti-console
-            openziti.nixosModules.ziti-edge-tunnel
-            ./ziti.nix
-            ./ziti-register.nix
-          ];
-
-          securityGroupRules = {
-            inherit
-              (sr)
-              internal
-              internet
-              ssh
-              ziti-controller-mgmt
-              ziti-controller-rest
-              ziti-router-edge
-              ziti-router-fabric
-              ;
-          };
-        };
       };
 
       awsExtNodes = let
@@ -362,11 +268,11 @@ in {
           ;
       in {
         # Traefik explorer gateway
-        explorer = mkExplorerGateway "explorer" "10.12.171.133" "mainnet" {};
+        explorer = mkExplorerGateway "explorer" "10.12.171.133" "192.168.254.254" "mainnet" {};
 
         # Explorer backends
-        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
-        explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
+        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "192.168.254.1" "mainnet" {};
+        explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "192.168.254.2" "mainnet" {};
       };
     };
   };

@@ -1,4 +1,4 @@
-privateIP: {self, pkgs, config, lib, ...}:
+privateIP: wgIP: {self, pkgs, config, lib, ...}:
 let
   inherit (lib) mkDefault mkIf mkOption types;
 
@@ -89,7 +89,7 @@ in
       nodeConfig = environmentConfig.nodeConfig;
 
       extraNodeConfig = {
-        hasPrometheus = [ privateIP cardanoNodePrometheusExporterPort ];
+        hasPrometheus = [ wgIP cardanoNodePrometheusExporterPort ];
 
         # The maximum number of used peers when fetching newly forged blocks:
         MaxConcurrencyDeadline = 4;

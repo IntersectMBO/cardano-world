@@ -6,8 +6,7 @@ name: environmentName: {
   etcEncrypted,
   ...
 }: let
-  inherit (config.services.cardano-node) system;
-  inherit (pkgs.cardanoLib.environments.${environmentName}) domain;
+  inherit (config.cluster) domain;
 
   # Obtain the explorer name index number
   explorerNum = builtins.elemAt (lib.splitString "-" name) 1;
@@ -28,6 +27,14 @@ in {
             publicKey = "4DEOtdKOu8h284ZwjOsd/cKqSmuQnI+Jy2yiUPxG9B8=";
             allowedIPs = ["192.168.254.254/32"];
             endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
+            persistentKeepalive = 30;
+          }
+          # cardano-world monitoring server
+          # wg pubkey < <(sops -d ../encrypted/wg/monitoring-private)
+          {
+            publicKey = "nIxaHgQhzVfh1U/ZgwHdhcDczNJEbHEXWXVAo3EyOWE=";
+            allowedIPs = ["192.168.254.100/32"];
+            endpoint = "monitoring-wg.${domain}:51820";
             persistentKeepalive = 30;
           }
         ];

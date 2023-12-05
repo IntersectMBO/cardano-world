@@ -103,7 +103,7 @@ in {
     name = "registry.ci.iog.io/cardano-faucet";
     maxLayers = 25;
     layers = [
-      (n2c.buildLayer {deps = [packages.cardano-new-faucet];})
+      (n2c.buildLayer {deps = [packages.cardano-faucet];})
     ];
     copyToRoot = [nixpkgs.bashInteractive];
     config.Cmd = [

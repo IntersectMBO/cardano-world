@@ -24,7 +24,6 @@ in {
       name = "cardano";
       adminNames = [
         "samuel.leathers"
-        "david.arnold"
         "john.lotoski"
       ];
       developerGithubNames = [];

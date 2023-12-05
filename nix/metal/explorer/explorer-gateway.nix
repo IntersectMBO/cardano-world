@@ -1,4 +1,4 @@
-name: environmentName: privateIP: {
+name: environmentName: wgIP: {
   self,
   pkgs,
   lib,
@@ -41,8 +41,7 @@ in {
         allowedTCPPorts = lib.mkForce [80 443];
         extraCommands = ''
           # Allow scrapes for metrics to the private IP from the monitoring server
-          iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node-exporter metrics exporter" -j nixos-fw-accept
-          iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9586 -m comment --comment "wireguard metrics exporter" -j nixos-fw-accept
+          iptables -A nixos-fw -s 192.168.254.100 -p tcp -m comment --comment "accept monitoring server traffic" -j nixos-fw-accept
         '';
       };
     };
@@ -198,7 +197,7 @@ in {
       # Firewall handling is done in the networking.firewall.extraCommands block above
       node = {
         enable = true;
-        listenAddress = privateIP;
+        listenAddress = wgIP;
         port = 9100;
         enabledCollectors = [
           "bonding"
@@ -231,9 +230,11 @@ in {
 
       wireguard = {
         enable = true;
-        listenAddress = privateIP;
+        listenAddress = wgIP;
         port = 9586;
       };
     };
+
+    services.telegraf.extraConfig.outputs.influxdb.urls = ["http://192.168.254.100:8428"];
   };
 }
