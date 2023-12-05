@@ -1,6 +1,6 @@
 self: config:
 let
-  inherit (self.inputs) bitte nixpkgs openziti;
+  inherit (self.inputs) bitte nixpkgs;
   inherit (nixpkgs) lib;
 in rec {
   deployType = "awsExt";
@@ -30,17 +30,15 @@ in rec {
     (bitte + /profiles/client.nix)
     (bitte + /profiles/multicloud/aws-extended.nix)
     (bitte + /profiles/multicloud/equinix.nix)
-    openziti.nixosModules.ziti-edge-tunnel
     ({
       pkgs,
       lib,
       config,
       ...
     }: {
-      services.ziti-edge-tunnel.enable = true;
-
-      # Temporarily disable nomad to avoid conflict with buildkite resource consumption.
+      # Disable nomad and consul with switch from zt to wg
       services.nomad.enable = lib.mkForce false;
+      services.consul.enable = lib.mkForce false;
 
       # Disable gluster
       services.glusterfs.enable = false;
@@ -67,11 +65,11 @@ in rec {
     })
   ];
 
-  baseExplorerModuleConfig = name: privateIP: environmentName: [
+  baseExplorerModuleConfig = name: privateIP: wgIP: environmentName: [
     (bitte + /modules/zfs-client-options.nix)
     (import ./explorer/wireguard.nix name environmentName)
-    (import ./explorer/explorer.nix name privateIP)
-    (import ./explorer/base-service.nix privateIP)
+    (import ./explorer/explorer.nix name wgIP)
+    (import ./explorer/base-service.nix privateIP wgIP)
     ./explorer/db-sync.nix
     ({pkgs, config, ...}: {
       services.cardano-node = let
@@ -106,7 +104,7 @@ in rec {
     })
   ];
 
-  mkExplorer = name: privateIP: environmentName: extra: lib.mkMerge [
+  mkExplorer = name: privateIP: wgIP: environmentName: extra: lib.mkMerge [
     {
       inherit deployType node_class primaryInterface role privateIP;
       equinix = {
@@ -117,14 +115,14 @@ in rec {
       modules =
         baseEquinixModuleConfig
         ++ (baseEquinixMachineConfig name)
-        ++ (baseExplorerModuleConfig name privateIP environmentName);
+        ++ (baseExplorerModuleConfig name privateIP wgIP environmentName);
     }
     extra
   ];
 
-  baseExplorerGatewayModuleConfig = name: privateIP: environmentName: [
+  baseExplorerGatewayModuleConfig = name: wgIP: environmentName: [
     (bitte + /modules/zfs-client-options.nix)
-    (import ./explorer/explorer-gateway.nix name environmentName privateIP)
+    (import ./explorer/explorer-gateway.nix name environmentName wgIP)
     (import ./explorer/wireguard-gateway.nix name environmentName)
     ({pkgs, config, ...}: {
       services.zfs-client-options = {
@@ -134,7 +132,7 @@ in rec {
     })
   ];
 
-  mkExplorerGateway = name: privateIP: environmentName: extra: lib.mkMerge [
+  mkExplorerGateway = name: privateIP: wgIP: environmentName: extra: lib.mkMerge [
     {
       inherit deployType node_class primaryInterface role privateIP;
       equinix = {
@@ -146,7 +144,7 @@ in rec {
       modules =
         baseEquinixModuleConfig
         ++ (baseEquinixMachineConfig name)
-        ++ (baseExplorerGatewayModuleConfig name privateIP environmentName);
+        ++ (baseExplorerGatewayModuleConfig name wgIP environmentName);
     }
     extra
   ];

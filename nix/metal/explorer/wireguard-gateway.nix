@@ -34,7 +34,7 @@ in {
           {
             publicKey = "nIxaHgQhzVfh1U/ZgwHdhcDczNJEbHEXWXVAo3EyOWE=";
             allowedIPs = ["192.168.254.100/32"];
-            endpoint = "monitoring.${domain}:51820";
+            endpoint = "monitoring-wg.${domain}:51820";
             persistentKeepalive = 30;
           }
         ];

@@ -19,8 +19,8 @@ in
     # WG_PUBKEY: wg pubkey < <(sops -d nix/metal/encrypted/wg/$AWS_EXT_NODES_NODENAME-private)
     # Attr struct: {name = $AWS_EXT_NODES_NODENAME; publicKey = $WG_PUBKEY;}
     explorerActiveBackends = [
-      {name = "explorer-1"; publicKey = "81yzO/clOEPyRiBXNfVIEQqdcr/QrnA5fhIEJym3MxI=";}
-      {name = "explorer-2"; publicKey = "qs1gZ5UY+u00byONElCW7bZ37Kxt6+pr865cN+bhBnI=";}
+      {name = "explorer-1"; publicKey = "81yzO/clOEPyRiBXNfVIEQqdcr/QrnA5fhIEJym3MxI="; wgIp = "192.168.254.1";}
+      {name = "explorer-2"; publicKey = "qs1gZ5UY+u00byONElCW7bZ37Kxt6+pr865cN+bhBnI="; wgIp = "192.168.254.2";}
     ];
 
     explorerRosettaActiveBackends = [

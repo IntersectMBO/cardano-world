@@ -363,11 +363,11 @@ in {
           ;
       in {
         # Traefik explorer gateway
-        explorer = mkExplorerGateway "explorer" "10.12.171.133" "mainnet" {};
+        explorer = mkExplorerGateway "explorer" "10.12.171.133" "192.168.254.254" "mainnet" {};
 
         # Explorer backends
-        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "mainnet" {};
-        explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "mainnet" {};
+        explorer-1 = mkExplorer "explorer-1" "10.12.171.129" "192.168.254.1" "mainnet" {};
+        explorer-2 = mkExplorer "explorer-2" "10.12.171.131" "192.168.254.2" "mainnet" {};
       };
     };
   };

@@ -1,4 +1,4 @@
-name: privateIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
+name: wgIP: {self, pkgs, config, lib, etcEncrypted, options, ...}:
 let
   inherit (lib) mkOption types;
 
@@ -314,14 +314,7 @@ in {
 
     networking.firewall.extraCommands = ''
       # Allow scrapes for metrics to the private IP from the monitoring server
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 8080 -m comment --comment "dbsync metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 8888 -m comment --comment "explorer topology metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9100 -m comment --comment "node-exporter metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9113 -m comment --comment "nginx metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9131 -m comment --comment "varnish metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9586 -m comment --comment "wireguard metrics exporter" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 9999 -m comment --comment "graphql-engine healthcheck" -j nixos-fw-accept
-      iptables -A nixos-fw -d ${privateIP}/32 -p tcp --dport 12798 -m comment --comment "node metrics exporter" -j nixos-fw-accept
+      iptables -A nixos-fw -s 192.168.254.100 -p tcp -m comment --comment "accept monitoring server traffic" -j nixos-fw-accept
 
       # Accept this environment cluster explorer gateway's requests over wireguard
       iptables -A nixos-fw -s 192.168.254.254/32 -p tcp --dport 80 -m comment --comment "upstream nginx proxypass" -j nixos-fw-accept
@@ -333,7 +326,7 @@ in {
       wantedBy = ["multi-user.target"];
       path = with pkgs; [coreutils netcat];
       script = ''
-        IP="${privateIP}"
+        IP="${wgIP}"
         PORT=8888
         FILE="/var/lib/registered-relays-dump/relays/topology.json"
 
@@ -527,7 +520,7 @@ in {
       appendHttpConfig = ''
         vhost_traffic_status_zone;
         server {
-          listen ${privateIP}:9113;
+          listen ${wgIP}:9113;
           location /status {
             vhost_traffic_status_display;
             vhost_traffic_status_display_format html;
@@ -828,7 +821,7 @@ in {
       # Firewall handling is done in the networking.firewall.extraCommands block above
       node = {
         enable = true;
-        listenAddress = privateIP;
+        listenAddress = wgIP;
         port = 9100;
         enabledCollectors = [
           "bonding"
@@ -863,7 +856,7 @@ in {
 
       varnish = {
         enable = true;
-        listenAddress = privateIP;
+        listenAddress = wgIP;
         port = 9131;
         group = "varnish";
         instance = "/var/spool/varnish/${name}";
@@ -871,10 +864,12 @@ in {
 
       wireguard = {
         enable = true;
-        listenAddress = privateIP;
+        listenAddress = wgIP;
         port = 9586;
       };
     };
+
+    services.telegraf.extraConfig.outputs.influxdb.urls = ["http://192.168.254.100:8428"];
 
     secrets.install.explorer = lib.mkIf isSops {
       source = "${etcEncrypted}/explorer.json";

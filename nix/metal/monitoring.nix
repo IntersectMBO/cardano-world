@@ -142,10 +142,10 @@ in {
     inherit (auxConfig.${environment}) explorerActiveBackends;
   in (
     (mkExplorerGatewayTargets [
-      {ip = config.cluster.awsExtNodes.explorer.privateIP; machine = "explorer";}
+      {ip = "192.168.254.254"; machine = "explorer";}
     ])
     ++
-    (mkExplorerTargets (map (backend: {ip = config.cluster.awsExtNodes.${backend.name}.privateIP; machine = backend.name;}) explorerActiveBackends))
+    (mkExplorerTargets (map (backend: {ip = backend.wgIp; machine = backend.name;}) explorerActiveBackends))
   );
 
   networking = {
@@ -160,7 +160,6 @@ in {
         peers = (map (backend: {
           inherit (backend) publicKey;
           allowedIPs = ["192.168.254.${explorerNum backend.name}/32"];
-          endpoint = "${config.cluster.awsExtNodes.${backend.name}.privateIP}:51820";
           persistentKeepalive = 30;
         }) explorerActiveBackends) ++ [
           # cardano-world explorer gateway
@@ -168,7 +167,6 @@ in {
           {
             publicKey = "4DEOtdKOu8h284ZwjOsd/cKqSmuQnI+Jy2yiUPxG9B8=";
             allowedIPs = ["192.168.254.254/32"];
-            endpoint = "${config.cluster.awsExtNodes.explorer.privateIP}:51820";
             persistentKeepalive = 30;
           }
         ];
