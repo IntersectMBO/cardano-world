@@ -2,7 +2,7 @@
   inputs,
   cell,
 }: let
-  inherit (inputs) openziti nixpkgs;
+  inherit (inputs) nixpkgs;
 in {
   default = {
     self,
@@ -52,16 +52,6 @@ in {
       flakePath = "${inputs.self}";
       vbkBackend = "local";
       infraType = "awsExt";
-      transitGateway = {
-        enable = true;
-        transitRoutes = [
-          # Equinix, cardano project
-          {
-            gatewayCoreNodeName = "zt";
-            cidrRange = "10.12.171.0/24";
-          }
-        ];
-      };
 
       autoscalingGroups = let
         defaultModules = [(bitte + "/profiles/client.nix")];
@@ -297,41 +287,6 @@ in {
             size = 500; # GiB
             type = "gp3";
             throughput = 125; # 125..1000 MiB/s
-          };
-        };
-
-        zt = {
-          # https://support.netfoundry.io/hc/en-us/articles/360025875331-Edge-Router-VM-Sizing-Guide
-          instanceType = "c5.large";
-          privateIP = "172.16.0.100";
-          subnet = cluster.vpc.subnets.core-1;
-          volumeSize = 100;
-          route53.domains = ["zt.${cluster.domain}"];
-          sourceDestCheck = false;
-
-          modules = [
-            inputs.bitte.profiles.common
-            inputs.bitte.profiles.consul-common
-            inputs.bitte.profiles.vault-cache
-            openziti.nixosModules.ziti-controller
-            openziti.nixosModules.ziti-router
-            openziti.nixosModules.ziti-console
-            openziti.nixosModules.ziti-edge-tunnel
-            ./ziti.nix
-            ./ziti-register.nix
-          ];
-
-          securityGroupRules = {
-            inherit
-              (sr)
-              internal
-              internet
-              ssh
-              ziti-controller-mgmt
-              ziti-controller-rest
-              ziti-router-edge
-              ziti-router-fabric
-              ;
           };
         };
       };
