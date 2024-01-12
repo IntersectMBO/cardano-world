@@ -457,7 +457,7 @@ in {
           wait
           if test -n "$(find . -maxdepth 1 -name '*-relay.json' -print -quit)"; then
             echo "Found a total of $(find . -name '*-relay.json' -printf '.' | wc -m) relays to include in topology.json"
-            find . -name '*-relay.json' -printf '%f\t%p\n' | sort -k1 -n | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 cat \
+            find . -name '*-relay.json' -printf '%f\t%p\n' | shuf | cut -d$'\t' -f2 | tr '\n' '\0' | xargs -r0 cat \
               | jq -n '. + [inputs]' | jq '{ Producers : . }' > topology.json
             mkdir -p relays
             mv topology.json relays/topology.json
