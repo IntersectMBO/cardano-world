@@ -4345,15 +4345,16 @@
     "explorer-cardano-explorer-app": {
       "flake": false,
       "locked": {
-        "lastModified": 1670416521,
-        "narHash": "sha256-MDD/3bafYnylfAIjVqhMKGKDcba9Pquras3BIIk/Mz4=",
-        "owner": "input-output-hk",
+        "lastModified": 1706289771,
+        "narHash": "sha256-J/pIpDQzy+n2DPyd7RKfnymCV24CU+l750IQJTwCEh4=",
+        "owner": "cardano-foundation",
         "repo": "cardano-explorer-app",
-        "rev": "4b058ce929efa991b4a0d0e1133f77f4bf676c1b",
+        "rev": "0f4f142534b2ce13dc38fb5826aab21ae67cbd35",
         "type": "github"
       },
       "original": {
-        "owner": "input-output-hk",
+        "owner": "cardano-foundation",
+        "ref": "sunset",
         "repo": "cardano-explorer-app",
         "type": "github"
       }

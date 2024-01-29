@@ -223,7 +223,7 @@ in {
     };
 
     services.cardano-rosetta-server = {
-      enable = true;
+      enable = false;
       package = rosettaPkgs.cardano-rosetta-server;
       topologyFilePath = cardanoLibExplorer.mkEdgeTopology {
         edgeNodes = map (p: p.addr) nodeCfg.producers;
@@ -259,10 +259,11 @@ in {
       SupplementaryGroups = "cardano-node";
     };
 
-    systemd.services.cardano-rosetta-server.serviceConfig = {
-      DynamicUser = true;
-      SupplementaryGroups = "cardano-node";
-    };
+    # Disable these extra systemd declarations as rosetta is set false for sunset
+    # systemd.services.cardano-rosetta-server.serviceConfig = {
+    #   DynamicUser = true;
+    #   SupplementaryGroups = "cardano-node";
+    # };
 
     systemd.services.cardano-graphql = {
       environment = {

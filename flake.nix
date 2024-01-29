@@ -96,7 +96,7 @@
     explorer-cardano-node.url = "github:input-output-hk/cardano-node/8.1.1";
 
     explorer-cardano-explorer-app = {
-      url = "github:input-output-hk/cardano-explorer-app";
+      url = "github:cardano-foundation/cardano-explorer-app/sunset";
       flake = false;
     };
 
