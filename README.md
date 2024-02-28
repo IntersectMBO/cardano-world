@@ -10,7 +10,7 @@
 Cardano is a decentralized third-generation proof-of-stake blockchain platform and home to the ada cryptocurrency.
 It is the first blockchain platform to evolve out of a scientific philosophy and a research-first driven approach.
 
-# Cardano World Repository
+# Cardano World Repository 
 
 This repository is a work-in-progress effort to bundle all Cardano
 related development & documentation in a single "portal"-repository.
