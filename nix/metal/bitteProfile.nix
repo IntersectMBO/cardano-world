@@ -40,6 +40,13 @@ in {
       (n: "/mnt/gv0/${n}")
     );
 
+    updatedSsh = {
+      # OpenSSH Version 9.8p1 fixes CVE-2024-6387
+      programs.ssh.package = (
+        builtins.getFlake "github:nixos/nixpkgs/b9014df496d5b68bf7c0145d0e9b0f529ce4f2a8"
+      ).legacyPackages.x86_64-linux.openssh;
+    };
+
   in {
     secrets.encryptedRoot = ./encrypted;
 
@@ -120,7 +127,7 @@ in {
           (args: let
             attrs =
               {
-                desiredCapacity = 6;
+                desiredCapacity = 0;
                 instanceType = "t3a.large";
                 associatePublicIP = true;
                 maxInstanceLifetime = 0;
@@ -145,6 +152,7 @@ in {
           volumeSize = 100;
 
           modules = [
+            updatedSsh
             (bitte + /profiles/core.nix)
             (bitte + /profiles/bootstrapper.nix)
           ];
@@ -159,6 +167,7 @@ in {
           volumeSize = 100;
 
           modules = [
+            updatedSsh
             (bitte + /profiles/core.nix)
           ];
 
@@ -172,6 +181,7 @@ in {
           volumeSize = 100;
 
           modules = [
+            updatedSsh
             (bitte + /profiles/core.nix)
           ];
 
@@ -187,6 +197,7 @@ in {
           ebsOptimized = true;
           securityGroupRules = {inherit (sr) internet internal ssh http https;} // {wireguard = {cidrs = ["0.0.0.0/0"]; port = 51820; protocols = ["udp"];};};
           modules = [
+            updatedSsh
             (bitte + /profiles/monitoring.nix)
             ./monitoring.nix
           ];
@@ -208,6 +219,7 @@ in {
           ];
 
           modules = [
+            updatedSsh
             (bitte + /profiles/routing.nix)
             {
               services.oauth2_proxy.email.domains = ["iohk.io"];
