@@ -141,12 +141,12 @@ in {
 
     inherit (auxConfig.${environment}) explorerActiveBackends;
   in (
-    (mkExplorerGatewayTargets [
-      {ip = "192.168.254.254"; machine = "explorer";}
-    ])
-    ++
-    (mkExplorerTargets (map (backend: {ip = backend.wgIp; machine = backend.name;}) explorerActiveBackends))
-  );
+    # (mkExplorerGatewayTargets [
+    #   {ip = "192.168.254.254"; machine = "explorer";}
+    # ])
+    # ++
+    # (mkExplorerTargets (map (backend: {ip = backend.wgIp; machine = backend.name;}) explorerActiveBackends))
+  []);
 
   networking = {
     # See the bitte profiles/multicloud/equinix.nix for equinix firewall handling
